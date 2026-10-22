@@ -742,21 +742,23 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
   const selectedRepresentanteObj =
     isRepUser && userRepresentante
       ? userRepresentante
-      : form.representante?.startsWith('gerente:')
+      : form.representante &&
+          typeof form.representante === 'string' &&
+          form.representante.startsWith('gerente:')
         ? (() => {
             const gId = form.representante.replace('gerente:', '')
             const g = gerentes.find((x) => x.id === gId)
             if (!g) return undefined
             const repLinked = representantes.find(
               (r) =>
-                (g.email && r.email && r.email.toLowerCase() === g.email.toLowerCase()) ||
-                (g.profile_id && r.profile_id === g.profile_id) ||
-                r.fantasia.toLowerCase() === g.nome.toLowerCase(),
+                (g.email && r?.email && r.email.toLowerCase() === g.email.toLowerCase()) ||
+                (g.profile_id && r?.profile_id === g.profile_id) ||
+                (r?.fantasia && g.nome && r.fantasia.toLowerCase() === g.nome.toLowerCase()),
             )
             return {
               id: repLinked?.id || g.id,
-              fantasia: `${g.nome} (Gerência)`,
-              razao_social: g.nome,
+              fantasia: `${g.nome || 'Gerente'} (Gerência)`,
+              razao_social: g.nome || 'Gerente',
             } as unknown as Representante
           })()
         : representantes.find((r) => r.id === form.representante)
@@ -797,7 +799,8 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       if (!moedaManualOverride && !isEditing) {
         upd('moeda', versaoMoeda)
         if (versaoMoeda !== 'BRL') {
-          const autoRate = versaoMoeda === 'USD' ? rates?.usdRate : rates?.eurRate
+          const autoRate =
+            versaoMoeda === 'USD' ? Number(rates?.usdRate ?? 5.4) : Number(rates?.eurRate ?? 5.9)
           if (autoRate && !form.cotacao_moeda) {
             upd('cotacao_moeda', autoRate)
           }
@@ -836,7 +839,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       upd('nome_representante_comercial', g ? g.nome : '')
     } else {
       const r = representantes.find((x) => x.id === id)
-      upd('nome_representante_comercial', r ? r.fantasia : '')
+      upd('nome_representante_comercial', r ? r.fantasia || r.razao_social || '' : '')
     }
   }
 
@@ -1704,8 +1707,8 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                   ) : (
                     <div className="h-10 px-3 flex items-center justify-between border rounded-md bg-muted/40 text-sm font-medium text-foreground cursor-not-allowed select-none">
                       <span className="truncate">
-                        {userRepresentante.fantasia ||
-                          userRepresentante.razao_social ||
+                        {userRepresentante?.fantasia ||
+                          userRepresentante?.razao_social ||
                           'Representante'}
                       </span>
                       <Lock className="w-4 h-4 text-muted-foreground shrink-0 ml-2" />
@@ -1970,7 +1973,10 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
               upd('moeda', firstVersaoMoeda)
               upd('moeda_original', firstVersaoMoeda)
               if (firstVersaoMoeda !== 'BRL') {
-                const autoRate = firstVersaoMoeda === 'USD' ? rates?.usdRate : rates?.eurRate
+                const autoRate =
+                  firstVersaoMoeda === 'USD'
+                    ? Number(rates?.usdRate ?? 5.4)
+                    : Number(rates?.eurRate ?? 5.9)
                 if (autoRate && !form.cotacao_moeda) {
                   upd('cotacao_moeda', autoRate)
                 }
@@ -2173,7 +2179,8 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     setMoedaManualOverride(true)
                     upd('moeda', v)
                     if (v !== 'BRL') {
-                      const autoRate = v === 'USD' ? rates?.usdRate : rates?.eurRate
+                      const autoRate =
+                        v === 'USD' ? Number(rates?.usdRate ?? 5.4) : Number(rates?.eurRate ?? 5.9)
                       if (autoRate && !form.cotacao_moeda) {
                         upd('cotacao_moeda', autoRate)
                       }
@@ -2221,10 +2228,12 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     <span>Taxa de Câmbio ({form.moeda}):</span>
                     <strong className="text-foreground">
                       R${' '}
-                      {(
+                      {Number(
                         form.cotacao_moeda ??
-                        (form.moeda === 'USD' ? rates?.usdRate : rates?.eurRate) ??
-                        0
+                          (form.moeda === 'USD'
+                            ? (rates?.usdRate ?? 5.4)
+                            : (rates?.eurRate ?? 5.9)) ??
+                          0,
                       ).toFixed(2)}
                     </strong>
                     {form.data_cotacao_moeda && (
@@ -2249,7 +2258,10 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                       type="button"
                       className="text-[10px] text-primary hover:underline font-medium"
                       onClick={() => {
-                        const r = form.moeda === 'USD' ? rates?.usdRate : rates?.eurRate
+                        const r =
+                          form.moeda === 'USD'
+                            ? Number(rates?.usdRate ?? 5.4)
+                            : Number(rates?.eurRate ?? 5.9)
                         if (r) {
                           upd('cotacao_moeda', r)
                           upd('data_cotacao_moeda', new Date().toISOString().split('T')[0])
@@ -2258,8 +2270,8 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     >
                       Usar cotação do dia (R${' '}
                       {form.moeda === 'USD'
-                        ? rates?.usdRate?.toFixed(2)
-                        : rates?.eurRate?.toFixed(2)}
+                        ? Number(rates?.usdRate ?? 5.4).toFixed(2)
+                        : Number(rates?.eurRate ?? 5.9).toFixed(2)}
                       )
                     </button>
                   </div>
