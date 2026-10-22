@@ -73,20 +73,24 @@ export interface CanDrawGerenteSignatureParams {
  *    - Comparando os identificadores (id de gerente, profile_id, email, usuario, nome)
  *      do usuário logado com o gerente associado.
  */
-export function canDrawGerenteSignature({
-  user,
-  userGerenteRecord,
-  selectedGerenteId,
-  selectedRepresentanteValue,
-  selectedGerenteNome,
-  proposta,
-  gerentesList = [],
-}: CanDrawGerenteSignatureParams): boolean {
+export function canDrawGerenteSignature(params?: CanDrawGerenteSignatureParams | null): boolean {
+  if (!params) return false
+
+  const {
+    user,
+    userGerenteRecord,
+    selectedGerenteId,
+    selectedRepresentanteValue,
+    selectedGerenteNome,
+    proposta,
+    gerentesList = [],
+  } = params
+
   if (!user) return false
 
   // 1. O usuário DEVE possuir papel de Gerente (isGerenteRole).
   // Se for admin puro, vendedor, representante ou outro: NÃO pode cadastrar a assinatura do gerente.
-  const role = user.role || ''
+  const role = typeof user.role === 'string' ? user.role : ''
   if (!isGerenteRole(role)) {
     return false
   }
@@ -103,27 +107,31 @@ export function canDrawGerenteSignature({
       null
   }
 
-  if (!associatedGerenteId && selectedRepresentanteValue?.startsWith('gerente:')) {
-    associatedGerenteId = selectedRepresentanteValue.replace('gerente:', '')
-  } else if (!associatedGerenteId && selectedRepresentanteValue) {
+  const safeRepVal =
+    typeof selectedRepresentanteValue === 'string' ? selectedRepresentanteValue.trim() : null
+
+  if (!associatedGerenteId && safeRepVal?.startsWith('gerente:')) {
+    associatedGerenteId = safeRepVal.replace('gerente:', '')
+  } else if (!associatedGerenteId && safeRepVal && Array.isArray(gerentesList)) {
     const isGer = gerentesList.some(
-      (g) => g.id.toLowerCase() === selectedRepresentanteValue.toLowerCase(),
+      (g) => g?.id && typeof g.id === 'string' && g.id.toLowerCase() === safeRepVal.toLowerCase(),
     )
     if (isGer) {
-      associatedGerenteId = selectedRepresentanteValue
+      associatedGerenteId = safeRepVal
     }
   }
 
-  if (!associatedGerenteId && selectedGerenteId) {
-    associatedGerenteId = selectedGerenteId
+  if (!associatedGerenteId && selectedGerenteId && typeof selectedGerenteId === 'string') {
+    associatedGerenteId = selectedGerenteId.trim()
   }
 
   const effectiveNomeGerente =
-    selectedGerenteNome ||
-    proposta?.nome_gerente_produto ||
-    proposta?.gerentes?.nome ||
-    proposta?.assinante_gerente?.nome ||
-    proposta?.gerente_original ||
+    (typeof selectedGerenteNome === 'string' && selectedGerenteNome.trim()) ||
+    (typeof proposta?.nome_gerente_produto === 'string' && proposta.nome_gerente_produto.trim()) ||
+    (typeof proposta?.gerentes?.nome === 'string' && proposta.gerentes.nome.trim()) ||
+    (typeof proposta?.assinante_gerente?.nome === 'string' &&
+      proposta.assinante_gerente.nome.trim()) ||
+    (typeof proposta?.gerente_original === 'string' && proposta.gerente_original.trim()) ||
     null
 
   // Se nenhum gerente estiver associado à proposta:
@@ -145,29 +153,36 @@ export function canDrawGerenteSignature({
     associatedGerenteObj = proposta.gerentes as typeof associatedGerenteObj
   } else if (proposta?.assinante_gerente?.id) {
     associatedGerenteObj = proposta.assinante_gerente as typeof associatedGerenteObj
-  } else if (associatedGerenteId) {
+  } else if (associatedGerenteId && Array.isArray(gerentesList)) {
+    const targetId = associatedGerenteId.toLowerCase()
     associatedGerenteObj =
-      gerentesList.find((g) => g.id.toLowerCase() === associatedGerenteId!.toLowerCase()) || null
+      gerentesList.find(
+        (g) => g?.id && typeof g.id === 'string' && g.id.toLowerCase() === targetId,
+      ) || null
   }
 
   // 3. Comparar o usuário logado com o gerente associado.
-  // Critérios de identidade:
-  const userId = user.id ? user.id.toLowerCase().trim() : ''
-  const userEmail = user.email ? user.email.toLowerCase().trim() : ''
-  const userNome = user.name ? user.name.toLowerCase().trim() : ''
-  const userGIdFromProfile = user.gerente_id ? user.gerente_id.toLowerCase().trim() : ''
+  // Critérios de identidade (com checagem segura de tipos):
+  const userId = typeof user.id === 'string' ? user.id.toLowerCase().trim() : ''
+  const userEmail = typeof user.email === 'string' ? user.email.toLowerCase().trim() : ''
+  const userNome = typeof user.name === 'string' ? user.name.toLowerCase().trim() : ''
+  const userGIdFromProfile =
+    typeof user.gerente_id === 'string' ? user.gerente_id.toLowerCase().trim() : ''
 
-  const logGerenteId = userGerenteRecord?.id ? userGerenteRecord.id.toLowerCase().trim() : ''
-  const logGerenteProfileId = userGerenteRecord?.profile_id
-    ? userGerenteRecord.profile_id.toLowerCase().trim()
-    : ''
-  const logGerenteEmail = userGerenteRecord?.email
-    ? userGerenteRecord.email.toLowerCase().trim()
-    : ''
-  const logGerenteNome = userGerenteRecord?.nome ? userGerenteRecord.nome.toLowerCase().trim() : ''
-  const logGerenteUsuario = userGerenteRecord?.usuario
-    ? userGerenteRecord.usuario.toLowerCase().trim()
-    : ''
+  const logGerenteId =
+    typeof userGerenteRecord?.id === 'string' ? userGerenteRecord.id.toLowerCase().trim() : ''
+  const logGerenteProfileId =
+    typeof userGerenteRecord?.profile_id === 'string'
+      ? userGerenteRecord.profile_id.toLowerCase().trim()
+      : ''
+  const logGerenteEmail =
+    typeof userGerenteRecord?.email === 'string' ? userGerenteRecord.email.toLowerCase().trim() : ''
+  const logGerenteNome =
+    typeof userGerenteRecord?.nome === 'string' ? userGerenteRecord.nome.toLowerCase().trim() : ''
+  const logGerenteUsuario =
+    typeof userGerenteRecord?.usuario === 'string'
+      ? userGerenteRecord.usuario.toLowerCase().trim()
+      : ''
 
   // A. Comparação por ID de Gerente
   if (associatedGerenteId) {
@@ -184,40 +199,49 @@ export function canDrawGerenteSignature({
 
     // Se temos o objeto do gerente associado, checar profile_id, email, usuario e nome dele
     if (associatedGerenteObj) {
-      if (
-        associatedGerenteObj.profile_id &&
-        userId &&
-        associatedGerenteObj.profile_id.toLowerCase().trim() === userId
-      ) {
+      const assocProfileId =
+        typeof associatedGerenteObj.profile_id === 'string'
+          ? associatedGerenteObj.profile_id.toLowerCase().trim()
+          : ''
+      const assocEmail =
+        typeof associatedGerenteObj.email === 'string'
+          ? associatedGerenteObj.email.toLowerCase().trim()
+          : ''
+      const assocUsuario =
+        typeof associatedGerenteObj.usuario === 'string'
+          ? associatedGerenteObj.usuario.toLowerCase().trim()
+          : ''
+      const assocNome =
+        typeof associatedGerenteObj.nome === 'string'
+          ? associatedGerenteObj.nome.toLowerCase().trim()
+          : ''
+
+      if (assocProfileId && userId && assocProfileId === userId) {
         return true
       }
-      if (
-        associatedGerenteObj.email &&
-        userEmail &&
-        associatedGerenteObj.email.toLowerCase().trim() === userEmail
-      ) {
+      if (logGerenteProfileId && assocProfileId && assocProfileId === logGerenteProfileId) {
         return true
       }
-      if (
-        associatedGerenteObj.usuario &&
-        userEmail &&
-        associatedGerenteObj.usuario.toLowerCase().trim() === userEmail
-      ) {
+      if (assocEmail && userEmail && assocEmail === userEmail) {
         return true
       }
-      if (logGerenteEmail && associatedGerenteObj.email) {
-        if (associatedGerenteObj.email.toLowerCase().trim() === logGerenteEmail) return true
+      if (assocUsuario && userEmail && assocUsuario === userEmail) {
+        return true
       }
-      if (associatedGerenteObj.nome && (userNome || logGerenteNome)) {
-        const assocNome = associatedGerenteObj.nome.toLowerCase().trim()
-        if (userNome && assocNome === userNome) return true
-        if (logGerenteNome && assocNome === logGerenteNome) return true
+      if (logGerenteEmail && assocEmail && assocEmail === logGerenteEmail) {
+        return true
+      }
+      if (assocNome && userNome && assocNome === userNome) {
+        return true
+      }
+      if (assocNome && logGerenteNome && assocNome === logGerenteNome) {
+        return true
       }
     }
   }
 
   // B. Comparação por email se disponível no objeto associado
-  if (associatedGerenteObj?.email && (userEmail || logGerenteEmail)) {
+  if (associatedGerenteObj?.email && typeof associatedGerenteObj.email === 'string') {
     const assocEmail = associatedGerenteObj.email.toLowerCase().trim()
     if (userEmail && assocEmail === userEmail) return true
     if (logGerenteEmail && assocEmail === logGerenteEmail) return true

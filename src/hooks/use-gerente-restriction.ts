@@ -63,7 +63,7 @@ export function useGerenteCategoryRestriction(): UserGerenteRestriction {
       return
     }
 
-    const roleNormalized = (user.role ?? '').trim().toLowerCase()
+    const roleNormalized = (typeof user.role === 'string' ? user.role : '').trim().toLowerCase()
     const isAdmin = isAdminRole(user.role)
     const isRep =
       !isAdmin &&
@@ -89,7 +89,13 @@ export function useGerenteCategoryRestriction(): UserGerenteRestriction {
     ;(async () => {
       try {
         // 1. Localizar representante vinculado ao profile/email
-        const rep = await findRepresentanteByProfile(user.id, user.email)
+        const rep =
+          user.id || user.email
+            ? await findRepresentanteByProfile(user.id, user.email).catch((e) => {
+                console.warn('Erro ao buscar representante no hook de restrição:', e)
+                return null
+              })
+            : null
         const repId = rep?.id || null
         const resolvedGerenteId = rep?.gerente_id || user.gerente_id || null
 
@@ -97,22 +103,26 @@ export function useGerenteCategoryRestriction(): UserGerenteRestriction {
         const allowedCatSet = new Set<string>()
 
         if (repId) {
-          const [{ data: repCats }, { data: rgcCats }] = await Promise.all([
-            supabase
-              .from('representante_categorias')
-              .select('categoria_id')
-              .eq('representante_id', repId),
-            supabase
-              .from('representante_gerente_categorias')
-              .select('categoria_id')
-              .eq('representante_id', repId),
-          ])
+          try {
+            const [{ data: repCats }, { data: rgcCats }] = await Promise.all([
+              supabase
+                .from('representante_categorias')
+                .select('categoria_id')
+                .eq('representante_id', repId),
+              supabase
+                .from('representante_gerente_categorias')
+                .select('categoria_id')
+                .eq('representante_id', repId),
+            ])
 
-          for (const rc of repCats || []) {
-            if (rc.categoria_id) allowedCatSet.add(rc.categoria_id)
-          }
-          for (const rgc of rgcCats || []) {
-            if (rgc.categoria_id) allowedCatSet.add(rgc.categoria_id)
+            for (const rc of repCats || []) {
+              if (rc?.categoria_id) allowedCatSet.add(rc.categoria_id)
+            }
+            for (const rgc of rgcCats || []) {
+              if (rgc?.categoria_id) allowedCatSet.add(rgc.categoria_id)
+            }
+          } catch (fetchErr) {
+            console.warn('Aviso ao buscar categorias do representante:', fetchErr)
           }
         }
 
@@ -121,27 +131,31 @@ export function useGerenteCategoryRestriction(): UserGerenteRestriction {
         let gerenteNome: string | null = null
 
         if (resolvedGerenteId) {
-          const { data: gerenteData } = await supabase
-            .from('gerentes')
-            .select(`
-              id,
-              nome,
-              categoria_restrita_id,
-              categoria_restrita:categorias!gerentes_categoria_restrita_id_fkey (
+          try {
+            const { data: gerenteData, error: gerErr } = await supabase
+              .from('gerentes')
+              .select(`
                 id,
-                nome
-              )
-            `)
-            .eq('id', resolvedGerenteId)
-            .maybeSingle()
+                nome,
+                categoria_restrita_id,
+                categoria_restrita:categorias!gerentes_categoria_restrita_id_fkey (
+                  id,
+                  nome
+                )
+              `)
+              .eq('id', resolvedGerenteId)
+              .maybeSingle()
 
-          if (gerenteData) {
-            gerenteNome = gerenteData.nome || null
-            const catRestritaObj = (gerenteData as any).categoria_restrita
-            legadoCatId = gerenteData.categoria_restrita_id || catRestritaObj?.id || null
-            if (legadoCatId && allowedCatSet.size === 0) {
-              allowedCatSet.add(legadoCatId)
+            if (!gerErr && gerenteData) {
+              gerenteNome = gerenteData.nome || null
+              const catRestritaObj = (gerenteData as any)?.categoria_restrita
+              legadoCatId = gerenteData.categoria_restrita_id || catRestritaObj?.id || null
+              if (legadoCatId && allowedCatSet.size === 0) {
+                allowedCatSet.add(legadoCatId)
+              }
             }
+          } catch (gerEx) {
+            console.warn('Aviso ao buscar gerente vinculado:', gerEx)
           }
         }
 
@@ -150,12 +164,16 @@ export function useGerenteCategoryRestriction(): UserGerenteRestriction {
 
         let primaryCatNome: string | null = null
         if (primaryCatId) {
-          const { data: catData } = await supabase
-            .from('categorias')
-            .select('nome')
-            .eq('id', primaryCatId)
-            .maybeSingle()
-          primaryCatNome = catData?.nome || null
+          try {
+            const { data: catData } = await supabase
+              .from('categorias')
+              .select('nome')
+              .eq('id', primaryCatId)
+              .maybeSingle()
+            primaryCatNome = catData?.nome || null
+          } catch (catEx) {
+            console.warn('Aviso ao buscar nome da categoria:', catEx)
+          }
         }
 
         if (isMounted) {

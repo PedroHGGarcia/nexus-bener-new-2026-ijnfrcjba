@@ -2232,8 +2232,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                         form.cotacao_moeda ??
                           (form.moeda === 'USD'
                             ? (rates?.usdRate ?? 5.4)
-                            : (rates?.eurRate ?? 5.9)) ??
-                          0,
+                            : (rates?.eurRate ?? 5.9)),
                       ).toFixed(2)}
                     </strong>
                     {form.data_cotacao_moeda && (
