@@ -1161,8 +1161,9 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   }
   doc.y += totalH + 8
 
-  // Exchange block
-  if (moeda !== 'BRL' && (p.cotacao_moeda || p.cambio_estimado)) {
+  // Exchange block (only when currency differs from original)
+  const moedaOrig = (p.moeda_original || 'BRL').toUpperCase()
+  if (moeda !== moedaOrig && (p.cotacao_moeda || p.cambio_estimado)) {
     ensureSpace(24)
     const taxa = Number(p.cotacao_moeda || p.cambio_estimado)
     const dataCot = p.data_cotacao_moeda || p.cambio_estimado_data
@@ -1233,6 +1234,20 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       doc.y += 6
     }
   }
+
+  // ===== CLOSING TEXT =====
+  ensureSpace(140)
+  doc.y += 12
+  doc.para(
+    M_LEFT,
+    doc.contentW,
+    'Antecipadamente agradecemos vossa honrosa preferência, permanecendo ao vosso inteiro dispor, para dirimir e atender quaisquer eventuais esclarecimentos adicionais que se fizerem necessários.',
+    { font: 'F1', size: 8.5 },
+    11.5,
+  )
+  doc.y += 10
+  doc.txt(M_LEFT, doc.y, 'Atenciosamente', { font: 'F1', size: 8.5, color: [0.1, 0.1, 0.1] })
+  doc.y += 14
 
   // ===== SIGNATURES =====
   ensureSpace(95)

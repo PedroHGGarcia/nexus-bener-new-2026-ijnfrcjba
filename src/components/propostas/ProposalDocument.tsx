@@ -1229,14 +1229,11 @@ export function ProposalDocument({ proposal }: Props) {
                 </span>
               </div>
 
-              {/* R4: Bloco de Cotação de Moeda Estrangeira (Ponto 1: APENAS quando a moeda original for BRL e for convertida para outra moeda) */}
+              {/* R4: Bloco de Cotação de Moeda Estrangeira (APENAS quando houver conversão real entre moedas diferentes com taxa) */}
               {(() => {
-                const isOriginalBrl = (proposal.moeda_original || 'BRL').toUpperCase() === 'BRL'
-                const hasRealConversion =
-                  Boolean(proposal.moeda) &&
-                  proposal.moeda !== 'BRL' &&
-                  isOriginalBrl &&
-                  Boolean(proposal.cotacao_moeda)
+                const moedaOrig = (proposal.moeda_original || 'BRL').toUpperCase()
+                const moedaProp = (proposal.moeda || 'BRL').toUpperCase()
+                const hasRealConversion = moedaProp !== moedaOrig && Boolean(proposal.cotacao_moeda)
 
                 if (!hasRealConversion) return null
 
@@ -1550,6 +1547,16 @@ export function ProposalDocument({ proposal }: Props) {
                 </table>
               </section>
             )}
+
+            {/* Closing text */}
+            <section className="proposal-closing-text mt-6 mb-4 text-xs text-black break-inside-avoid">
+              <p className="text-justify leading-relaxed">
+                Antecipadamente agradecemos vossa honrosa preferência, permanecendo ao vosso inteiro
+                dispor, para dirimir e atender quaisquer eventuais esclarecimentos adicionais que se
+                fizerem necessários.
+              </p>
+              <p className="mt-3 text-left">Atenciosamente</p>
+            </section>
 
             {/* Signatures section */}
             <section className="proposal-signatures mt-6 break-inside-avoid">

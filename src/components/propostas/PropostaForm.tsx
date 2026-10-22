@@ -232,6 +232,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     modeloId: null,
     versaoId: null,
   })
+  const [converterMoeda, setConverterMoeda] = useState(false)
   const [moedaManualOverride, setMoedaManualOverride] = useState(false)
   const [itensMoedasMap, setItensMoedasMap] = useState<Record<string, string>>({})
   const { rates } = useCurrencyRates()
@@ -503,6 +504,11 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     if (editProposta.contato_id) {
       setContatoId(editProposta.contato_id)
     }
+    const editMoedaOrig = editProposta.moeda_original || editProposta.moeda || 'BRL'
+    const editMoeda = editProposta.moeda || 'BRL'
+    const hasActiveConversion = Boolean(editProposta.cotacao_moeda) && editMoeda !== editMoedaOrig
+    setConverterMoeda(hasActiveConversion)
+
     setForm({
       cliente: editProposta.cliente || '',
       tipo_proposta: editProposta.tipo_proposta || '',
@@ -510,12 +516,12 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       gerente: editProposta.gerente || '',
       validade_oferta: editProposta.validade_oferta || '30 dias',
       versao: editProposta.versao || '',
-      moeda: editProposta.moeda || 'BRL',
-      moeda_original: editProposta.moeda_original || 'BRL',
+      moeda: editMoeda,
+      moeda_original: editMoedaOrig,
       cotacao_moeda: editProposta.cotacao_moeda ?? null,
       data_cotacao_moeda: editProposta.data_cotacao_moeda || '',
       valor_sem_desconto: editProposta.valor_sem_desconto || 0,
-      percentual_desconto: editProposta.percentual_desconto || 0,
+      percentual_desconto: 0,
       tem_preco_especial:
         editProposta.preco_especial != null && Number(editProposta.preco_especial) > 0,
       preco_especial: editProposta.preco_especial ?? null,
@@ -794,13 +800,17 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       const versaoMoeda = (v.moeda || 'BRL').toUpperCase()
       // Sempre grava a moeda original da máquina
       upd('moeda_original', versaoMoeda)
-      // Se o usuário ainda não escolheu uma moeda manualmente nesta sessão de emissão,
-      // a moeda da proposta é pré-preenchida a partir da moeda cadastrada na versão (default 'BRL').
-      if (!moedaManualOverride && !isEditing) {
+      // Padrão: SEM conversão. A moeda da proposta segue a moeda original cadastrada na máquina.
+      if (!converterMoeda) {
         upd('moeda', versaoMoeda)
-        if (versaoMoeda !== 'BRL') {
+        upd('cotacao_moeda', null)
+        upd('data_cotacao_moeda', '')
+      } else if (!moedaManualOverride && !isEditing) {
+        if (form.moeda !== versaoMoeda) {
           const autoRate =
-            versaoMoeda === 'USD' ? Number(rates?.usdRate ?? 5.4) : Number(rates?.eurRate ?? 5.9)
+            form.moeda === 'USD' || versaoMoeda === 'USD'
+              ? Number(rates?.usdRate ?? 5.4)
+              : Number(rates?.eurRate ?? 5.9)
           if (autoRate && !form.cotacao_moeda) {
             upd('cotacao_moeda', autoRate)
           }
@@ -1000,14 +1010,16 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     return (form.moeda_original || 'BRL').toUpperCase()
   }
 
-  // Converter valor unitário de um item para a moeda de destino da proposta
+  // Converter valor unitário de um item para a moeda de destino da proposta (apenas se conversão ativa)
   const getItemValorUnitarioConverted = (item: PropostaVersaoItem): number => {
+    if (!converterMoeda) return item.valor_unitario || 0
     const itemMoeda = getItemMoeda(item.versao_id)
     return convertCurrency(item.valor_unitario, itemMoeda, form.moeda, ratesConfig)
   }
 
   const getItemDescontoValorConverted = (item: PropostaVersaoItem): number => {
     if (!item.desconto_valor) return 0
+    if (!converterMoeda) return item.desconto_valor
     const itemMoeda = getItemMoeda(item.versao_id)
     return convertCurrency(item.desconto_valor, itemMoeda, form.moeda, ratesConfig)
   }
@@ -1044,7 +1056,9 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         (a.versao_id ? getItemMoeda(a.versao_id) : form.moeda_original) ||
         'BRL'
       ).toUpperCase()
-      const valConverted = convertCurrency(a.valor || 0, acMoeda, form.moeda, ratesConfig)
+      const valConverted = converterMoeda
+        ? convertCurrency(a.valor || 0, acMoeda, form.moeda, ratesConfig)
+        : a.valor || 0
       return sum + valConverted * (a.quantidade || 1)
     }, 0)
 
@@ -1056,13 +1070,12 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         (a.versao_id ? getItemMoeda(a.versao_id) : form.moeda_original) ||
         'BRL'
       ).toUpperCase()
-      const valConverted = convertCurrency(a.valor || 0, acMoeda, form.moeda, ratesConfig)
-      const descValConverted = convertCurrency(
-        a.desconto_valor || 0,
-        acMoeda,
-        form.moeda,
-        ratesConfig,
-      )
+      const valConverted = converterMoeda
+        ? convertCurrency(a.valor || 0, acMoeda, form.moeda, ratesConfig)
+        : a.valor || 0
+      const descValConverted = converterMoeda
+        ? convertCurrency(a.desconto_valor || 0, acMoeda, form.moeda, ratesConfig)
+        : a.desconto_valor || 0
       return (
         sum +
         calculateLineTotal({
@@ -1076,11 +1089,12 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
 
   const valorSemDesconto = equipamentosSubtotal + acessoriosSubtotal
   const valorAtual = equipamentosComDesconto + acessoriosComDesconto
+  // Ponto 1: Desconto Geral (%) removido do cálculo; descontos ocorrem apenas por item ou Preço Especial
   const valorFinal = form.tem_preco_especial
     ? form.preco_especial != null && Number(form.preco_especial) > 0
       ? Number(form.preco_especial)
       : valorAtual
-    : valorAtual * (1 - (form.percentual_desconto || 0) / 100)
+    : valorAtual
 
   const fmtCurrency = (val: number) => {
     const formatted = val.toLocaleString('pt-BR', {
@@ -1277,12 +1291,14 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         assinante_gerente_id: finalGerenteId,
         validade_oferta: form.validade_oferta || null,
         versao: itensVersoes[0]?.versao_id || null,
-        moeda: form.moeda,
+        moeda: converterMoeda ? form.moeda : form.moeda_original || 'BRL',
         moeda_original: form.moeda_original || 'BRL',
-        cotacao_moeda: form.moeda !== 'BRL' ? form.cotacao_moeda : null,
-        data_cotacao_moeda: form.moeda !== 'BRL' ? form.data_cotacao_moeda : null,
+        cotacao_moeda:
+          converterMoeda && form.moeda !== form.moeda_original ? form.cotacao_moeda : null,
+        data_cotacao_moeda:
+          converterMoeda && form.moeda !== form.moeda_original ? form.data_cotacao_moeda : null,
         valor_sem_desconto: valorSemDesconto,
-        percentual_desconto: form.percentual_desconto,
+        percentual_desconto: 0,
         valor_final: valorFinal,
         preco_especial:
           form.tem_preco_especial && form.preco_especial != null && Number(form.preco_especial) > 0
@@ -1971,13 +1987,18 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
 
             // Se o usuário ainda não escolheu uma moeda manualmente, atualiza a moeda padrão da proposta
             // a partir da primeira versão selecionada no pacote
-            if (!moedaManualOverride && !isEditing && items[0]) {
+            if (!converterMoeda && items[0]) {
               const firstVersaoMoeda = newMoedasMap[items[0].versao_id] || 'BRL'
               upd('moeda', firstVersaoMoeda)
               upd('moeda_original', firstVersaoMoeda)
-              if (firstVersaoMoeda !== 'BRL') {
+              upd('cotacao_moeda', null)
+              upd('data_cotacao_moeda', '')
+            } else if (!moedaManualOverride && !isEditing && items[0]) {
+              const firstVersaoMoeda = newMoedasMap[items[0].versao_id] || 'BRL'
+              upd('moeda_original', firstVersaoMoeda)
+              if (form.moeda !== firstVersaoMoeda) {
                 const autoRate =
-                  firstVersaoMoeda === 'USD'
+                  firstVersaoMoeda === 'USD' || form.moeda === 'USD'
                     ? Number(rates?.usdRate ?? 5.4)
                     : Number(rates?.eurRate ?? 5.9)
                 if (autoRate && !form.cotacao_moeda) {
@@ -2162,7 +2183,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
               </h3>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               {form.is_pacote && (
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300">
                   <span className="font-semibold text-slate-900 dark:text-slate-100">
@@ -2172,54 +2193,102 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                 </div>
               )}
 
-              <div className="flex items-center gap-2">
-                <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">
-                  Moeda:
-                </Label>
-                <Select
-                  value={form.moeda}
-                  onValueChange={(v) => {
-                    setMoedaManualOverride(true)
-                    upd('moeda', v)
-                    if (v !== 'BRL') {
-                      const autoRate =
-                        v === 'USD' ? Number(rates?.usdRate ?? 5.4) : Number(rates?.eurRate ?? 5.9)
-                      if (autoRate && !form.cotacao_moeda) {
-                        upd('cotacao_moeda', autoRate)
-                      }
-                      if (!form.data_cotacao_moeda) {
-                        upd('data_cotacao_moeda', new Date().toISOString().split('T')[0])
-                      }
+              {/* Ponto 2: Moeda padrão é a da máquina (sem conversão). Toggle explícito para ativar conversão */}
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                <Switch
+                  id="toggle-converter-moeda"
+                  checked={converterMoeda}
+                  onCheckedChange={(checked) => {
+                    setConverterMoeda(checked)
+                    if (!checked) {
+                      const orig = (form.moeda_original || 'BRL').toUpperCase()
+                      upd('moeda', orig)
+                      upd('cotacao_moeda', null)
+                      upd('data_cotacao_moeda', '')
+                    } else {
+                      const orig = (form.moeda_original || 'BRL').toUpperCase()
+                      const target = orig === 'BRL' ? 'USD' : 'BRL'
+                      upd('moeda', target)
+                      const defaultRate =
+                        target === 'USD' || orig === 'USD'
+                          ? Number(rates?.usdRate ?? 5.4)
+                          : target === 'EUR' || orig === 'EUR'
+                            ? Number(rates?.eurRate ?? 5.9)
+                            : 1
+                      upd('cotacao_moeda', defaultRate)
+                      upd('data_cotacao_moeda', new Date().toISOString().split('T')[0])
                     }
                   }}
                   disabled={isEditing}
+                />
+                <Label
+                  htmlFor="toggle-converter-moeda"
+                  className="text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer select-none"
                 >
-                  <SelectTrigger
-                    className="h-8 text-xs font-semibold w-[160px]"
+                  Converter Moeda
+                </Label>
+              </div>
+
+              {!converterMoeda ? (
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300">
+                  <span>Moeda:</span>
+                  <strong className="text-slate-900 dark:text-slate-100">
+                    {form.moeda_original || 'BRL'} (Original)
+                  </strong>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                    Converter para:
+                  </Label>
+                  <Select
+                    value={form.moeda}
+                    onValueChange={(v) => {
+                      setMoedaManualOverride(true)
+                      upd('moeda', v)
+                      const orig = (form.moeda_original || 'BRL').toUpperCase()
+                      if (v !== orig) {
+                        const autoRate =
+                          v === 'USD' || orig === 'USD'
+                            ? Number(rates?.usdRate ?? 5.4)
+                            : v === 'EUR' || orig === 'EUR'
+                              ? Number(rates?.eurRate ?? 5.9)
+                              : 1
+                        upd('cotacao_moeda', autoRate)
+                        if (!form.data_cotacao_moeda) {
+                          upd('data_cotacao_moeda', new Date().toISOString().split('T')[0])
+                        }
+                      } else {
+                        upd('cotacao_moeda', null)
+                        upd('data_cotacao_moeda', '')
+                      }
+                    }}
                     disabled={isEditing}
                   >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="BRL">Reais (R$)</SelectItem>
-                    <SelectItem value="USD">Dólar (US$)</SelectItem>
-                    <SelectItem value="EUR">Euro (€)</SelectItem>
-                  </SelectContent>
-                </Select>
-                {moedaManualOverride && !isEditing && (
-                  <span className="text-[10px] text-muted-foreground font-normal">(Manual)</span>
-                )}
-              </div>
+                    <SelectTrigger
+                      className="h-8 text-xs font-semibold w-[150px]"
+                      disabled={isEditing}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="BRL">Reais (R$)</SelectItem>
+                      <SelectItem value="USD">Dólar (US$)</SelectItem>
+                      <SelectItem value="EUR">Euro (€)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
           </div>
 
           {/* 2. Linha divisória horizontal fina atravessando toda a largura */}
           <div className="border-b border-slate-200 dark:border-slate-800 -mx-5 sm:-mx-6" />
 
-          {/* R4 / R14: Cotação e Data da Moeda quando em Dólar ou Euro em Collapsible discreto */}
-          {form.moeda !== 'BRL' && (
+          {/* R4 / R14: Cotação e Data da Moeda SOMENTE quando conversão ativada e houver conversão entre moedas diferentes */}
+          {converterMoeda && form.moeda !== form.moeda_original && (
             <Collapsible
-              defaultOpen={false}
+              defaultOpen={true}
               className="border border-slate-200 dark:border-slate-800 rounded-md bg-slate-50/70 dark:bg-slate-900/40"
             >
               <CollapsibleTrigger asChild>
@@ -2228,12 +2297,14 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                   className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors group"
                 >
                   <span className="flex items-center gap-2">
-                    <span>Taxa de Câmbio ({form.moeda}):</span>
+                    <span>
+                      Taxa de Câmbio ({form.moeda_original} ➔ {form.moeda}):
+                    </span>
                     <strong className="text-foreground">
                       R${' '}
                       {Number(
                         form.cotacao_moeda ??
-                          (form.moeda === 'USD'
+                          (form.moeda === 'USD' || form.moeda_original === 'USD'
                             ? (rates?.usdRate ?? 5.4)
                             : (rates?.eurRate ?? 5.9)),
                       ).toFixed(2)}
@@ -2253,15 +2324,14 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
               <CollapsibleContent className="p-3.5 pt-2 border-t border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-medium text-foreground">
-                      Cotação {form.moeda} (em R$) *
-                    </Label>
+                    <Label className="text-xs font-medium text-foreground">Cotação (em R$) *</Label>
                     <button
                       type="button"
                       className="text-[10px] text-primary hover:underline font-medium"
                       onClick={() => {
+                        const target = form.moeda === 'BRL' ? form.moeda_original : form.moeda
                         const r =
-                          form.moeda === 'USD'
+                          target === 'USD'
                             ? Number(rates?.usdRate ?? 5.4)
                             : Number(rates?.eurRate ?? 5.9)
                         if (r) {
@@ -2271,7 +2341,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                       }}
                     >
                       Usar cotação do dia (R${' '}
-                      {form.moeda === 'USD'
+                      {form.moeda === 'USD' || form.moeda_original === 'USD'
                         ? Number(rates?.usdRate ?? 5.4).toFixed(2)
                         : Number(rates?.eurRate ?? 5.9).toFixed(2)}
                       )
@@ -2281,13 +2351,15 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     className="mt-1 bg-white dark:bg-slate-900"
                     value={
                       form.cotacao_moeda ??
-                      (form.moeda === 'USD' ? (rates?.usdRate ?? 5.4) : (rates?.eurRate ?? 5.9))
+                      (form.moeda === 'USD' || form.moeda_original === 'USD'
+                        ? (rates?.usdRate ?? 5.4)
+                        : (rates?.eurRate ?? 5.9))
                     }
                     onChange={(val) => upd('cotacao_moeda', val || null)}
                     prefix="R$"
                   />
                   <p className="text-[10px] text-muted-foreground mt-0.5">
-                    Valor de 1 {form.moeda} em reais para conversão dos valores
+                    Valor de 1 moeda estrangeira em reais para conversão dos valores
                   </p>
                 </div>
 
@@ -2347,33 +2419,6 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                 <span className="font-semibold tabular-nums">{fmtCurrency(valorAtual)}</span>
               </div>
             )}
-
-            {/* Campo de Desconto Geral */}
-            <div
-              className={`pt-2.5 border-t border-slate-200/70 dark:border-slate-800 ${form.tem_preco_especial ? 'opacity-50 select-none' : ''}`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex-1">
-                  <Label className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                    Desconto Geral (%)
-                  </Label>
-                  <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                    {form.tem_preco_especial
-                      ? 'Desativado pois o preço especial está ativo.'
-                      : 'Aplicado sobre o total da proposta.'}
-                  </p>
-                </div>
-                <div className="w-28 shrink-0">
-                  <FormattedNumberInput
-                    className="h-8 text-xs font-medium text-right bg-white dark:bg-slate-900"
-                    value={form.tem_preco_especial ? 0 : form.percentual_desconto || 0}
-                    onChange={(v) => upd('percentual_desconto', v)}
-                    suffix="%"
-                    disabled={form.tem_preco_especial}
-                  />
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* 4. FORA DO CARD, ABAIXO DELE: Valor Final da Proposta (destaque aprovado pela Bianca) */}
@@ -2680,20 +2725,20 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     },
                 proposta_versoes: tempProposalVersoes,
                 tipo_proposta: form.tipo_proposta,
-                moeda: form.moeda || 'BRL',
+                moeda: converterMoeda ? form.moeda || 'BRL' : form.moeda_original || 'BRL',
                 moeda_original: form.moeda_original || 'BRL',
                 cotacao_moeda:
-                  form.moeda !== 'BRL'
+                  converterMoeda && form.moeda !== form.moeda_original
                     ? form.cotacao_moeda || (form.moeda === 'USD' ? rates?.usdRate : rates?.eurRate)
                     : null,
                 data_cotacao_moeda:
-                  form.moeda !== 'BRL'
+                  converterMoeda && form.moeda !== form.moeda_original
                     ? form.data_cotacao_moeda || new Date().toISOString().split('T')[0]
                     : null,
                 valor_sem_desconto: valorSemDesconto,
                 valor_atual: valorAtual,
                 valor_final: valorFinal,
-                percentual_desconto: form.percentual_desconto || 0,
+                percentual_desconto: 0,
                 preco_especial: form.tem_preco_especial ? form.preco_especial : null,
                 prazo_entrega: form.prazo_entrega || selectedTipo?.prazo_entrega || '',
                 condicoes_pagamento:

@@ -791,6 +791,15 @@ export function generatePropostaHtml(
             : ''
         }
 
+        <div class="closing-text" style="margin-top:20px;margin-bottom:16px;font-size:11px;color:#0f172a;page-break-inside:avoid;break-inside:avoid;">
+          <p style="text-align:justify;line-height:1.6;margin:0 0 12px 0;">
+            Antecipadamente agradecemos vossa honrosa preferência, permanecendo ao vosso inteiro dispor, para dirimir e atender quaisquer eventuais esclarecimentos adicionais que se fizerem necessários.
+          </p>
+          <p style="text-align:left;margin:0;">
+            Atenciosamente
+          </p>
+        </div>
+
         <div class="signatures-grid">
           <div>
             <div class="sig-line">

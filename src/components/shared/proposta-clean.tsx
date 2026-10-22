@@ -333,6 +333,14 @@ export function PropostaCleanDocument({ proposal }: { proposal: PropostaWithRela
         especificacoes={proposal.especificacoes_tecnicas}
       />
       <PropostaCleanPricing proposal={proposal} />
+      <section className="my-6 text-xs text-slate-800 break-inside-avoid">
+        <p className="text-justify leading-relaxed">
+          Antecipadamente agradecemos vossa honrosa preferência, permanecendo ao vosso inteiro
+          dispor, para dirimir e atender quaisquer eventuais esclarecimentos adicionais que se
+          fizerem necessários.
+        </p>
+        <p className="mt-3 text-left">Atenciosamente</p>
+      </section>
       <PropostaCleanSignatures proposal={proposal} />
     </div>
   )
