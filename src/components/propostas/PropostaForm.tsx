@@ -263,7 +263,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       nome: string
       valor: number
       moeda: string
-      inclusao?: 'preco' | 'opcional'
+      inclusao?: 'preco' | 'opcional' | 'incluir' | 'exibir' | 'nao_exibir'
       quantidade?: number
       desconto_percentual?: number
       desconto_valor?: number
@@ -472,7 +472,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
           nome: string
           valor: number
           moeda: string
-          inclusao?: 'preco' | 'opcional'
+          inclusao?: 'preco' | 'opcional' | 'incluir' | 'exibir' | 'nao_exibir'
           quantidade?: number
           desconto_percentual?: number
           desconto_valor?: number
@@ -494,7 +494,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         nome: a.nome,
         valor: a.valor,
         moeda: a.moeda || editProposta.moeda || 'USD',
-        inclusao: a.inclusao ?? 'preco',
+        inclusao: a.inclusao ?? 'incluir',
         quantidade: a.quantidade ?? 1,
         desconto_percentual: a.desconto_percentual ?? 0,
         desconto_valor: a.desconto_valor ?? 0,
@@ -1033,8 +1033,11 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
   }, 0)
 
   // Subtotais e totais dos acessórios já convertidos para a moeda da proposta
+  const isAcessorioIncludedInPrice = (inc?: string) =>
+    inc === 'incluir' || inc === 'preco' || inc === undefined
+
   const acessoriosSubtotal = form.acessorios_proposta
-    .filter((a) => (a.inclusao ?? 'preco') === 'preco')
+    .filter((a) => isAcessorioIncludedInPrice(a.inclusao))
     .reduce((sum, a) => {
       const acMoeda = (
         a.moeda ||
@@ -1046,7 +1049,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     }, 0)
 
   const acessoriosComDesconto = form.acessorios_proposta
-    .filter((a) => (a.inclusao ?? 'preco') === 'preco')
+    .filter((a) => isAcessorioIncludedInPrice(a.inclusao))
     .reduce((sum, a) => {
       const acMoeda = (
         a.moeda ||

@@ -1,29 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandItem,
-  CommandEmpty,
-} from '@/components/ui/command'
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from '@/components/ui/select'
-import { ListFilter, Loader2, X, Plus, Minus, Search, ChevronUp, ChevronDown } from 'lucide-react'
+import { List, Loader2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Acessorio } from '@/types/acessorio'
 import { cn } from '@/lib/utils'
-import { calculateLineTotal } from '@/lib/proposta-calculations'
 
-type InclusaoType = 'preco' | 'opcional'
+export type InclusaoType = 'preco' | 'opcional' | 'incluir' | 'exibir' | 'nao_exibir'
 
 export interface SelectedAcessorio {
   id: string
@@ -47,6 +29,16 @@ interface Props {
   precoEspecialAtivo?: boolean
 }
 
+function formatAcessorioValor(val: number | null | undefined, moeda?: string | null): string {
+  const num = val ?? 0
+  const m = (moeda || 'BRL').toUpperCase()
+  const formatted = num.toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  return `${m} ${formatted}`
+}
+
 export function PropostaAcessoriosSection({
   versaoId,
   currency,
@@ -54,11 +46,9 @@ export function PropostaAcessoriosSection({
   onChange,
   versaoNome,
   hideHeaderTitle,
-  precoEspecialAtivo,
 }: Props) {
   const [acessorios, setAcessorios] = useState<Acessorio[]>([])
   const [loading, setLoading] = useState(false)
-  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     if (!versaoId) {
@@ -73,9 +63,6 @@ export function PropostaAcessoriosSection({
       .then(({ data, error }) => {
         setLoading(false)
         if (!error && data) {
-          // Each join row carries its single linked acessorio (the FK is
-          // many-to-one from acessorio_versoes → acessorios). Defensive:
-          // handle both object and array shapes from the nested select.
           const rows = data as Array<{
             acessorio_id: string
             acessorios: Acessorio | Acessorio[] | null
@@ -86,7 +73,7 @@ export function PropostaAcessoriosSection({
               return Array.isArray(a) ? a[0] : a
             })
             .filter((a): a is Acessorio => !!a && (a.status ?? 'Ativo') === 'Ativo')
-          // Dedupe (duplicate join rows are possible) and sort by name.
+
           const seen = new Set<string>()
           const deduped = items.filter((a) => {
             if (seen.has(a.id)) return false
@@ -101,83 +88,43 @@ export function PropostaAcessoriosSection({
       })
   }, [versaoId])
 
-  const isSameItem = (
-    sel: SelectedAcessorio,
-    candidate: { id: string; cod_erp?: string | null },
-  ) => {
-    if (sel.id === candidate.id) return true
-    if (
-      candidate.cod_erp &&
-      (sel as unknown as { cod_erp?: string }).cod_erp === candidate.cod_erp
-    ) {
-      return true
-    }
-    return false
+  const getItemStatus = (id: string): 'incluir' | 'nao_exibir' | 'exibir' => {
+    const sel = selectedAcessorios.find((s) => s.id === id)
+    if (!sel) return 'nao_exibir'
+    if (sel.inclusao === 'exibir') return 'exibir'
+    if (sel.inclusao === 'nao_exibir') return 'nao_exibir'
+    return 'incluir'
   }
 
-  const available = acessorios.filter((a) => !selectedAcessorios.some((s) => isSameItem(s, a)))
+  const handleRadioChange = (item: Acessorio, option: 'incluir' | 'nao_exibir' | 'exibir') => {
+    const remaining = selectedAcessorios.filter((s) => s.id !== item.id)
 
-  const addAcessorio = (item: Acessorio) => {
-    // Prevent duplicate accessory insertion by id / cod_erp
-    const alreadyExists = selectedAcessorios.some((s) => isSameItem(s, item))
-    if (alreadyExists) {
-      setOpen(false)
+    if (option === 'nao_exibir') {
+      onChange(remaining)
       return
     }
 
-    onChange([
-      ...selectedAcessorios,
-      {
-        id: item.id,
-        nome: item.nome,
-        valor: item.valor || 0,
-        moeda: item.moeda || currency,
-        inclusao: 'preco',
-        quantidade: 1,
-        desconto_percentual: 0,
-        desconto_valor: 0,
-        versao_id: versaoId || undefined,
-      },
-    ])
-    setOpen(false)
-  }
+    const newItem: SelectedAcessorio = {
+      id: item.id,
+      nome: item.nome,
+      valor: item.valor || 0,
+      moeda: item.moeda || currency,
+      inclusao: option,
+      quantidade: 1,
+      desconto_percentual: 0,
+      desconto_valor: 0,
+      versao_id: versaoId || undefined,
+    }
 
-  const removeAcessorio = (id: string) => onChange(selectedAcessorios.filter((a) => a.id !== id))
-
-  const updateInclusao = (id: string, inclusao: InclusaoType) =>
-    onChange(selectedAcessorios.map((a) => (a.id === id ? { ...a, inclusao } : a)))
-
-  const updateQty = (id: string, delta: number) =>
-    onChange(
-      selectedAcessorios.map((a) =>
-        a.id === id ? { ...a, quantidade: Math.max(1, (a.quantidade || 1) + delta) } : a,
-      ),
-    )
-
-  const updateField = (id: string, field: keyof SelectedAcessorio, value: number) =>
-    onChange(selectedAcessorios.map((a) => (a.id === id ? { ...a, [field]: value } : a)))
-
-  const moveItem = (index: number, dir: -1 | 1) => {
-    const ni = index + dir
-    if (ni < 0 || ni >= selectedAcessorios.length) return
-    const arr = [...selectedAcessorios]
-    ;[arr[index], arr[ni]] = [arr[ni], arr[index]]
-    onChange(arr)
-  }
-
-  const fmt = (val: number, moeda?: string | null) => {
-    const c = moeda || currency
-    if (c === 'USD') return `US$ ${val.toLocaleString('en-US', { minimumFractionDigits: 2 })}`
-    if (c === 'EUR') return `€ ${val.toLocaleString('de-DE', { minimumFractionDigits: 2 })}`
-    return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+    onChange([...remaining, newItem])
   }
 
   return (
     <div className="space-y-3">
       {!hideHeaderTitle && (
-        <div className="flex items-center gap-2 text-base font-semibold text-primary">
-          <ListFilter className="w-5 h-5" />
-          Acessórios {versaoNome ? `— ${versaoNome}` : ''}
+        <div className="flex items-center gap-2 text-base font-semibold text-slate-800 dark:text-slate-100">
+          <List className="w-5 h-5 text-slate-700 dark:text-slate-300" />
+          <span>Acessórios {versaoNome ? `— ${versaoNome}` : ''}</span>
         </div>
       )}
 
@@ -187,181 +134,117 @@ export function PropostaAcessoriosSection({
             Selecione uma versão para visualizar os acessórios disponíveis.
           </CardContent>
         </Card>
-      ) : (
+      ) : loading ? (
         <Card>
-          <CardContent className="p-4 space-y-3">
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  className="w-full justify-between font-normal"
-                  disabled={loading || available.length === 0}
-                >
-                  <span className="flex items-center gap-2">
-                    <Search className="w-4 h-4 text-muted-foreground" />
-                    {loading
-                      ? 'Carregando acessórios...'
-                      : available.length === 0
-                        ? 'Todos os acessórios já foram adicionados'
-                        : 'Buscar e adicionar acessório...'}
-                  </span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Digite para buscar acessório..." />
-                  <CommandList className="max-h-60">
-                    <CommandEmpty>Nenhum acessório encontrado.</CommandEmpty>
-                    {available.map((item) => (
-                      <CommandItem
-                        key={item.id}
-                        value={item.nome}
-                        onSelect={() => addAcessorio(item)}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <span className="text-sm">{item.nome}</span>
-                          <span className="text-xs font-semibold text-muted-foreground">
-                            {fmt(item.valor || 0, item.moeda)}
-                          </span>
-                        </div>
-                      </CommandItem>
-                    ))}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+          <CardContent className="p-8 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            <span>Carregando acessórios...</span>
+          </CardContent>
+        </Card>
+      ) : acessorios.length === 0 ? (
+        <Card>
+          <CardContent className="p-6 text-center text-sm text-muted-foreground">
+            Nenhum acessório cadastrado para esta versão.
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-sm border-collapse text-left">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-bold text-xs uppercase tracking-wider">
+                  <th className="py-3 px-4 text-left w-[42%] min-w-[200px]">Acessório</th>
+                  <th className="py-3 px-4 text-left w-[16%] min-w-[120px]">Valor</th>
+                  <th className="py-3 px-3 text-center w-[14%] min-w-[130px]">
+                    Incluir na Proposta
+                  </th>
+                  <th className="py-3 px-3 text-center w-[14%] min-w-[140px]">
+                    Não exibir na Proposta
+                  </th>
+                  <th className="py-3 px-3 text-center w-[14%] min-w-[130px]">
+                    Exibir na Proposta
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                {acessorios.map((item, idx) => {
+                  const currentStatus = getItemStatus(item.id)
+                  const radioGroupName = `acc-opt-${versaoId || 'single'}-${item.id}`
+                  const isZebra = idx % 2 === 0
 
-            {selectedAcessorios.length > 0 ? (
-              <div className="space-y-2 pt-2 border-t">
-                {selectedAcessorios.map((item, idx) => {
-                  const itemKey = item.id || `acessorio-${idx}`
-                  const total = calculateLineTotal({
-                    quantidade: item.quantidade || 1,
-                    valor_unitario: item.valor || 0,
-                    desconto_percentual: item.desconto_percentual,
-                    desconto_valor: item.desconto_valor,
-                  })
-                  const isIncluso = (item.inclusao ?? 'preco') === 'preco'
                   return (
-                    <div
-                      key={itemKey}
+                    <tr
+                      key={item.id}
                       className={cn(
-                        'flex flex-col gap-2 p-3 rounded-lg border text-sm transition-colors',
-                        isIncluso
-                          ? 'border-primary/30 bg-primary/5'
-                          : 'border-input bg-slate-50/50 dark:bg-slate-900/50',
+                        'transition-colors hover:bg-slate-100/70 dark:hover:bg-slate-800/50',
+                        isZebra
+                          ? 'bg-slate-50/70 dark:bg-slate-900/30'
+                          : 'bg-white dark:bg-slate-950',
                       )}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-start gap-2 min-w-0 flex-1">
-                          <span className="text-xs font-bold text-muted-foreground mt-0.5 shrink-0">
-                            {idx + 1}.
-                          </span>
-                          <span className="font-medium break-words min-w-0" title={item.nome}>
-                            {item.nome}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => moveItem(idx, -1)}
-                            disabled={idx === 0}
-                            className="h-6 w-6 p-0"
-                          >
-                            <ChevronUp className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => moveItem(idx, 1)}
-                            disabled={idx === selectedAcessorios.length - 1}
-                            className="h-6 w-6 p-0"
-                          >
-                            <ChevronDown className="w-3 h-3" />
-                          </Button>
-                          <button
-                            type="button"
-                            onClick={() => removeAcessorio(item.id)}
-                            className="text-muted-foreground hover:text-destructive shrink-0 ml-1"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        <div className="flex items-center gap-1">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateQty(item.id, -1)}
-                          >
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <span className="w-8 text-center font-semibold tabular-nums">
-                            {item.quantidade || 1}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            className="h-7 w-7"
-                            onClick={() => updateQty(item.id, 1)}
-                          >
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        <Select
-                          value={item.inclusao ?? 'preco'}
-                          onValueChange={(v) => updateInclusao(item.id, v as InclusaoType)}
+                      <td className="py-2.5 px-4 font-normal text-slate-900 dark:text-slate-100">
+                        {item.nome}
+                      </td>
+                      <td className="py-2.5 px-4 font-normal text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                        {formatAcessorioValor(item.valor, item.moeda || currency)}
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <label
+                          htmlFor={`${radioGroupName}-incluir`}
+                          className="inline-flex items-center justify-center p-1 cursor-pointer"
                         >
-                          <SelectTrigger className="h-7 text-xs w-[120px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="preco">No preço</SelectItem>
-                            <SelectItem value="opcional">Opcional</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-muted-foreground">Desc.%:</span>
                           <input
-                            type="number"
-                            min={0}
-                            value={precoEspecialAtivo ? 0 : item.desconto_percentual || 0}
-                            onChange={(e) =>
-                              updateField(
-                                item.id,
-                                'desconto_percentual',
-                                parseFloat(e.target.value) || 0,
-                              )
-                            }
-                            disabled={precoEspecialAtivo}
-                            className={cn(
-                              'w-14 h-7 px-1 text-xs border rounded text-right',
-                              precoEspecialAtivo && 'opacity-60 bg-muted cursor-not-allowed',
-                            )}
+                            type="radio"
+                            id={`${radioGroupName}-incluir`}
+                            name={radioGroupName}
+                            value="incluir"
+                            checked={currentStatus === 'incluir'}
+                            onChange={() => handleRadioChange(item, 'incluir')}
+                            className="h-4 w-4 text-primary accent-primary cursor-pointer transition-transform hover:scale-110"
                           />
-                        </div>
-                        <Badge variant="secondary" className="text-xs ml-auto">
-                          {fmt(total, item.moeda)}
-                        </Badge>
-                      </div>
-                    </div>
+                          <span className="sr-only">Incluir na Proposta {item.nome}</span>
+                        </label>
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <label
+                          htmlFor={`${radioGroupName}-nao_exibir`}
+                          className="inline-flex items-center justify-center p-1 cursor-pointer"
+                        >
+                          <input
+                            type="radio"
+                            id={`${radioGroupName}-nao_exibir`}
+                            name={radioGroupName}
+                            value="nao_exibir"
+                            checked={currentStatus === 'nao_exibir'}
+                            onChange={() => handleRadioChange(item, 'nao_exibir')}
+                            className="h-4 w-4 text-primary accent-primary cursor-pointer transition-transform hover:scale-110"
+                          />
+                          <span className="sr-only">Não exibir na Proposta {item.nome}</span>
+                        </label>
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <label
+                          htmlFor={`${radioGroupName}-exibir`}
+                          className="inline-flex items-center justify-center p-1 cursor-pointer"
+                        >
+                          <input
+                            type="radio"
+                            id={`${radioGroupName}-exibir`}
+                            name={radioGroupName}
+                            value="exibir"
+                            checked={currentStatus === 'exibir'}
+                            onChange={() => handleRadioChange(item, 'exibir')}
+                            className="h-4 w-4 text-primary accent-primary cursor-pointer transition-transform hover:scale-110"
+                          />
+                          <span className="sr-only">Exibir na Proposta {item.nome}</span>
+                        </label>
+                      </td>
+                    </tr>
                   )
                 })}
-              </div>
-            ) : (
-              <p className="text-xs text-muted-foreground text-center py-2">
-                Nenhum acessório adicionado. Use a busca acima para adicionar.
-              </p>
-            )}
-          </CardContent>
+              </tbody>
+            </table>
+          </div>
         </Card>
       )}
     </div>

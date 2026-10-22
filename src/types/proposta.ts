@@ -39,7 +39,7 @@ export interface Proposta {
         nome: string
         valor: number
         moeda?: string
-        inclusao?: 'preco' | 'opcional'
+        inclusao?: 'preco' | 'opcional' | 'incluir' | 'exibir' | 'nao_exibir'
         quantidade?: number
         desconto_percentual?: number
         desconto_valor?: number
