@@ -2206,13 +2206,13 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                       upd('cotacao_moeda', null)
                       upd('data_cotacao_moeda', '')
                     } else {
-                      const orig = (form.moeda_original || 'BRL').toUpperCase()
+                      const orig = String(form.moeda_original || 'BRL').toUpperCase()
                       const target = orig === 'BRL' ? 'USD' : 'BRL'
                       upd('moeda', target)
                       const defaultRate =
                         target === 'USD' || orig === 'USD'
                           ? Number(rates?.usdRate ?? 5.4)
-                          : target === 'EUR' || orig === 'EUR'
+                          : orig === 'EUR'
                             ? Number(rates?.eurRate ?? 5.9)
                             : 1
                       upd('cotacao_moeda', defaultRate)
