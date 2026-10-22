@@ -330,6 +330,23 @@
     break-inside: avoid;
   }
 
+  .proposal-document section,
+  .proposal-document tr,
+  .proposal-document table,
+  .proposal-document .break-inside-avoid {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .proposal-document h1,
+  .proposal-document h2,
+  .proposal-document h3,
+  .proposal-document h4,
+  .proposal-document .break-after-avoid {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
   .proposal-a4,
   .proposal-document {
     width: 100% !important;

@@ -359,23 +359,25 @@ export function ProposalDocument({ proposal }: Props) {
   })
   const dataPorExtensoCap = dataPorExtenso.charAt(0).toUpperCase() + dataPorExtenso.slice(1)
   const siglaBox = (
-    <div className="border border-black text-[9px] leading-tight text-black shrink-0 break-inside-avoid max-w-[260px] w-auto">
-      <div className="grid grid-cols-4 divide-x divide-black">
-        <div className="px-1.5 py-0.5 text-center">
+    <div className="border border-black text-[9px] leading-tight text-black shrink-0 break-inside-avoid min-w-[280px] max-w-[340px] w-auto">
+      <div className="grid grid-cols-[auto_1fr_auto_auto] divide-x divide-black items-stretch">
+        <div className="px-1.5 py-0.5 text-center min-w-[50px]">
           <p className="font-bold">Sigla</p>
-          <p className="whitespace-nowrap truncate">{repPrimeiroNome}</p>
+          <p className="whitespace-nowrap">{repPrimeiroNome}</p>
         </div>
-        <div className="px-1.5 py-0.5 text-center">
+        <div className="px-1.5 py-0.5 text-center min-w-[110px] flex flex-col justify-center">
           <p className="font-bold">N° Oferta</p>
-          <p className="whitespace-nowrap truncate">{numeroOferta}</p>
+          <p className="break-all font-semibold leading-tight text-[8px] sm:text-[8.5px]">
+            {numeroOferta}
+          </p>
         </div>
-        <div className="px-1.5 py-0.5 text-center">
+        <div className="px-1.5 py-0.5 text-center min-w-[36px]">
           <p className="font-bold">Mês</p>
-          <p className="whitespace-nowrap truncate">{mesOferta}</p>
+          <p className="whitespace-nowrap">{mesOferta}</p>
         </div>
-        <div className="px-1.5 py-0.5 text-center">
+        <div className="px-1.5 py-0.5 text-center min-w-[42px]">
           <p className="font-bold">Ano</p>
-          <p className="whitespace-nowrap truncate">{anoOferta}</p>
+          <p className="whitespace-nowrap">{anoOferta}</p>
         </div>
       </div>
     </div>
@@ -394,7 +396,7 @@ export function ProposalDocument({ proposal }: Props) {
         <p className="font-bold text-[12px] sm:text-[13px]">
           Bener Comercial Importadora Exportadora Ltda.
         </p>
-        <p className="mt-1">{dataPorExtensoCap}</p>
+        <p className="mt-1">Vinhedo, {dataPorExtensoCap}</p>
       </div>
     </div>
   )
@@ -658,7 +660,7 @@ export function ProposalDocument({ proposal }: Props) {
             {/* Modo Pacote: Bloco estruturado por Máquina com Foto, Título e Acessórios vinculados */}
             {proposal.is_pacote && equipmentItems.length > 0 ? (
               <section className="mb-5 text-xs">
-                <div className="flex items-center gap-2 mb-3 pb-1.5 border-b-2 border-slate-800">
+                <div className="flex items-center gap-2 mb-3 pb-1.5 border-b-2 border-slate-800 break-after-avoid">
                   <span className="w-1.5 h-4 bg-[#0b3c26] rounded-xs" />
                   <h2 className="font-bold uppercase tracking-wider text-slate-900 text-[12px] sm:text-xs">
                     Equipamentos e Acessórios do Pacote
@@ -694,7 +696,7 @@ export function ProposalDocument({ proposal }: Props) {
                       nome?: string
                       valor?: number
                       moeda?: string
-                      inclusao?: 'preco' | 'opcional'
+                      inclusao?: string
                       quantidade?: number
                       desconto_percentual?: number
                       desconto_valor?: number
@@ -703,9 +705,18 @@ export function ProposalDocument({ proposal }: Props) {
                     const rawAcc = Array.isArray(proposal.acessorios_proposta)
                       ? (proposal.acessorios_proposta as AccItem[])
                       : []
-                    const itemAcc = rawAcc.filter((a) => a.versao_id === item.versao_id)
-                    const accInclusos = itemAcc.filter((a) => a.inclusao !== 'opcional')
-                    const accNaoInclusos = itemAcc.filter((a) => a.inclusao === 'opcional')
+                    const itemAcc = rawAcc.filter(
+                      (a) => a.versao_id === item.versao_id && a.inclusao !== 'nao_exibir',
+                    )
+                    const accInclusos = itemAcc.filter(
+                      (a) =>
+                        a.inclusao === 'incluir' ||
+                        a.inclusao === 'preco' ||
+                        a.inclusao === undefined,
+                    )
+                    const accNaoInclusos = itemAcc.filter(
+                      (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
+                    )
 
                     return (
                       <div
@@ -1055,7 +1066,7 @@ export function ProposalDocument({ proposal }: Props) {
               </section>
             ) : (
               /* Modo Padrão (máquina única): Especificações + Características + Standard + Acessórios Globais */
-              <section className="mb-4 text-xs">
+              <section className="mb-4 text-xs break-inside-avoid">
                 {(() => {
                   const desc =
                     primaryVersao?.especificacoes_tecnicas ||
@@ -1063,8 +1074,8 @@ export function ProposalDocument({ proposal }: Props) {
                     proposal.descricao_proposta
                   if (!desc) return null
                   return (
-                    <div className="mb-3.5">
-                      <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20">
+                    <div className="mb-3.5 break-inside-avoid">
+                      <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
                         <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
                         <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
                           Especificações Técnicas
@@ -1078,8 +1089,8 @@ export function ProposalDocument({ proposal }: Props) {
                 })()}
 
                 {primaryVersao?.caracteristicas_construtivas && (
-                  <div className="mb-3.5">
-                    <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20">
+                  <div className="mb-3.5 break-inside-avoid">
+                    <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
                       <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
                       <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
                         Características Construtivas
@@ -1095,8 +1106,8 @@ export function ProposalDocument({ proposal }: Props) {
                 )}
 
                 {primaryVersao?.acessorios_standards && (
-                  <div className="mb-3.5">
-                    <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20">
+                  <div className="mb-3.5 break-inside-avoid">
+                    <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
                       <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
                       <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
                         Configuração Standard
@@ -1122,21 +1133,30 @@ export function ProposalDocument({ proposal }: Props) {
                     nome?: string
                     valor?: number
                     moeda?: string
-                    inclusao?: 'preco' | 'opcional'
+                    inclusao?: string
                     quantidade?: number
                     desconto_percentual?: number
                     desconto_valor?: number
                   }
-                  const rawItems = proposal.acessorios_proposta as AccItem[]
-                  const inclusos = rawItems.filter((a) => a.inclusao !== 'opcional')
-                  const naoInclusos = rawItems.filter((a) => a.inclusao === 'opcional')
+                  const rawItems = (proposal.acessorios_proposta as AccItem[]).filter(
+                    (a) => a.inclusao !== 'nao_exibir',
+                  )
+                  const inclusos = rawItems.filter(
+                    (a) =>
+                      a.inclusao === 'incluir' ||
+                      a.inclusao === 'preco' ||
+                      a.inclusao === undefined,
+                  )
+                  const naoInclusos = rawItems.filter(
+                    (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
+                  )
                   const propMoeda = proposal.moeda || 'BRL'
 
                   return (
                     <>
                       {inclusos.length > 0 && (
-                        <div className="mb-3.5">
-                          <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20">
+                        <div className="mb-3.5 break-inside-avoid">
+                          <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
                             <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
                             <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
                               Acessórios Opcionais Inclusos no Preço
@@ -1157,8 +1177,8 @@ export function ProposalDocument({ proposal }: Props) {
                       )}
 
                       {naoInclusos.length > 0 && (
-                        <div className="mb-3.5">
-                          <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20">
+                        <div className="mb-3.5 break-inside-avoid">
+                          <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
                             <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
                             <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
                               Acessórios Opcionais Não Inclusos no Preço
@@ -1199,8 +1219,8 @@ export function ProposalDocument({ proposal }: Props) {
             )}
 
             {/* Commercial Conditions Section (R2: Tabela limpa e alinhada em tom profissional + R4: Cotação detalhada) */}
-            <section className="mb-5 text-xs">
-              <div className="border-b-2 border-slate-800 pb-1.5 mb-2.5 flex items-center justify-between">
+            <section className="mb-5 text-xs break-inside-avoid">
+              <div className="border-b-2 border-slate-800 pb-1.5 mb-2.5 flex items-center justify-between break-after-avoid">
                 <span className="font-bold tracking-wider uppercase text-slate-900 text-[11px] sm:text-xs">
                   Condições Comerciais
                 </span>
@@ -1209,50 +1229,58 @@ export function ProposalDocument({ proposal }: Props) {
                 </span>
               </div>
 
-              {/* R4: Bloco de Cotação de Moeda Estrangeira (se aplicável) */}
-              {proposal.moeda && proposal.moeda !== 'BRL' && proposal.cotacao_moeda && (
-                <div className="mb-3 p-2.5 bg-slate-50 border border-slate-300 rounded text-[11px] text-slate-800 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 uppercase tracking-wide text-[10px] bg-slate-200 px-1.5 py-0.5 rounded">
-                      Câmbio / Cotação
-                    </span>
-                    <span>
-                      Moeda da proposta: <strong>{proposal.moeda}</strong> (Original:{' '}
-                      {proposal.moeda_original || 'BRL'})
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span>
-                      Taxa aplicada:{' '}
-                      <strong>
-                        1 {proposal.moeda} = {fmtCurrency(proposal.cotacao_moeda, 'BRL')}
-                      </strong>
-                    </span>
-                    {proposal.data_cotacao_moeda && (
-                      <span className="text-slate-600">
-                        Data da cotação: <strong>{proposal.data_cotacao_moeda}</strong>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
+              {/* R4: Bloco de Cotação de Moeda Estrangeira (Ponto 1: APENAS quando a moeda original for BRL e for convertida para outra moeda) */}
+              {(() => {
+                const isOriginalBrl = (proposal.moeda_original || 'BRL').toUpperCase() === 'BRL'
+                const hasRealConversion =
+                  Boolean(proposal.moeda) &&
+                  proposal.moeda !== 'BRL' &&
+                  isOriginalBrl &&
+                  Boolean(proposal.cotacao_moeda)
 
-              {/* R2: Tabela Profissional Limpa de Itens e Valores - compactada para caber 100% no PDF sem overflow */}
-              <div className="w-full border border-slate-300 rounded-sm mb-3 bg-white overflow-hidden print:overflow-visible">
+                if (!hasRealConversion) return null
+
+                return (
+                  <div className="mb-3 p-2.5 bg-slate-50 border border-slate-300 rounded text-[11px] text-slate-800 flex flex-wrap items-center justify-between gap-2 break-inside-avoid">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900 uppercase tracking-wide text-[10px] bg-slate-200 px-1.5 py-0.5 rounded">
+                        Câmbio / Cotação
+                      </span>
+                      <span>
+                        Moeda da proposta: <strong>{proposal.moeda}</strong> (Original:{' '}
+                        {proposal.moeda_original || 'BRL'})
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span>
+                        Taxa aplicada:{' '}
+                        <strong>
+                          1 {proposal.moeda} = {fmtCurrency(proposal.cotacao_moeda, 'BRL')}
+                        </strong>
+                      </span>
+                      {proposal.data_cotacao_moeda && (
+                        <span className="text-slate-600">
+                          Data da cotação: <strong>{proposal.data_cotacao_moeda}</strong>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* R2: Tabela Profissional Limpa de Itens e Valores - Ponto 2: sem coluna Tipo Fornecimento, larguras redistribuídas para 100% */}
+              <div className="w-full border border-slate-300 rounded-sm mb-3 bg-white overflow-hidden print:overflow-visible break-inside-avoid">
                 <table className="w-full table-fixed text-[10px] border-collapse">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-300 text-slate-700 font-semibold text-[9px] uppercase tracking-wider">
                       <th className="py-1.5 px-2 text-center w-[6%]">Item</th>
-                      <th className="py-1.5 px-2 text-left w-[36%] break-words">
+                      <th className="py-1.5 px-2 text-left w-[48%] break-words">
                         Descrição do Equipamento
                       </th>
-                      <th className="py-1.5 px-2 text-left w-[18%] break-words">
-                        Tipo Fornecimento
-                      </th>
                       <th className="py-1.5 px-1 text-center w-[6%]">Qtd</th>
-                      <th className="py-1.5 px-2 text-right w-[16%]">Valor Unitário</th>
+                      <th className="py-1.5 px-2 text-right w-[18%]">Valor Unitário</th>
                       <th className="py-1.5 px-1 text-right w-[8%]">Desconto</th>
-                      <th className="py-1.5 px-2 text-right w-[17%]">Subtotal</th>
+                      <th className="py-1.5 px-2 text-right w-[14%]">Subtotal</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -1271,8 +1299,6 @@ export function ProposalDocument({ proposal }: Props) {
                             ? Math.max(0, subtotal - descVal)
                             : subtotal * (1 - descPct / 100)
                         const itemHasDiscount = descPct > 0 || descVal > 0
-                        const tipoDesc =
-                          item.tipo_proposta || (idx === 0 ? proposal.tipo_proposta : null)
 
                         return (
                           <tr key={item.id || idx} className="hover:bg-slate-50/70 align-middle">
@@ -1281,15 +1307,6 @@ export function ProposalDocument({ proposal }: Props) {
                             </td>
                             <td className="py-1.5 px-2 font-bold text-slate-900 break-words leading-tight">
                               {itemNome}
-                            </td>
-                            <td className="py-1.5 px-2 text-slate-700 break-words leading-tight">
-                              {tipoDesc ? (
-                                <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 border border-slate-300 text-[9px] font-medium text-slate-800 break-words max-w-full">
-                                  {tipoDesc}
-                                </span>
-                              ) : (
-                                '—'
-                              )}
                             </td>
                             <td className="py-1.5 px-1 text-center font-medium text-slate-800">
                               {qtd}
@@ -1333,15 +1350,6 @@ export function ProposalDocument({ proposal }: Props) {
                         <td className="py-1.5 px-2 font-bold text-slate-900 break-words leading-tight">
                           {machineTitle}
                         </td>
-                        <td className="py-1.5 px-2 text-slate-700 break-words leading-tight">
-                          {proposal.tipo_proposta ? (
-                            <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 border border-slate-300 text-[9px] font-medium text-slate-800 break-words max-w-full">
-                              {proposal.tipo_proposta}
-                            </span>
-                          ) : (
-                            '—'
-                          )}
-                        </td>
                         <td className="py-1.5 px-1 text-center font-medium text-slate-800">1</td>
                         <td className="py-1.5 px-2 text-right font-semibold text-slate-900 leading-tight">
                           <span className="block whitespace-nowrap">
@@ -1376,7 +1384,7 @@ export function ProposalDocument({ proposal }: Props) {
                   <tfoot>
                     <tr className="bg-slate-100/90 border-t-2 border-slate-300 font-bold">
                       <td
-                        colSpan={4}
+                        colSpan={3}
                         className="py-1.5 px-2 text-left uppercase text-[9.5px] tracking-wider text-slate-700"
                       >
                         Valor Total do Fornecimento
@@ -1415,8 +1423,8 @@ export function ProposalDocument({ proposal }: Props) {
 
             {/* Terms and conditions - Ficha Técnica layout */}
             {filteredTerms.length > 0 && (
-              <section className="mb-5 text-xs">
-                <div className="bg-[#0b3c26] text-white px-3 py-1.5 rounded-sm flex items-center justify-between mb-3 shadow-sm">
+              <section className="mb-5 text-xs break-inside-avoid">
+                <div className="bg-[#0b3c26] text-white px-3 py-1.5 rounded-sm flex items-center justify-between mb-3 shadow-sm break-after-avoid">
                   <span className="font-bold tracking-wider uppercase text-[11px] sm:text-xs">
                     Termos de Fornecimento
                   </span>
@@ -1428,7 +1436,7 @@ export function ProposalDocument({ proposal }: Props) {
                   {filteredTerms.map(([label, value]) => (
                     <div
                       key={label}
-                      className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 p-2 sm:px-3 hover:bg-slate-50/60 transition-colors items-baseline text-[11px]"
+                      className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 p-2 sm:px-3 hover:bg-slate-50/60 transition-colors items-baseline text-[11px] break-inside-avoid"
                     >
                       <div
                         className="sm:col-span-4 font-bold text-slate-900 uppercase tracking-wide text-[10px] bg-slate-100/90 px-2 py-1 rounded-xs border-l-2 border-slate-300"
@@ -1458,8 +1466,8 @@ export function ProposalDocument({ proposal }: Props) {
                   ((f.titulo && f.titulo.trim() !== '') || (f.chave && f.chave.trim() !== '')) &&
                   !isCommercialFieldEmpty(f.conteudo != null ? f.conteudo : f.valor),
               ).length > 0 && (
-                <section className="mb-4 text-xs">
-                  <h2 className="font-bold uppercase tracking-wider text-black border-b border-black/40 pb-1 mb-2">
+                <section className="mb-4 text-xs break-inside-avoid">
+                  <h2 className="font-bold uppercase tracking-wider text-black border-b border-black/40 pb-1 mb-2 break-after-avoid">
                     Informações Adicionais
                   </h2>
                   <div className="border border-slate-200 rounded-sm divide-y divide-slate-100 bg-white">
@@ -1477,7 +1485,7 @@ export function ProposalDocument({ proposal }: Props) {
                         return (
                           <div
                             key={i}
-                            className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 p-2 sm:px-3 items-baseline text-[11px]"
+                            className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 p-2 sm:px-3 items-baseline text-[11px] break-inside-avoid"
                           >
                             <div
                               className="sm:col-span-4 font-bold text-slate-900 uppercase tracking-wide text-[10px] bg-slate-100/90 px-2 py-1 rounded-xs border-l-2 border-slate-300"
@@ -1502,11 +1510,11 @@ export function ProposalDocument({ proposal }: Props) {
 
             {/* Comparisons table */}
             {hasComparison && (
-              <section className="mb-4 text-xs">
-                <h2 className="font-bold uppercase tracking-wider text-black border-b border-black/40 pb-1 mb-2">
+              <section className="mb-4 text-xs break-inside-avoid">
+                <h2 className="font-bold uppercase tracking-wider text-black border-b border-black/40 pb-1 mb-2 break-after-avoid">
                   Comparação de Versões
                 </h2>
-                <table className="w-full text-[10px] border-collapse border border-black">
+                <table className="w-full text-[10px] border-collapse border border-black break-inside-avoid">
                   <thead>
                     <tr className="bg-black/5">
                       <th className="p-1 text-left border border-black font-bold">Item</th>
@@ -1519,7 +1527,7 @@ export function ProposalDocument({ proposal }: Props) {
                   </thead>
                   <tbody>
                     {(['nome', 'especificacoes'] as const).map((field) => (
-                      <tr key={field}>
+                      <tr key={field} className="break-inside-avoid">
                         <td className="p-1 border border-black font-medium">
                           {field === 'nome' ? 'Nome' : 'Especificações'}
                         </td>
@@ -1530,7 +1538,7 @@ export function ProposalDocument({ proposal }: Props) {
                         ))}
                       </tr>
                     ))}
-                    <tr>
+                    <tr className="break-inside-avoid">
                       <td className="p-1 border border-black font-medium">Valor</td>
                       {compItems.map((item, i) => (
                         <td key={i} className="p-1 border border-black text-center font-bold">
@@ -1544,8 +1552,8 @@ export function ProposalDocument({ proposal }: Props) {
             )}
 
             {/* Signatures section */}
-            <section className="proposal-signatures mt-6">
-              <h2 className="font-bold uppercase tracking-wider text-black border-b border-black/40 pb-1 mb-3 text-xs">
+            <section className="proposal-signatures mt-6 break-inside-avoid">
+              <h2 className="font-bold uppercase tracking-wider text-black border-b border-black/40 pb-1 mb-3 text-xs break-after-avoid">
                 De Acordo e Assinaturas
               </h2>
               <div className="grid grid-cols-3 gap-4 text-center">

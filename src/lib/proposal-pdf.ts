@@ -388,14 +388,19 @@ export function generatePropostaHtml(
                 nome?: string
                 valor?: number
                 moeda?: string
-                inclusao?: 'preco' | 'opcional'
+                inclusao?: string
                 quantidade?: number
               }>)
             : []
-          if (rawAcc.length === 0) return ''
+          const filteredAcc = rawAcc.filter((a) => a.inclusao !== 'nao_exibir')
+          if (filteredAcc.length === 0) return ''
 
-          const inclusos = rawAcc.filter((a) => a.inclusao !== 'opcional')
-          const naoInclusos = rawAcc.filter((a) => a.inclusao === 'opcional')
+          const inclusos = filteredAcc.filter(
+            (a) => a.inclusao === 'incluir' || a.inclusao === 'preco' || a.inclusao === undefined,
+          )
+          const naoInclusos = filteredAcc.filter(
+            (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
+          )
           const propMoeda = proposal.moeda || 'BRL'
           let out = ''
 
