@@ -1,0 +1,5 @@
+ALTER TABLE public.propostas
+  ADD COLUMN IF NOT EXISTS transporte_seguro TEXT,
+  ADD COLUMN IF NOT EXISTS imposto_ipi NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS imposto_icms NUMERIC(12,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS campos_adicionais JSONB DEFAULT '[]'::jsonb;

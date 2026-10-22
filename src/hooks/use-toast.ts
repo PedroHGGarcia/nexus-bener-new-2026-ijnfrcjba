@@ -182,8 +182,21 @@ function useToast() {
   return {
     ...state,
     toast,
+    success: toastSuccess,
+    error: toastError,
+    info: toastInfo,
+    warning: toastWarning,
     dismiss: (toastId?: string) => dispatch({ type: 'DISMISS_TOAST', toastId }),
   }
 }
+
+export const toastSuccess = (title: string, description?: React.ReactNode) =>
+  toast({ title, description })
+export const toastError = (title: string, description?: React.ReactNode) =>
+  toast({ title, description, variant: 'destructive' })
+export const toastInfo = (title: string, description?: React.ReactNode) =>
+  toast({ title, description })
+export const toastWarning = (title: string, description?: React.ReactNode) =>
+  toast({ title, description })
 
 export { useToast, toast }

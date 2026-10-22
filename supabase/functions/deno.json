@@ -1,0 +1,25 @@
+{
+  "_versions": {
+    "cep-lookup": 711,
+    "admin-user-management": 700,
+    "ai-suggestions": 700,
+    "verify-recaptcha": 700,
+    "suggest-specs": 696,
+    "generate-proposal-pdf": 693,
+    "send-proposal-email": 692,
+    "cnpj-lookup": 641,
+    "versoes-chatbot": 637,
+    "currency-rates": 629,
+    "public-proposal-pdf": 563,
+    "confirm-email-delivery": 564,
+    "notify-critical-action-email": 524,
+    "importar-clientes-antigos": 491,
+    "importar-base-antiga": 487,
+    "batch-cep-lookup": 474,
+    "send-password-reset": 438,
+    "upload-asset": 244,
+    "public-proposal": 200,
+    "invite-user": 50,
+    "enriquecer-cnpj-receita": 37
+  }
+}

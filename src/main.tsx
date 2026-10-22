@@ -4,4 +4,8 @@ import App from './App.tsx'
 import './main.css'
 
 // @skip-protected: Do not remove. Required for React rendering.
+import { registerServiceWorker } from './lib/register-sw'
+
+registerServiceWorker()
+
 createRoot(document.getElementById('root')!).render(<App />)

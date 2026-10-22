@@ -1,0 +1,53 @@
+.avatar-anim-container {
+  animation: avatar-float 3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.avatar-anim-eyes {
+  animation: avatar-blink 4s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.avatar-anim-ears {
+  animation: avatar-ear-wiggle 3s ease-in-out infinite;
+  transform-origin: bottom center;
+  transform-box: fill-box;
+}
+
+@keyframes avatar-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4%);
+  }
+}
+
+@keyframes avatar-blink {
+  0%,
+  88%,
+  100% {
+    transform: scaleY(1);
+  }
+  92% {
+    transform: scaleY(0.1);
+  }
+  96% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes avatar-ear-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-5deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+}

@@ -1,0 +1,2 @@
+ALTER TABLE public.propostas
+  ADD COLUMN IF NOT EXISTS is_pacote BOOLEAN NOT NULL DEFAULT false;

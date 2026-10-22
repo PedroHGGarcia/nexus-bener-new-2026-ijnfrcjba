@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="pt-BR" xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Proposta Bener Máquinas</title>
+    <!--[if mso]>
+      <noscript>
+        <xml>
+          <o:OfficeDocumentSettings>
+            <o:PixelsPerInch>96</o:PixelsPerInch>
+          </o:OfficeDocumentSettings>
+        </xml>
+      </noscript>
+    <![endif]-->
+    <!--
+    ============================================================================
+    TEMPLATE DE E-MAIL — PROPOSTA COMERCIAL BENER MÁQUINAS
+    ============================================================================
+    Cole este HTML no node "Send Email" do n8n (campo HTML / Message).
+
+    O e-mail NÃO leva mais anexo PDF. A proposta é acessada por um link
+    público (qualquer pessoa, sem login) que abre uma página HTML completa
+    e estilizada com a identidade visual Bener.
+
+    Variáveis do payload recebido do webhook:
+      ATENÇÃO: o nó Webhook do n8n aninha o payload em `$json.body`.
+      Todas as expressões abaixo usam o formato seguro
+      `{{ $json.body?.campo || $json.campo }}`, que funciona tanto com o
+      payload aninhado (padrão do n8n) quanto plano (Code node que achata).
+
+      {{ $json.body?.cliente_nome || $json.cliente_nome }}
+      {{ $json.body?.numero_proposta || $json.numero_proposta }}
+      {{ $json.body?.equipamento_nome || $json.equipamento_nome }}
+      {{ $json.body?.valor_final || $json.valor_final }}
+      {{ $json.body?.link_proposta || $json.link_proposta }}   <- link público da proposta
+      {{ $json.body?.prazo_entrega || $json.prazo_entrega }}
+      {{ $json.body?.condicoes_pagamento || $json.condicoes_pagamento }}
+      {{ $json.body?.email_html || $json.email_html }}      <- HTML completo já gerado pelo Nexus com inline cid:
+
+    Observação: {{ $json.valor_final }} é numérico. Para formatá-lo em
+    moeda dentro do n8n, use a expressão:
+      {{ $json.valor_final.toLocaleString('pt-BR', {minimumFractionDigits:2}) }}
+    ou, se preferir, substitua a variável pelo valor já formatado em um Set node.
+    ============================================================================
+  --></head>
+  <body
+    style="
+      margin: 0;
+      padding: 0;
+      background-color: #f1f5f4;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    "
+  >
+    <!-- Wrapper -->
+    <table
+      role="presentation"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #f1f5f4"
+    >
+      <tr>
+        <td align="center" style="padding: 24px 12px">
+          <!-- Container 600px -->
+          <table
+            role="presentation"
+            width="600"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              width: 600px;
+              max-width: 600px;
+              background-color: #ffffff;
+              border-radius: 10px;
+              overflow: hidden;
+              box-shadow: 0 2px 8px rgba(11, 60, 38, 0.08);
+            "
+          >
+            <!-- Header branco com logos Nexus e Bener inline (cid:) -->
+            <tr>
+              <td
+                style="
+                  background-color: #ffffff;
+                  padding: 26px 32px;
+                  border-bottom: 2px solid #10b981;
+                  text-align: center;
+                "
+              >
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td align="center" style="vertical-align: middle">
+                      <table
+                        role="presentation"
+                        cellpadding="0"
+                        cellspacing="0"
+                        border="0"
+                        style="margin: 0 auto"
+                      >
+                        <tr>
+                          <td style="vertical-align: middle; padding-right: 20px">
+                            <img
+                              src="cid:logo-nexus"
+                              alt="Nexus — Extranet Bener Máquinas"
+                              width="168"
+                              height="42"
+                              border="0"
+                              style="
+                                display: block;
+                                border: 0;
+                                outline: none;
+                                text-decoration: none;
+                                width: 168px;
+                                max-width: 180px;
+                                height: 42px;
+                                object-fit: contain;
+                                font-family: Arial, Helvetica, sans-serif;
+                                font-size: 14px;
+                                font-weight: 700;
+                                color: #0b3c26;
+                                text-align: left;
+                              "
+                            />
+                          </td>
+                          <td
+                            style="
+                              width: 1px;
+                              height: 34px;
+                              background-color: #d1d5db;
+                              vertical-align: middle;
+                            "
+                            width="1"
+                          ></td>
+                          <td style="vertical-align: middle; padding-left: 20px">
+                            <img
+                              src="cid:logo-bener"
+                              alt="Bener Máquinas — Máquinas que Transformam"
+                              width="135"
+                              height="32"
+                              border="0"
+                              style="
+                                display: block;
+                                border: 0;
+                                outline: none;
+                                text-decoration: none;
+                                width: 135px;
+                                max-width: 145px;
+                                height: 32px;
+                                object-fit: contain;
+                                font-family: Arial, Helvetica, sans-serif;
+                                font-size: 13px;
+                                font-weight: 700;
+                                color: #0b3c26;
+                                text-align: left;
+                              "
+                            />
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <!-- Corpo -->
+            <tr>
+              <td
+                style="
+                  padding: 32px 32px 8px 32px;
+                  font-family: Arial, Helvetica, sans-serif;
+                  color: #1e293b;
+                "
+              >
+                <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: #0b3c26">
+                  Proposta Comercial
+                </h1>
+                <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #475569">
+                  Prezado(a) <strong>{{ $json.body?.cliente_nome || $json.cliente_nome }}</strong>,
+                </p>
+                <p style="margin: 0 0 20px 0; font-size: 15px; line-height: 1.6; color: #475569">
+                  Segue abaixo o resumo da sua proposta comercial. Clique no botão
+                  <strong>"Visualizar Proposta"</strong> para abrir o documento completo em uma
+                  página exclusiva — sem necessidade de login.
+                </p>
+
+                <!-- Cartão de resumo -->
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="
+                    background-color: #f0f7f3;
+                    border-left: 4px solid #0b3c26;
+                    border-radius: 6px;
+                    margin-bottom: 24px;
+                  "
+                >
+                  <tr>
+                    <td style="padding: 18px 20px; font-family: Arial, Helvetica, sans-serif">
+                      <table
+                        role="presentation"
+                        width="100%"
+                        cellpadding="0"
+                        cellspacing="0"
+                        border="0"
+                      >
+                        <tr>
+                          <td style="padding: 4px 0; font-size: 14px; color: #334155">
+                            <strong>Nº da Proposta:</strong>
+                          </td>
+                          <td
+                            style="
+                              padding: 4px 0;
+                              font-size: 14px;
+                              color: #0b3c26;
+                              font-weight: 700;
+                              text-align: right;
+                            "
+                          >
+                            {{ $json.body?.numero_proposta || $json.numero_proposta }}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 4px 0; font-size: 14px; color: #334155">
+                            <strong>Equipamento:</strong>
+                          </td>
+                          <td
+                            style="
+                              padding: 4px 0;
+                              font-size: 14px;
+                              color: #1e293b;
+                              text-align: right;
+                            "
+                          >
+                            {{ $json.body?.equipamento_nome || $json.equipamento_nome }}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 4px 0; font-size: 14px; color: #334155">
+                            <strong>Valor:</strong>
+                          </td>
+                          <td
+                            style="
+                              padding: 4px 0;
+                              font-size: 14px;
+                              color: #0b3c26;
+                              font-weight: 700;
+                              text-align: right;
+                            "
+                          >
+                            {{ $json.body?.moeda || $json.moeda || 'R$' }} {{
+                            ($json.body?.valor_final || $json.valor_final ||
+                            0).toLocaleString('pt-BR', {minimumFractionDigits:2,
+                            maximumFractionDigits:2}) }}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- Condições -->
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="margin-bottom: 24px"
+                >
+                  <tr>
+                    <td
+                      width="50%"
+                      style="
+                        padding: 0 8px 12px 0;
+                        font-family: Arial, Helvetica, sans-serif;
+                        vertical-align: top;
+                      "
+                    >
+                      <p
+                        style="
+                          margin: 0 0 4px 0;
+                          font-size: 12px;
+                          text-transform: uppercase;
+                          letter-spacing: 0.5px;
+                          color: #64748b;
+                          font-weight: 700;
+                        "
+                      >
+                        Prazo de Entrega
+                      </p>
+                      <p style="margin: 0; font-size: 14px; color: #1e293b; line-height: 1.5">
+                        {{ $json.body?.prazo_entrega || $json.prazo_entrega }}
+                      </p>
+                    </td>
+                    <td
+                      width="50%"
+                      style="
+                        padding: 0 0 12px 8px;
+                        font-family: Arial, Helvetica, sans-serif;
+                        vertical-align: top;
+                      "
+                    >
+                      <p
+                        style="
+                          margin: 0 0 4px 0;
+                          font-size: 12px;
+                          text-transform: uppercase;
+                          letter-spacing: 0.5px;
+                          color: #64748b;
+                          font-weight: 700;
+                        "
+                      >
+                        Condições de Pagamento
+                      </p>
+                      <p style="margin: 0; font-size: 14px; color: #1e293b; line-height: 1.5">
+                        {{ $json.body?.condicoes_pagamento || $json.condicoes_pagamento }}
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- CTA — link público -->
+                <table
+                  role="presentation"
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="margin-bottom: 8px"
+                >
+                  <tr>
+                    <td align="center" style="padding: 12px 0 20px 0">
+                      <a
+                        href="{{ $json.body?.link_proposta || $json.link_proposta }}"
+                        target="_blank"
+                        style="
+                          display: inline-block;
+                          background-color: #0b3c26;
+                          color: #ffffff;
+                          font-family: Arial, Helvetica, sans-serif;
+                          font-size: 17px;
+                          font-weight: 700;
+                          text-decoration: none;
+                          padding: 16px 44px;
+                          border-radius: 8px;
+                          letter-spacing: 0.5px;
+                        "
+                      >
+                        Visualizar Proposta
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+                <p style="margin: 0 0 24px 0; font-size: 13px; color: #64748b; line-height: 1.6">
+                  Em caso de dúvidas, entre em contato com nossa equipe de vendas.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Rodapé -->
+            <tr>
+              <td
+                style="
+                  background-color: #f8faf9;
+                  border-top: 1px solid #e2e8f0;
+                  padding: 24px 32px;
+                  font-family: Arial, Helvetica, sans-serif;
+                "
+              >
+                <p style="margin: 0 0 4px 0; font-size: 13px; font-weight: 700; color: #0b3c26">
+                  Bener Máquinas S.A.
+                </p>
+                <p style="margin: 0 0 2px 0; font-size: 12px; color: #64748b; line-height: 1.5">
+                  Rua Iracema Lucas, 450 (Antiga Rua Parsch) &ndash; Distrito Industrial
+                </p>
+                <p style="margin: 0 0 2px 0; font-size: 12px; color: #64748b; line-height: 1.5">
+                  Vinhedo - SP - Brasil &bull; CEP: 13280-172 &bull; Fone: (019) 3826-7373
+                </p>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: #64748b; line-height: 1.5">
+                  E-mail: vendas@bener.com.br &bull; Site: www.bener.com.br
+                </p>
+              </td>
+            </tr>
+          </table>
+          <!-- /Container -->
+
+          <p
+            style="
+              margin: 16px 0 0 0;
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 11px;
+              color: #94a3b8;
+              text-align: center;
+            "
+          >
+            Este e-mail foi gerado automaticamente. Por favor, não responda.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
