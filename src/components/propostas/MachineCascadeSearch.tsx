@@ -263,7 +263,8 @@ export function MachineCascadeSearch({
   const distinctActive = (key: keyof VersaoEnriched) => {
     const seen = new Map<string, string>()
     for (const v of filteredVersoes) {
-      const id = v[key] as string | null
+      if (!v) continue
+      const id = (v[key] as string | null) ?? null
       if (id) {
         const nomeKey = (
           {
@@ -273,7 +274,7 @@ export function MachineCascadeSearch({
             _modeloId: '_modeloNome',
           } as const
         )[key as '_categoriaId' | '_produtoId' | '_marcaId' | '_modeloId']
-        const nome = v[nomeKey] as string
+        const nome = (v[nomeKey] as string) || '—'
         if (!seen.has(id)) seen.set(id, nome)
       }
     }
@@ -285,8 +286,8 @@ export function MachineCascadeSearch({
     // Always include the currently selected value even if no versão matches
     // (so the chip stays visible while the user is editing).
     if (value.categoriaId && !active.has(value.categoriaId)) {
-      const c = categorias.find((x) => x.id === value.categoriaId)
-      if (c) active.set(c.id, c.nome)
+      const c = categorias.find((x) => x?.id === value.categoriaId)
+      if (c) active.set(c.id, c.nome || '—')
     }
     let list = Array.from(active.entries())
     if (restriction.hasRestriction) {
@@ -297,8 +298,8 @@ export function MachineCascadeSearch({
       }
     }
     return list
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([val, label]) => ({ value: val, label }))
+      .sort((a, b) => (a[1] || '').localeCompare(b[1] || ''))
+      .map(([val, label]) => ({ value: val, label: label || '—' }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     filteredVersoes,
@@ -312,36 +313,36 @@ export function MachineCascadeSearch({
   const produtoOptions: ComboboxOption[] = useMemo(() => {
     const active = distinctActive('_produtoId')
     if (value.produtoId && !active.has(value.produtoId)) {
-      const p = produtos.find((x) => x.id === value.produtoId)
-      if (p) active.set(p.id, p.nome)
+      const p = produtos.find((x) => x?.id === value.produtoId)
+      if (p) active.set(p.id, p.nome || '—')
     }
     return Array.from(active.entries())
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([val, label]) => ({ value: val, label }))
+      .sort((a, b) => (a[1] || '').localeCompare(b[1] || ''))
+      .map(([val, label]) => ({ value: val, label: label || '—' }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredVersoes, produtos, value.produtoId])
 
   const marcaOptions: ComboboxOption[] = useMemo(() => {
     const active = distinctActive('_marcaId')
     if (value.marcaId && !active.has(value.marcaId)) {
-      const m = marcas.find((x) => x.id === value.marcaId)
-      if (m) active.set(m.id, m.nome)
+      const m = marcas.find((x) => x?.id === value.marcaId)
+      if (m) active.set(m.id, m.nome || '—')
     }
     return Array.from(active.entries())
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([val, label]) => ({ value: val, label }))
+      .sort((a, b) => (a[1] || '').localeCompare(b[1] || ''))
+      .map(([val, label]) => ({ value: val, label: label || '—' }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredVersoes, marcas, value.marcaId])
 
   const modeloOptions: ComboboxOption[] = useMemo(() => {
     const active = distinctActive('_modeloId')
     if (value.modeloId && !active.has(value.modeloId)) {
-      const m = modelos.find((x) => x.id === value.modeloId)
-      if (m) active.set(m.id, m.nome)
+      const m = modelos.find((x) => x?.id === value.modeloId)
+      if (m) active.set(m.id, m.nome || '—')
     }
     return Array.from(active.entries())
-      .sort((a, b) => a[1].localeCompare(b[1]))
-      .map(([val, label]) => ({ value: val, label }))
+      .sort((a, b) => (a[1] || '').localeCompare(b[1] || ''))
+      .map(([val, label]) => ({ value: val, label: label || '—' }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredVersoes, modelos, value.modeloId])
 
@@ -634,10 +635,20 @@ export function MachineCascadeSearch({
                             </span>
                           </div>
                           <span className="text-xs font-semibold text-[#0b3c26] dark:text-emerald-400 shrink-0 ml-2 tabular-nums">
-                            {(v.valor || 0).toLocaleString('pt-BR', {
-                              style: 'currency',
-                              currency: v.moeda || 'BRL',
-                            })}
+                            {(() => {
+                              const num =
+                                typeof v.valor === 'number' && !isNaN(v.valor) ? v.valor : 0
+                              const curr = (v.moeda || 'BRL').trim().toUpperCase()
+                              const validCurr = /^[A-Z]{3}$/.test(curr) ? curr : 'BRL'
+                              try {
+                                return num.toLocaleString('pt-BR', {
+                                  style: 'currency',
+                                  currency: validCurr,
+                                })
+                              } catch {
+                                return `R$ ${num.toFixed(2)}`
+                              }
+                            })()}
                           </span>
                         </CommandItem>
                       ))}
