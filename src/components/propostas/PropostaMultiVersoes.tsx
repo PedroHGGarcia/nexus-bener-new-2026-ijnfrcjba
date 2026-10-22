@@ -64,30 +64,8 @@ interface Props {
   currency: string
   disabled?: boolean
   precoEspecialAtivo?: boolean
-  acessorios?: Array<{
-    id: string
-    nome: string
-    valor: number
-    moeda: string
-    inclusao?: 'preco' | 'opcional'
-    quantidade?: number
-    desconto_percentual?: number
-    desconto_valor?: number
-    versao_id?: string
-  }>
-  onAcessoriosChange?: (
-    items: Array<{
-      id: string
-      nome: string
-      valor: number
-      moeda: string
-      inclusao?: 'preco' | 'opcional'
-      quantidade?: number
-      desconto_percentual?: number
-      desconto_valor?: number
-      versao_id?: string
-    }>,
-  ) => void
+  acessorios?: SelectedAcessorio[]
+  onAcessoriosChange?: (items: SelectedAcessorio[]) => void
 }
 
 interface SelectedVersaoSummary {
