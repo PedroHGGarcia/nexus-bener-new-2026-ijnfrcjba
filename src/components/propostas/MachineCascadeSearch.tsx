@@ -30,6 +30,7 @@ import { fetchProdutos } from '@/services/produtos'
 import { fetchMarcas } from '@/services/marcas'
 import { fetchModelos } from '@/services/modelos'
 import { fetchVersoes } from '@/services/versoes'
+import { formatCurrencyByMoeda } from '@/lib/format'
 
 import { CategoriaProduto } from '@/types/categoria-produto'
 import { Produto } from '@/types/produto'
@@ -635,20 +636,7 @@ export function MachineCascadeSearch({
                             </span>
                           </div>
                           <span className="text-xs font-semibold text-[#0b3c26] dark:text-emerald-400 shrink-0 ml-2 tabular-nums">
-                            {(() => {
-                              const num =
-                                typeof v.valor === 'number' && !isNaN(v.valor) ? v.valor : 0
-                              const curr = (v.moeda || 'BRL').trim().toUpperCase()
-                              const validCurr = /^[A-Z]{3}$/.test(curr) ? curr : 'BRL'
-                              try {
-                                return num.toLocaleString('pt-BR', {
-                                  style: 'currency',
-                                  currency: validCurr,
-                                })
-                              } catch {
-                                return `R$ ${num.toFixed(2)}`
-                              }
-                            })()}
+                            {formatCurrencyByMoeda(v.valor ?? 0, v.moeda)}
                           </span>
                         </CommandItem>
                       ))}

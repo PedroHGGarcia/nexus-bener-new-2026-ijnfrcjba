@@ -97,7 +97,7 @@ import {
   formatPrecoEspecialDiscountBadge,
 } from '@/lib/proposta-calculations'
 import { useAuth } from '@/hooks/use-auth'
-import { formatDateTime } from '@/lib/format'
+import { formatDateTime, normalizeMoedaCode, formatCurrencyByMoeda } from '@/lib/format'
 import { isRepresentanteRole, isAdminRole, isGerenteRole } from '@/components/RoleGuard'
 import { findRepresentanteByProfile } from '@/services/representantes'
 import { findGerenteByProfile } from '@/services/gerentes'
@@ -504,8 +504,10 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     if (editProposta.contato_id) {
       setContatoId(editProposta.contato_id)
     }
-    const editMoedaOrig = editProposta.moeda_original || editProposta.moeda || 'BRL'
-    const editMoeda = editProposta.moeda || 'BRL'
+    const editMoedaOrig = normalizeMoedaCode(
+      editProposta.moeda_original || editProposta.moeda || 'BRL',
+    )
+    const editMoeda = normalizeMoedaCode(editProposta.moeda || 'BRL')
     const hasActiveConversion = Boolean(editProposta.cotacao_moeda) && editMoeda !== editMoedaOrig
     setConverterMoeda(hasActiveConversion)
 
@@ -576,7 +578,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         const initialMoedas: Record<string, string> = {}
         for (const item of items) {
           if (item.versao_id && item.versoes?.moeda) {
-            initialMoedas[item.versao_id] = item.versoes.moeda.toUpperCase()
+            initialMoedas[item.versao_id] = normalizeMoedaCode(item.versoes.moeda)
           }
         }
         if (Object.keys(initialMoedas).length > 0) {
@@ -797,18 +799,18 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     }
     if (v) {
       upd('valor_sem_desconto', v.valor)
-      const versaoMoeda = (v.moeda || 'BRL').toUpperCase()
-      // Sempre grava a moeda original da máquina
-      upd('moeda_original', versaoMoeda)
+      const versaoMoedaNorm = normalizeMoedaCode(v.moeda)
+      // Sempre grava a moeda original normalizada da máquina
+      upd('moeda_original', versaoMoedaNorm)
       // Padrão: SEM conversão. A moeda da proposta segue a moeda original cadastrada na máquina.
       if (!converterMoeda) {
-        upd('moeda', versaoMoeda)
+        upd('moeda', versaoMoedaNorm)
         upd('cotacao_moeda', null)
         upd('data_cotacao_moeda', '')
       } else if (!moedaManualOverride && !isEditing) {
-        if (form.moeda !== versaoMoeda) {
+        if (form.moeda !== versaoMoedaNorm) {
           const autoRate =
-            form.moeda === 'USD' || versaoMoeda === 'USD'
+            form.moeda === 'USD' || versaoMoedaNorm === 'USD'
               ? Number(rates?.usdRate ?? 5.4)
               : Number(rates?.eurRate ?? 5.9)
           if (autoRate && !form.cotacao_moeda) {
@@ -972,8 +974,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     for (const item of itensVersoes) {
       const vMoeda =
         itensMoedasMap[item.versao_id] ||
-        versoes.find((v) => v.id === item.versao_id)?.moeda ||
-        'BRL'
+        normalizeMoedaCode(versoes.find((v) => v.id === item.versao_id)?.moeda)
       moedasEncontradas.add(vMoeda.toUpperCase())
     }
 
@@ -1002,12 +1003,12 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
 
   // Helper para obter a moeda original de um item/versão
   const getItemMoeda = (versaoId?: string): string => {
-    if (!versaoId) return (form.moeda_original || 'BRL').toUpperCase()
+    if (!versaoId) return normalizeMoedaCode(form.moeda_original)
     const fromMap = itensMoedasMap[versaoId]
-    if (fromMap) return fromMap.toUpperCase()
+    if (fromMap) return normalizeMoedaCode(fromMap)
     const fromList = versoes.find((v) => v.id === versaoId)?.moeda
-    if (fromList) return fromList.toUpperCase()
-    return (form.moeda_original || 'BRL').toUpperCase()
+    if (fromList) return normalizeMoedaCode(fromList)
+    return normalizeMoedaCode(form.moeda_original)
   }
 
   // Converter valor unitário de um item para a moeda de destino da proposta (apenas se conversão ativa)
@@ -1097,13 +1098,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     : valorAtual
 
   const fmtCurrency = (val: number) => {
-    const formatted = val.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })
-    if (form.moeda === 'USD') return `US$ ${formatted}`
-    if (form.moeda === 'EUR') return `€ ${formatted}`
-    return `R$ ${formatted}`
+    return formatCurrencyByMoeda(val, form.moeda)
   }
 
   const proceedWithSave = async () => {
@@ -1291,12 +1286,20 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         assinante_gerente_id: finalGerenteId,
         validade_oferta: form.validade_oferta || null,
         versao: itensVersoes[0]?.versao_id || null,
-        moeda: converterMoeda ? form.moeda : form.moeda_original || 'BRL',
-        moeda_original: form.moeda_original || 'BRL',
+        moeda: converterMoeda
+          ? normalizeMoedaCode(form.moeda)
+          : normalizeMoedaCode(form.moeda_original || 'BRL'),
+        moeda_original: normalizeMoedaCode(form.moeda_original || 'BRL'),
         cotacao_moeda:
-          converterMoeda && form.moeda !== form.moeda_original ? form.cotacao_moeda : null,
+          converterMoeda &&
+          normalizeMoedaCode(form.moeda) !== normalizeMoedaCode(form.moeda_original)
+            ? form.cotacao_moeda
+            : null,
         data_cotacao_moeda:
-          converterMoeda && form.moeda !== form.moeda_original ? form.data_cotacao_moeda : null,
+          converterMoeda &&
+          normalizeMoedaCode(form.moeda) !== normalizeMoedaCode(form.moeda_original)
+            ? form.data_cotacao_moeda
+            : null,
         valor_sem_desconto: valorSemDesconto,
         percentual_desconto: 0,
         valor_final: valorFinal,
@@ -1359,21 +1362,19 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
           versoes: versoes.find((v) => v.id === item.versao_id),
         })),
         acessorios_proposta: (form.acessorios_proposta || []).map((a) => {
-          const acMoeda = (
-            a.moeda ||
-            (a.versao_id ? getItemMoeda(a.versao_id) : form.moeda_original) ||
-            'BRL'
-          ).toUpperCase()
+          const acMoeda = normalizeMoedaCode(
+            a.moeda || (a.versao_id ? getItemMoeda(a.versao_id) : form.moeda_original) || 'BRL',
+          )
+          const targetMoeda = normalizeMoedaCode(form.moeda)
           return {
             ...a,
-            valor: convertCurrency(a.valor || 0, acMoeda, form.moeda, ratesConfig),
-            desconto_valor: convertCurrency(
-              a.desconto_valor || 0,
-              acMoeda,
-              form.moeda,
-              ratesConfig,
-            ),
-            moeda: form.moeda,
+            valor: converterMoeda
+              ? convertCurrency(a.valor || 0, acMoeda, targetMoeda, ratesConfig)
+              : a.valor || 0,
+            desconto_valor: converterMoeda
+              ? convertCurrency(a.desconto_valor || 0, acMoeda, targetMoeda, ratesConfig)
+              : a.desconto_valor || 0,
+            moeda: targetMoeda,
           }
         }),
         secoes_adicionais: (form as any).secoes_adicionais || null,
@@ -1980,7 +1981,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                   const fetched = await fetchVersaoById(item.versao_id)
                   if (fetched?.moeda) vMoeda = fetched.moeda
                 }
-                newMoedasMap[item.versao_id] = (vMoeda || 'BRL').toUpperCase()
+                newMoedasMap[item.versao_id] = normalizeMoedaCode(vMoeda)
               }
             }
             setItensMoedasMap((prev) => ({ ...prev, ...newMoedasMap }))
@@ -2201,12 +2202,12 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                   onCheckedChange={(checked) => {
                     setConverterMoeda(checked)
                     if (!checked) {
-                      const orig = (form.moeda_original || 'BRL').toUpperCase()
+                      const orig = normalizeMoedaCode(form.moeda_original)
                       upd('moeda', orig)
                       upd('cotacao_moeda', null)
                       upd('data_cotacao_moeda', '')
                     } else {
-                      const orig = String(form.moeda_original || 'BRL').toUpperCase()
+                      const orig = normalizeMoedaCode(form.moeda_original)
                       const target = orig === 'BRL' ? 'USD' : 'BRL'
                       upd('moeda', target)
                       const defaultRate =
@@ -2246,7 +2247,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     onValueChange={(v) => {
                       setMoedaManualOverride(true)
                       upd('moeda', v)
-                      const orig = (form.moeda_original || 'BRL').toUpperCase()
+                      const orig = normalizeMoedaCode(form.moeda_original)
                       if (v !== orig) {
                         const autoRate =
                           v === 'USD' || orig === 'USD'

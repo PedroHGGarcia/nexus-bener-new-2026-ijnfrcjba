@@ -1,7 +1,7 @@
 import type { Json } from '@/lib/supabase/types'
 import type { PropostaWithRelations } from '@/types/proposta'
 import type { PropostaVersaoWithRelations } from '@/types/proposta-versao'
-import { formatCurrencyByMoeda, formatBulletList } from '@/lib/format'
+import { formatCurrencyByMoeda, formatBulletList, normalizeMoedaCode } from '@/lib/format'
 import { formatPrecoEspecialDiscountBadge } from '@/lib/proposta-calculations'
 import { isTechnicalTableJson, parseTechnicalData } from '@/lib/technical-table'
 import { isHtmlContent } from '@/lib/technical-html-converter'
@@ -254,7 +254,7 @@ export function generatePropostaHtml(
     return true
   }) as Array<[string, string | null | undefined]>
 
-  const moeda = proposal.moeda || 'BRL'
+  const moeda = normalizeMoedaCode(proposal.moeda || 'BRL')
   const valorFinal = proposal.valor_final ?? proposal.valor_atual ?? 0
   const precoEspecial =
     proposal.preco_especial != null && Number(proposal.preco_especial) > 0
@@ -401,7 +401,7 @@ export function generatePropostaHtml(
           const naoInclusos = filteredAcc.filter(
             (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
           )
-          const propMoeda = proposal.moeda || 'BRL'
+          const propMoeda = normalizeMoedaCode(proposal.moeda || 'BRL')
           let out = ''
 
           if (inclusos.length > 0) {
@@ -640,6 +640,25 @@ export function generatePropostaHtml(
           <span style="font-size:10px;opacity:0.9;">${proposal.is_pacote ? 'Pacote de Máquinas' : 'Fornecimento Unitário'}</span>
         </div>
 
+        ${(() => {
+          const moedaOrig = normalizeMoedaCode(proposal.moeda_original || proposal.moeda || 'BRL')
+          const moedaProp = normalizeMoedaCode(proposal.moeda || 'BRL')
+          const hasRealConversion = moedaProp !== moedaOrig && Boolean(proposal.cotacao_moeda)
+
+          if (!hasRealConversion) return ''
+
+          return `<div style="margin-bottom:12px;padding:8px 10px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;font-size:11px;color:#1e293b;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-weight:bold;color:#0f172a;text-transform:uppercase;font-size:10px;background:#e2e8f0;padding:2px 6px;border-radius:3px;">Câmbio / Cotação</span>
+              <span>Moeda da proposta: <strong>${moedaProp}</strong> (Original: ${moedaOrig})</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span>Taxa aplicada: <strong>1 ${moedaProp} = ${formatCurrencyByMoeda(proposal.cotacao_moeda, 'BRL')}</strong></span>
+              ${proposal.data_cotacao_moeda ? `<span style="color:#64748b;">Data da cotação: <strong>${esc(proposal.data_cotacao_moeda)}</strong></span>` : ''}
+            </div>
+          </div>`
+        })()}
+
         <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
           ${
             proposal.is_pacote && equipmentItems && equipmentItems.length > 0
@@ -647,7 +666,7 @@ export function generatePropostaHtml(
                   .map((item, idx) => {
                     const itemNome =
                       item.versoes?.nome || item.versoes?.nome_abreviado || `Item ${idx + 1}`
-                    const itemMoeda = item.versoes?.moeda || moeda
+                    const itemMoeda = normalizeMoedaCode(item.versoes?.moeda || moeda)
                     const qtd = item.quantidade || 1
                     const valUnit = Number(item.valor_unitario || 0)
                     const descPct = Number(item.desconto_percentual || 0)

@@ -80,6 +80,8 @@ export function formatPrecoEspecialDiscountBadge(
  * Se a moeda de origem for igual à de destino, NUNCA converte (fator = 1).
  * Cotações referem-se à taxa em Reais (1 USD = X BRL, 1 EUR = Y BRL).
  */
+import { normalizeMoedaCode } from '@/lib/format'
+
 export function convertCurrency(
   valor: number,
   fromMoeda: string | null | undefined,
@@ -90,8 +92,8 @@ export function convertCurrency(
     eurRate?: number | null
   },
 ): number {
-  const from = (fromMoeda || 'BRL').toUpperCase()
-  const to = (toMoeda || 'BRL').toUpperCase()
+  const from = normalizeMoedaCode(fromMoeda)
+  const to = normalizeMoedaCode(toMoeda)
 
   if (!valor || isNaN(valor)) return 0
   if (from === to) return valor

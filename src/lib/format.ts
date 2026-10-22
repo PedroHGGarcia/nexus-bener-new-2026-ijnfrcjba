@@ -26,18 +26,50 @@ export function formatDateTime(dateStr: string | null | undefined): string {
   return `${dd}/${mm}/${yyyy} ${hh}:${min}`
 }
 
+export type MoedaCode = 'BRL' | 'USD' | 'EUR' | 'CHF'
+
+/**
+ * Normaliza textos livres de moedas (ex.: 'DOLAR', 'REAIS', 'EURO', 'FRANCO SUÍÇO')
+ * gravados no banco para o código padrão de 3 letras.
+ */
+export function normalizeMoedaCode(raw?: string | null): MoedaCode {
+  if (!raw) return 'BRL'
+  const cleaned = raw.trim().toUpperCase()
+
+  if (cleaned === 'USD' || cleaned === 'DOLAR' || cleaned === 'DÓLAR') {
+    return 'USD'
+  }
+  if (cleaned === 'EUR' || cleaned === 'EURO') {
+    return 'EUR'
+  }
+  if (
+    cleaned === 'CHF' ||
+    cleaned === 'FRANCO SUÍÇO' ||
+    cleaned === 'FRANCO SUICO' ||
+    cleaned === 'FRANCO'
+  ) {
+    return 'CHF'
+  }
+  if (cleaned === 'BRL' || cleaned === 'REAIS' || cleaned === 'REAL') {
+    return 'BRL'
+  }
+
+  return 'BRL'
+}
+
 export function formatCurrencyByMoeda(
   value: number | null | undefined,
   moeda?: string | null,
 ): string {
   if (value == null) return '—'
-  const currency = moeda || 'BRL'
+  const currency = normalizeMoedaCode(moeda)
   const formatted = value.toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
   if (currency === 'USD') return `US$ ${formatted}`
   if (currency === 'EUR') return `€ ${formatted}`
+  if (currency === 'CHF') return `CHF ${formatted}`
   return `R$ ${formatted}`
 }
 

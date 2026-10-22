@@ -6,7 +6,7 @@ import { fetchPropostaVersoes } from '@/services/proposta-versoes'
 import { snapshotToPropostaVersoes } from '@/lib/proposal-snapshot'
 import type { CustomField } from '@/components/propostas/CustomFieldsEditor'
 import { supabase } from '@/lib/supabase/client'
-import { formatCurrencyByMoeda, formatBulletList } from '@/lib/format'
+import { formatCurrencyByMoeda, formatBulletList, normalizeMoedaCode } from '@/lib/format'
 import {
   splitIntoParagraphs,
   parseParagraphs,
@@ -57,12 +57,7 @@ function renderMultilinhaParagraphs(value: string | number | null | undefined) {
 }
 
 function fmtCurrency(value: number | null | undefined, moeda: string | null | undefined): string {
-  const curr = moeda === 'USD' ? 'USD' : moeda === 'EUR' ? 'EUR' : 'BRL'
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: curr,
-    minimumFractionDigits: 2,
-  }).format(value || 0)
+  return formatCurrencyByMoeda(value || 0, moeda)
 }
 
 function SignatureBlock({
@@ -679,7 +674,9 @@ export function ProposalDocument({ proposal }: Props) {
                       `Equipamento ${idx + 1}`
                     ).toUpperCase()
                     const itemImagem = itemVersao?.imagem_preview || null
-                    const itemMoeda = itemVersao?.moeda || proposal.moeda || 'BRL'
+                    const itemMoeda = normalizeMoedaCode(
+                      itemVersao?.moeda || proposal.moeda || 'BRL',
+                    )
                     const tipoDesc =
                       item.tipo_proposta || (idx === 0 ? proposal.tipo_proposta : null)
                     const itemSpecs =
@@ -1150,7 +1147,7 @@ export function ProposalDocument({ proposal }: Props) {
                   const naoInclusos = rawItems.filter(
                     (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
                   )
-                  const propMoeda = proposal.moeda || 'BRL'
+                  const propMoeda = normalizeMoedaCode(proposal.moeda || 'BRL')
 
                   return (
                     <>
@@ -1231,8 +1228,10 @@ export function ProposalDocument({ proposal }: Props) {
 
               {/* R4: Bloco de Cotação de Moeda Estrangeira (APENAS quando houver conversão real entre moedas diferentes com taxa) */}
               {(() => {
-                const moedaOrig = (proposal.moeda_original || 'BRL').toUpperCase()
-                const moedaProp = (proposal.moeda || 'BRL').toUpperCase()
+                const moedaOrig = normalizeMoedaCode(
+                  proposal.moeda_original || proposal.moeda || 'BRL',
+                )
+                const moedaProp = normalizeMoedaCode(proposal.moeda || 'BRL')
                 const hasRealConversion = moedaProp !== moedaOrig && Boolean(proposal.cotacao_moeda)
 
                 if (!hasRealConversion) return null
@@ -1244,15 +1243,14 @@ export function ProposalDocument({ proposal }: Props) {
                         Câmbio / Cotação
                       </span>
                       <span>
-                        Moeda da proposta: <strong>{proposal.moeda}</strong> (Original:{' '}
-                        {proposal.moeda_original || 'BRL'})
+                        Moeda da proposta: <strong>{moedaProp}</strong> (Original: {moedaOrig})
                       </span>
                     </div>
                     <div className="flex items-center gap-3">
                       <span>
                         Taxa aplicada:{' '}
                         <strong>
-                          1 {proposal.moeda} = {fmtCurrency(proposal.cotacao_moeda, 'BRL')}
+                          1 {moedaProp} = {fmtCurrency(proposal.cotacao_moeda, 'BRL')}
                         </strong>
                       </span>
                       {proposal.data_cotacao_moeda && (
@@ -1285,7 +1283,9 @@ export function ProposalDocument({ proposal }: Props) {
                       equipmentItems.map((item, idx) => {
                         const itemNome =
                           item.versoes?.nome || item.versoes?.nome_abreviado || `Item ${idx + 1}`
-                        const itemMoeda = item.versoes?.moeda || proposal.moeda || 'BRL'
+                        const itemMoeda = normalizeMoedaCode(
+                          item.versoes?.moeda || proposal.moeda || 'BRL',
+                        )
                         const qtd = item.quantidade || 1
                         const valUnit = Number(item.valor_unitario || 0)
                         const descPct = Number(item.desconto_percentual || 0)
