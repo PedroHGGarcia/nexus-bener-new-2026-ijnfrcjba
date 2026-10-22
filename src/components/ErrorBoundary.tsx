@@ -13,8 +13,13 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { hasError: false }
 
-  static getDerivedStateFromError(): State {
+  static getDerivedStateFromError(error: Error): State {
+    console.error('ErrorBoundary capturou erro:', error)
     return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('ErrorBoundary componentDidCatch:', error, errorInfo)
   }
 
   handleRetry = () => {
