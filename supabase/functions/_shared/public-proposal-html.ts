@@ -779,14 +779,15 @@ export function buildPublicProposalHtml(
       .page-container {
         box-shadow: none !important;
         margin: 0 auto !important;
-        width: 186mm !important;
-        max-width: 186mm !important;
+        width: 100% !important;
+        max-width: 100% !important;
       }
       .page {
         box-sizing: border-box !important;
         width: 100% !important;
         max-width: 100% !important;
-        min-height: auto !important;
+        min-height: 0 !important;
+        height: auto !important;
         padding: 4mm 0 !important;
         margin: 0 !important;
         page-break-inside: avoid;
@@ -797,8 +798,13 @@ export function buildPublicProposalHtml(
         break-after: page;
       }
       .page:last-child {
-        page-break-after: auto;
-        break-after: auto;
+        page-break-after: auto !important;
+        break-after: auto !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+      }
+      .page:last-child > *:last-child {
+        margin-bottom: 0 !important;
       }
       .page-divider { border: none !important; }
       table {

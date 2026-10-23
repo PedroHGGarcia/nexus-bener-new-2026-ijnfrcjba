@@ -1278,9 +1278,10 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     }
   }
 
-  // ===== CLOSING TEXT =====
+  // ===== CLOSING TEXT & SIGNATURES =====
+  // Keep closing text and signatures together to avoid pushing only signatures onto an extra page
   ensureSpace(140)
-  doc.y += 12
+  doc.y += 8
   doc.para(
     M_LEFT,
     doc.contentW,
@@ -1288,17 +1289,15 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     { font: 'F1', size: 8.5 },
     11.5,
   )
-  doc.y += 10
+  doc.y += 8
   doc.txt(M_LEFT, doc.y, 'Atenciosamente', { font: 'F1', size: 8.5, color: [0.1, 0.1, 0.1] })
-  doc.y += 14
+  doc.y += 12
 
   // ===== SIGNATURES =====
-  ensureSpace(95)
-  doc.y += 10
   doc.txt(M_LEFT, doc.y, 'DE ACORDO E ASSINATURAS', { font: 'F2', size: 9.5, color: GREEN })
-  doc.y += 8
+  doc.y += 6
   doc.hline(M_LEFT, PAGE_W - M_RIGHT, doc.y, { lw: 0.5, color: [0.75, 0.78, 0.8] })
-  doc.y += 42
+  doc.y += 32
   const sigW = doc.contentW / 3
   const sigs: Array<[string, string | null | undefined]> = [
     ['Gerente de Produto', p.nome_gerente_produto || p.gerentes?.nome || p.gerente_original],
@@ -1321,7 +1320,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       w: lineW,
     })
   })
-  doc.y += 34
+  doc.y += 26
 
   // ===== FOOTERS (drawn per page at the end) =====
   // Flush any pending ops of the last page before counting/appending footers.

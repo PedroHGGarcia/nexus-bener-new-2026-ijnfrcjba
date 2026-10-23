@@ -1,7 +1,7 @@
 export const A4_PRINT_STYLES = `
   @page {
-    size: A4;
-    margin: 15mm;
+    size: A4 portrait;
+    margin: 10mm 12mm;
   }
   *, *::before, *::after {
     box-sizing: border-box;
@@ -22,9 +22,10 @@ export const A4_PRINT_STYLES = `
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 0;
+    padding: 4mm 0;
     margin: 0;
-    min-height: auto;
+    min-height: 0;
+    height: auto;
     page-break-inside: avoid;
     break-inside: avoid;
   }
@@ -33,8 +34,8 @@ export const A4_PRINT_STYLES = `
     break-after: page;
   }
   .proposal-page:last-child {
-    page-break-after: auto;
-    break-after: auto;
+    page-break-after: auto !important;
+    break-after: auto !important;
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
   }

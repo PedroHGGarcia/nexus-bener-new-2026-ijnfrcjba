@@ -459,7 +459,7 @@ export function ProposalDocument({ proposal }: Props) {
 
   return (
     <div
-      className="proposal-document bg-white text-black mx-auto"
+      className="proposal-document bg-white text-black mx-auto print:min-h-0 print:w-full"
       style={{
         width: '210mm',
         minHeight: '297mm',
@@ -469,7 +469,7 @@ export function ProposalDocument({ proposal }: Props) {
     >
       {/* ================= PAGE 1: COVER / RECEPTION ================= */}
       <div
-        className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-8 bg-white min-h-[297mm] print:min-h-0"
+        className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:border-none"
         style={{ boxSizing: 'border-box' }}
       >
         {/* Top & Main Body */}
@@ -631,7 +631,7 @@ export function ProposalDocument({ proposal }: Props) {
       {/* ================= PAGE 2: TECHNICAL & COMMERCIAL DETAILS ================= */}
       {showAdditionalPages && (
         <div
-          className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-8 bg-white min-h-[297mm] print:min-h-0 border-t-2 border-dashed border-slate-300 print:border-none print:break-before-page"
+          className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 border-t-2 border-dashed border-slate-300 print:border-none"
           style={{ boxSizing: 'border-box' }}
         >
           <div>

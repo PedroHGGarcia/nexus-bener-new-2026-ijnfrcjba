@@ -820,14 +820,18 @@ export function buildProposalPdfHtml(
         width: 186mm !important;
         max-width: 186mm !important;
         margin: 0 auto !important;
-        padding: 0 0 90px 0 !important;
+        padding: 0 0 40px 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
       .page-footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        position: static;
+        margin-top: 24px;
+        border-top: 1px solid #cbd5e1;
+        padding-top: 10px;
         display: block;
+        page-break-inside: avoid;
+        break-inside: avoid;
       }
       table {
         table-layout: fixed !important;
@@ -836,7 +840,7 @@ export function buildProposalPdfHtml(
     }
     @page {
       size: A4 portrait;
-      margin: 10mm 12mm 20mm 12mm;
+      margin: 10mm 12mm;
     }
   </style>
 </head>
