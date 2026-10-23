@@ -430,13 +430,6 @@ export function buildProposalPdfHtml(
     ['Imposto ICMS', rawIcmsEdge],
     ['Treinamento Técnico', proposta.treinamento_tecnico || tpSnapshot?.treinamento_tecnico],
     ['Frase de Preço', proposta.frase_preco || tpSnapshot?.frase_preco],
-    ['Frase de Comissão', proposta.frase_comissao || tpSnapshot?.frase_comissao],
-    [
-      'Comissão',
-      tpSnapshot?.comissao != null && Number(tpSnapshot.comissao) > 0
-        ? `${tpSnapshot.comissao}%`
-        : null,
-    ],
   ]
 
   // Campos adicionais do tipo de proposta

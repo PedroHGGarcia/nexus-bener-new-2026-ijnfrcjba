@@ -628,7 +628,17 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
 
   const numero = p.numero_proposta || '-'
   const revisao = p.revisao || ''
-  const sigla = p.representantes?.sigla || ''
+  const rawRepNome =
+    p.representantes?.sigla ||
+    p.representantes?.fantasia ||
+    p.nome_representante_comercial ||
+    p.representante_original ||
+    p.user ||
+    ''
+  const firstWord = rawRepNome.trim().split(/\s+/)[0] || ''
+  const sigla = firstWord
+    ? firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase()
+    : '—'
   const mes = String(
     p.dt_cad ? new Date(`${p.dt_cad}T12:00:00`).getMonth() + 1 : new Date().getMonth() + 1,
   ).padStart(2, '0')
@@ -698,8 +708,17 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   )
   addTerm('Treinamento Técnico', p.treinamento_tecnico || tp?.treinamento_tecnico)
   addTerm('Frase de Preço', p.frase_preco || tp?.frase_preco)
-  addTerm('Frase de Comissão', p.frase_comissao || tp?.frase_comissao)
-  addTerm('Comissão', tp?.comissao != null && tp.comissao !== 0 ? `${tp.comissao}%` : null)
+
+  const hasAdditionalContent =
+    Boolean(
+      primaryV?.especificacoes_tecnicas || p.especificacoes_tecnicas || p.descricao_proposta,
+    ) ||
+    Boolean(primaryV?.caracteristicas_construtivas) ||
+    Boolean(primaryV?.acessorios_standards) ||
+    (Array.isArray(p.acessorios_proposta) && p.acessorios_proposta.length > 0) ||
+    Boolean(p.is_pacote && equipmentItems && equipmentItems.length > 0) ||
+    terms.length > 0 ||
+    p.valor_final != null
 
   const drawHeader = (): void => {
     const y0 = doc.y
@@ -863,8 +882,10 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.y += 12
   }
 
-  doc.newPage()
-  drawHeader()
+  if (hasAdditionalContent) {
+    doc.newPage()
+    drawHeader()
+  }
 
   // ===== TECHNICAL SECTIONS =====
   const specs =

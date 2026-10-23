@@ -197,11 +197,6 @@ export function generatePropostaHtml(
       'Frase de Preço',
       (proposal as { frase_preco?: string | null }).frase_preco || tipoProposta?.frase_preco,
     ],
-    [
-      'Frase de Comissão',
-      (proposal as { frase_comissao?: string | null }).frase_comissao ||
-        tipoProposta?.frase_comissao,
-    ],
   ]
 
   if (tipoProposta?.campos_adicionais) {
@@ -606,13 +601,6 @@ export function generatePropostaHtml(
                              label: 'Frase de Preço',
                              value: String(tpObj.frase_preco).trim(),
                            })
-                         if (!isCommercialFieldEmpty(tpObj.frase_comissao))
-                           tpDetails.push({
-                             label: 'Frase de Comissão',
-                             value: String(tpObj.frase_comissao).trim(),
-                           })
-                         if (tpObj.comissao != null && Number(tpObj.comissao) > 0)
-                           tpDetails.push({ label: 'Comissão', value: `${tpObj.comissao}%` })
                          if (!isTaxValueEmpty(tpObj.imposto_ipi, 'Imposto IPI'))
                            tpDetails.push({
                              label: 'Imposto IPI',
