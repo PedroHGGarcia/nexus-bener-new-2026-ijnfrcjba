@@ -316,7 +316,7 @@
   /* Page break rules for formal PDF documents */
   .proposal-page {
     box-sizing: border-box !important;
-    min-height: auto !important;
+    min-height: 0 !important;
     height: auto !important;
     page-break-inside: avoid;
     break-inside: avoid;

@@ -285,7 +285,9 @@ export function generatePropostaHtml(
         : 0
 
   const technicalSpecsHtml = renderTechnicalHtml(
-    primaryVersao?.especificacoes_tecnicas || proposal.especificacoes_tecnicas || proposal.descricao_proposta,
+    primaryVersao?.especificacoes_tecnicas ||
+      proposal.especificacoes_tecnicas ||
+      proposal.descricao_proposta,
     'Conforme catálogo e especificações técnicas de fábrica.',
   )
   const caracteristicasHtml = primaryVersao?.caracteristicas_construtivas
@@ -875,7 +877,9 @@ export function generatePropostaHtml(
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
         <div class="page-number">Página 2/2</div>
       </div>
-    </div>
+    </div>`
+        : ''
+    }
   `
 }
 

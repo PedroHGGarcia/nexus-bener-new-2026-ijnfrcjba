@@ -208,7 +208,7 @@ export const A4_PRINT_STYLES = `
       padding: 0 !important;
     }
     .proposal-page {
-      min-height: auto !important;
+      min-height: 0 !important;
       height: auto !important;
       padding: 0 !important;
       margin: 0 !important;
@@ -222,8 +222,6 @@ export const A4_PRINT_STYLES = `
     }
   }
 `
-
-import { escapeHtml } from '@/lib/escape-html'
 
 export function openPrintWindow(html: string): Window | null {
   const win = window.open('', '_blank', 'width=900,height=700')

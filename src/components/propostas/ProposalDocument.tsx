@@ -480,7 +480,7 @@ export function ProposalDocument({ proposal }: Props) {
     >
       {/* ================= PAGE 1: COVER / RECEPTION ================= */}
       <div
-        className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-8 bg-white min-h-[297mm] print:min-h-screen"
+        className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-8 bg-white min-h-[297mm] print:min-h-0"
         style={{ boxSizing: 'border-box' }}
       >
         {/* Top & Main Body */}
@@ -642,7 +642,7 @@ export function ProposalDocument({ proposal }: Props) {
       {/* ================= PAGE 2: TECHNICAL & COMMERCIAL DETAILS ================= */}
       {showAdditionalPages && (
         <div
-          className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-8 bg-white min-h-[297mm] print:min-h-screen border-t-2 border-dashed border-slate-300 print:border-none print:break-before-page"
+          className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-8 bg-white min-h-[297mm] print:min-h-0 border-t-2 border-dashed border-slate-300 print:border-none print:break-before-page"
           style={{ boxSizing: 'border-box' }}
         >
           <div>
