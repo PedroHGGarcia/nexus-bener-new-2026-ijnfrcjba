@@ -284,6 +284,28 @@ export function generatePropostaHtml(
         ? Math.round(((valorOriginalTabela - precoEspecial) / valorOriginalTabela) * 100 * 10) / 10
         : 0
 
+  const technicalSpecsHtml = renderTechnicalHtml(
+    primaryVersao?.especificacoes_tecnicas || proposal.especificacoes_tecnicas || proposal.descricao_proposta,
+    'Conforme catálogo e especificações técnicas de fábrica.',
+  )
+  const caracteristicasHtml = primaryVersao?.caracteristicas_construtivas
+    ? renderTechnicalHtml(primaryVersao.caracteristicas_construtivas)
+    : ''
+  const acessoriosStandardsHtml = primaryVersao?.acessorios_standards
+    ? renderTechnicalHtml(primaryVersao.acessorios_standards)
+    : ''
+
+  const hasAnyPage2Content =
+    Boolean(technicalSpecsHtml) ||
+    Boolean(caracteristicasHtml) ||
+    Boolean(acessoriosStandardsHtml) ||
+    (Array.isArray(proposal.acessorios_proposta) && proposal.acessorios_proposta.length > 0) ||
+    Boolean(proposal.is_pacote && equipmentItems && equipmentItems.length > 0) ||
+    filteredTerms.length > 0 ||
+    proposal.valor_final != null
+
+  const page1PageNumber = hasAnyPage2Content ? 'Página 1/2' : 'Página 1/1'
+
   return `
     <div class="proposal-page">
       <div>
@@ -331,11 +353,13 @@ export function generatePropostaHtml(
         <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial</p>
         <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373</p>
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
-        <div class="page-number">Página 1/2</div>
+        <div class="page-number">${page1PageNumber}</div>
       </div>
     </div>
 
-    <div class="proposal-page">
+    ${
+      hasAnyPage2Content
+        ? `<div class="proposal-page">
       <div>
         <div class="proposal-top-header">
           <div style="display:flex;align-items:center;gap:8px;">
@@ -349,34 +373,38 @@ export function generatePropostaHtml(
           </div>
         </div>
 
-        <div style="margin-bottom:12px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
-            <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-            <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
-          </div>
-          ${renderTechnicalHtml(primaryVersao?.especificacoes_tecnicas || proposal.especificacoes_tecnicas || proposal.descricao_proposta, 'Conforme catálogo e especificações técnicas de fábrica.')}
-        </div>
-
         ${
-          primaryVersao?.caracteristicas_construtivas
-            ? `<div style="margin-bottom:12px;">
+          technicalSpecsHtml
+            ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
                    <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Características Construtivas</span>
+                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
                  </div>
-                 ${renderTechnicalHtml(primaryVersao.caracteristicas_construtivas)}
+                 ${technicalSpecsHtml}
                </div>`
             : ''
         }
 
         ${
-          primaryVersao?.acessorios_standards
-            ? `<div style="margin-bottom:12px;">
+          caracteristicasHtml
+            ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
+                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
+                   <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
+                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Características Construtivas</span>
+                 </div>
+                 ${caracteristicasHtml}
+               </div>`
+            : ''
+        }
+
+        ${
+          acessoriosStandardsHtml
+            ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
                    <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
                    <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Configuração Standard</span>
                  </div>
-                 ${renderTechnicalHtml(primaryVersao.acessorios_standards)}
+                 ${acessoriosStandardsHtml}
                </div>`
             : ''
         }
@@ -405,7 +433,7 @@ export function generatePropostaHtml(
           let out = ''
 
           if (inclusos.length > 0) {
-            out += `<div style="margin-bottom:12px;">
+            out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
                 <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
                 <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Inclusos no Preço</span>
@@ -422,7 +450,7 @@ export function generatePropostaHtml(
           }
 
           if (naoInclusos.length > 0) {
-            out += `<div style="margin-bottom:12px;">
+            out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
                 <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
                 <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Não Inclusos no Preço</span>
@@ -445,8 +473,8 @@ export function generatePropostaHtml(
 
         ${
           equipmentItems && equipmentItems.length > 1
-            ? `<div class="section-heading">Equipamentos Inclusos no Pacote</div>
-               <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-size:11px;">
+            ? `<div class="section-heading" style="page-break-inside:avoid;break-inside:avoid;break-after:avoid;">Equipamentos Inclusos no Pacote</div>
+               <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;font-size:11px;page-break-inside:avoid;break-inside:avoid;">
                  ${equipmentItems
                    .map((item, idx) => {
                      const tipoDesc =

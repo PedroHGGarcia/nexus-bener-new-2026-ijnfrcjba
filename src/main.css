@@ -315,13 +315,24 @@
 
   /* Page break rules for formal PDF documents */
   .proposal-page {
-    page-break-after: always;
+    box-sizing: border-box !important;
+    min-height: auto !important;
+    height: auto !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .proposal-page:not(:last-child) {
+    page-break-after: page;
     break-after: page;
-    min-height: 100vh;
   }
   .proposal-page:last-child {
-    page-break-after: auto;
-    break-after: auto;
+    page-break-after: auto !important;
+    break-after: auto !important;
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+  .proposal-page:last-child > *:last-child {
+    margin-bottom: 0 !important;
   }
 
   /* Keep signature section together on one page */
