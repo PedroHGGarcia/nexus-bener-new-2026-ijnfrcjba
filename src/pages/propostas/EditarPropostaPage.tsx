@@ -5,6 +5,9 @@ import { fetchPropostaById } from '@/services/propostas'
 import { PropostaWithRelations } from '@/types/proposta'
 import { useAuth } from '@/hooks/use-auth'
 import { LoadingState, ErrorState } from '@/components/StateViews'
+import { Button } from '@/components/ui/button'
+import { Printer } from 'lucide-react'
+import { showPrintPdfBlockedFallbackToast } from '@/lib/proposal-auto-open'
 
 export default function EditarPropostaPage() {
   const { id } = useParams<{ id: string }>()
