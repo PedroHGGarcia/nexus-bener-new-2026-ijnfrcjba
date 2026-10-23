@@ -762,13 +762,33 @@ export function buildPublicProposalHtml(
       print-color-adjust: exact;
     }
 
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm;
+    }
+
     @media print {
-      body { background: #fff; }
-      .print-bar { display: none; }
-      .page-container { box-shadow: none; margin: 0; max-width: none; }
+      html, body {
+        background: #fff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .print-bar { display: none !important; }
+      .page-container {
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        width: 186mm !important;
+        max-width: 186mm !important;
+      }
       .page {
-        min-height: auto;
-        padding: 30px;
+        box-sizing: border-box !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: auto !important;
+        padding: 4mm 0 !important;
+        margin: 0 !important;
         page-break-inside: avoid;
         break-inside: avoid;
       }
@@ -780,7 +800,13 @@ export function buildPublicProposalHtml(
         page-break-after: auto;
         break-after: auto;
       }
-      .page-divider { border: none; }
+      .page-divider { border: none !important; }
+      table {
+        table-layout: fixed !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        word-break: break-word;
+      }
     }
   </style>
 </head>

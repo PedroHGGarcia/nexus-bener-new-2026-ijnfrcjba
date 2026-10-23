@@ -816,8 +816,11 @@ export function buildProposalPdfHtml(
       margin: 0;
     }
     @media print {
-      body {
-        padding-bottom: 90px;
+      html, body {
+        width: 186mm !important;
+        max-width: 186mm !important;
+        margin: 0 auto !important;
+        padding: 0 0 90px 0 !important;
       }
       .page-footer {
         position: fixed;
@@ -826,9 +829,14 @@ export function buildProposalPdfHtml(
         right: 0;
         display: block;
       }
+      table {
+        table-layout: fixed !important;
+        width: 100% !important;
+      }
     }
     @page {
-      margin-bottom: 70px;
+      size: A4 portrait;
+      margin: 10mm 12mm 20mm 12mm;
     }
   </style>
 </head>
