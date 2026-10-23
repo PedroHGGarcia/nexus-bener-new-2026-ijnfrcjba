@@ -1,4 +1,39 @@
-function formatPrecoEspecialDiscountBadge(
+import { escapeHtml } from './escape-html.ts'
+
+export function normalizeMoedaCode(raw?: string | null): string {
+  if (!raw) return 'BRL'
+  const c = raw.trim().toUpperCase()
+  if (c === 'USD' || c === 'DOLAR' || c === 'DÓLAR') return 'USD'
+  if (c === 'EUR' || c === 'EURO') return 'EUR'
+  if (c === 'CHF' || c === 'FRANCO' || c.startsWith('FRANCO')) return 'CHF'
+  if (c === 'BRL' || c === 'REAL' || c === 'REAIS' || c === 'R$') return 'BRL'
+  return c
+}
+
+export function formatCurrencyByMoeda(
+  value: number | string | null | undefined,
+  moeda: string = 'BRL',
+): string {
+  const num = typeof value === 'string' ? parseFloat(value) : (value ?? 0)
+  const normMoeda = normalizeMoedaCode(moeda)
+  const formatted = (isNaN(num as number) ? 0 : (num as number)).toLocaleString('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  switch (normMoeda) {
+    case 'USD':
+      return `US$ ${formatted}`
+    case 'EUR':
+      return `€ ${formatted}`
+    case 'CHF':
+      return `CHF ${formatted}`
+    case 'BRL':
+    default:
+      return `R$ ${formatted}`
+  }
+}
+
+export function formatPrecoEspecialDiscountBadge(
   valorOriginal: number | null | undefined,
   precoEspecial: number | null | undefined,
 ): string | null {
@@ -23,41 +58,145 @@ function formatPrecoEspecialDiscountBadge(
   return `−${formatted}%`
 }
 
-import { escapeHtml } from './escape-html.ts'
+function isTaxValEmpty(val: unknown, columnLabel?: string): boolean {
+  if (val == null) return true
+  const s = String(val).trim().toLowerCase()
+  if (
+    !s ||
+    s === '-' ||
+    s === '—' ||
+    s === 'n/a' ||
+    s === '0' ||
+    s === '0%' ||
+    s === '0,00%' ||
+    s === '0.00%'
+  )
+    return true
+  const clean = s.replace(/[:\-–—.,;!?]+$/g, '').trim()
+  const compact = clean.replace(/[^a-z0-9]/g, '')
+  if (
+    compact === 'impostoipi' ||
+    compact === 'ipi' ||
+    compact === 'impostoicms' ||
+    compact === 'icms'
+  ) {
+    return true
+  }
+  if (columnLabel) {
+    const colCompact = columnLabel.toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (compact && colCompact && compact === colCompact) return true
+  }
+  return false
+}
 
-function buildEquipmentSection(equipmentItems: any[], proposta: any): string {
-  if (!equipmentItems || equipmentItems.length === 0) return ''
+function isCommercialEmpty(val: unknown, columnLabel?: string): boolean {
+  if (val == null) return true
+  if (typeof val === 'string') {
+    const s = val.trim()
+    if (!s || s === '-' || s === '—' || s.toLowerCase() === 'n/a') return true
+    if (columnLabel) {
+      const normVal = s
+        .toLowerCase()
+        .replace(/[:\-–—.,;!?]+$/g, '')
+        .replace(/[^a-z0-9]/g, '')
+      const normCol = columnLabel
+        .toLowerCase()
+        .replace(/[:\-–—.,;!?]+$/g, '')
+        .replace(/[^a-z0-9]/g, '')
+      if (normVal && normCol && normVal === normCol) return true
+    }
+  }
+  return false
+}
 
-  const fmtVal = (val: number) =>
-    val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+function stripBold(s: string | null | undefined): string {
+  return s
+    ? String(s)
+        .replace(/<\/?b\b[^>]*>/gi, '')
+        .trim()
+    : ''
+}
 
-  const itemsHtml = equipmentItems
-    .map((item: any, idx: number) => {
-      const v = item.versoes
+function renderCommercialFieldHtml(val: string | null | undefined): string {
+  if (!val) return ''
+  const str = String(val).trim()
+  const lines = str
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
+  if (lines.length <= 1 && !/<b\b/i.test(str)) {
+    return escapeHtml(str)
+  }
+
+  const boldWithCloseRegex =
+    /^(?:(\d{1,2}[.)\-–—]|•|p[oó]nto\s+\d{1,3}[:.\-–—]?)\s*)?<b\b[^>]*>([\s\S]*?)<\/b\s*>(.*)$/i
+  return lines
+    .map((line) => {
+      const match = line.match(boldWithCloseRegex)
+      if (match) {
+        const prefix = (match[1] || '').trim()
+        const rawTitle = (match[2] || '').trim()
+        const rawBody = (match[3] || '').trim()
+        const cleanTitle = stripBold(prefix ? `${prefix} ${rawTitle}` : rawTitle)
+        const cleanBody = stripBold(rawBody)
+        return `<div style="margin-bottom:4px;"><strong class="paragraph-title" style="display:block;font-weight:700;color:#0b3c26;margin-bottom:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${escapeHtml(cleanTitle)}</strong>${cleanBody ? `<span>${escapeHtml(cleanBody)}</span>` : ''}</div>`
+      }
+      return `<div style="margin-bottom:4px;">${escapeHtml(stripBold(line))}</div>`
+    })
+    .join('')
+}
+
+function formatLongDate(dtCad: string | null | undefined): string {
+  const d = dtCad ? new Date(dtCad + (dtCad.includes('T') ? '' : 'T12:00:00')) : new Date()
+  const formatted = d.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+  return `Vinhedo, ${formatted}`
+}
+
+function buildEquipmentSection(items: any[], proposta: any): string {
+  const fmtVal = (v: number | null | undefined) =>
+    (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  const itemsHtml = items
+    .map((item, idx) => {
+      const v = item.versoes || {}
       const modelo = v?.modelos
       const marca = modelo?.marcas
       const produto = modelo?.produtos
       const categoria = produto?.categorias_produtos
 
-      const subtotal = (item.quantidade || 0) * (item.valor_unitario || 0)
-      let total = subtotal
-      if ((item.desconto_valor || 0) > 0) {
-        total = Math.max(0, subtotal - (item.desconto_valor || 0))
-      } else if ((item.desconto_percentual || 0) > 0) {
-        total = subtotal * (1 - (item.desconto_percentual || 0) / 100)
-      }
+      const subtotal = (item.quantidade || 1) * (item.valor_unitario || 0)
+      const total =
+        (item.desconto_valor || 0) > 0
+          ? Math.max(0, subtotal - (item.desconto_valor || 0))
+          : subtotal * (1 - (item.desconto_percentual || 0) / 100)
 
-      const moeda = v?.moeda || proposta.moeda || 'BRL'
-      const tipoDesc = item.tipo_proposta || (idx === 0 ? proposta.tipo_proposta : null)
+      const moeda = normalizeMoedaCode(v?.moeda || proposta.moeda || 'BRL')
 
-      const acessorios = Array.isArray(proposta.acessorios_proposta)
+      // Regra 7: Acessórios com 3 estados (incluir, nao_exibir, opcional/exibir)
+      const rawAcc = Array.isArray(proposta.acessorios_proposta)
         ? (proposta.acessorios_proposta as any[])
         : []
-      const inclusosPacote = acessorios.filter((a) => a.inclusao !== 'opcional')
-      const naoInclusosPacote = acessorios.filter((a) => a.inclusao === 'opcional')
+      const filteredAcc = rawAcc.filter(
+        (a) => a && a.inclusao !== 'nao_exibir' && (!a.versao_id || !v?.id || a.versao_id === v.id),
+      )
+      const inclusosPacote = filteredAcc.filter(
+        (a) =>
+          a.inclusao === 'incluir' ||
+          a.inclusao === 'preco' ||
+          a.inclusao === undefined ||
+          a.inclusao === null,
+      )
+      const naoInclusosPacote = filteredAcc.filter(
+        (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
+      )
+
       let acessoriosHtml = ''
       if (inclusosPacote.length > 0) {
-        acessoriosHtml += `<div class="equipment-accessories" style="margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;">
+        acessoriosHtml += `<div class="equipment-accessories" style="margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;page-break-inside:avoid;break-inside:avoid;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
             <span style="display:inline-block;width:3px;height:12px;background:#0b3c26;border-radius:1px;"></span>
             <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;">Acessórios Opcionais Inclusos no Preço</span>
@@ -73,7 +212,7 @@ function buildEquipmentSection(equipmentItems: any[], proposta: any): string {
         </div>`
       }
       if (naoInclusosPacote.length > 0) {
-        acessoriosHtml += `<div class="equipment-accessories" style="margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;">
+        acessoriosHtml += `<div class="equipment-accessories" style="margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;page-break-inside:avoid;break-inside:avoid;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
             <span style="display:inline-block;width:3px;height:12px;background:#0b3c26;border-radius:1px;"></span>
             <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;">Acessórios Opcionais Não Inclusos no Preço</span>
@@ -81,23 +220,13 @@ function buildEquipmentSection(equipmentItems: any[], proposta: any): string {
           <ul style="list-style:none;padding:0 0 0 9px;margin:2px 0 0 0;font-size:11px;line-height:1.55;color:#1e293b;">
             ${naoInclusosPacote
               .map((a: any) => {
-                const itemMoeda = a.moeda || moeda
+                const itemMoeda = normalizeMoedaCode(a.moeda || moeda)
                 const valFmt = a.valor != null ? `${itemMoeda} ${fmtVal(a.valor)}` : null
                 return `<li style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px;"><div style="display:flex;align-items:baseline;gap:6px;"><span style="color:#0b3c26;font-weight:bold;">•</span><span>${a.quantidade ? a.quantidade + 'x ' : ''}${escapeHtml(a.nome || '—')}</span></div>${valFmt ? `<span style="font-weight:bold;color:#0f172a;white-space:nowrap;">${valFmt}</span>` : ''}</li>`
               })
               .join('')}
           </ul>
         </div>`
-      }
-
-      let exchangeHtml = ''
-      if (proposta.cambio_estimado != null) {
-        exchangeHtml = `<div class="equipment-exchange"><strong>Cambio Estimado:</strong> ${proposta.cambio_estimado}`
-        if (proposta.cambio_estimado_data)
-          exchangeHtml += ` (Data: ${proposta.cambio_estimado_data})`
-        if (proposta.cambio_estimado_base)
-          exchangeHtml += ` - Base: ${proposta.cambio_estimado_base}`
-        exchangeHtml += `</div>`
       }
 
       const imagemHtml = v?.imagem_preview
@@ -170,8 +299,9 @@ function buildEquipmentSection(equipmentItems: any[], proposta: any): string {
            </div>`
         : `<span style="font-weight:900;color:#0b3c26;font-size:13px;">${moeda} ${fmtVal(total)}</span>`
 
+      // Regra 3: Sem Tipo de Fornecimento na tabela de Condições Comerciais
       return `
-      <div class="equipment-item" style="border:1px solid #cbd5e1;border-radius:6px;padding:12px;margin-bottom:12px;background:#ffffff;">
+      <div class="equipment-item" style="border:1px solid #cbd5e1;border-radius:6px;padding:12px;margin-bottom:12px;background:#ffffff;page-break-inside:avoid;break-inside:avoid;">
         <div class="equipment-header" style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:8px;margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:10px;">
             ${imagemHtml}
@@ -182,7 +312,6 @@ function buildEquipmentSection(equipmentItems: any[], proposta: any): string {
               ${v?.nome_abreviado ? `<span class="equipment-abbr" style="font-size:11px;color:#64748b;margin-left:6px;">(${escapeHtml(v.nome_abreviado)})</span>` : ''}
             </div>
           </div>
-          ${tipoDesc ? `<span style="font-size:10px;font-weight:bold;background:#0b3c26;color:#ffffff;padding:3px 8px;border-radius:3px;letter-spacing:0.5px;">${escapeHtml(tipoDesc)}</span>` : ''}
         </div>
         ${metaLines.length > 0 ? `<div class="equipment-meta" style="margin-bottom:8px;">${metaLines.join('')}</div>` : ''}
         ${techLines.join('')}
@@ -205,20 +334,20 @@ function buildEquipmentSection(equipmentItems: any[], proposta: any): string {
           </div>
         </div>
         ${acessoriosHtml}
-        ${exchangeHtml}
       </div>
     `
     })
     .join('')
 
   return `
-  <div style="border-bottom:2px solid #0f172a;padding-bottom:6px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;display:flex;justify-content:space-between;align-items:center;">
+  <div style="border-bottom:2px solid #0f172a;padding-bottom:6px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;display:flex;justify-content:space-between;align-items:center;page-break-after:avoid;break-after:avoid;">
     <span>Detalhamento de Equipamentos & Condições Comerciais</span>
     <span style="font-size:10px;color:#64748b;font-weight:500;text-transform:none;">Pacote de Máquinas</span>
   </div>
   <div class="equipment-list">${itemsHtml}</div>
 `
 }
+
 export function buildProposalPdfHtml(
   proposta: any,
   publicAppUrl: string = 'https://nexus.bener.com.br',
@@ -229,6 +358,11 @@ export function buildProposalPdfHtml(
   logoUrlOverride?: string | null,
 ): string {
   const logoUrl = logoUrlOverride || ''
+
+  // Normalização de Moeda (Regras 1 e 2)
+  const moedaProp = normalizeMoedaCode(proposta.moeda || 'BRL')
+  const moedaOrig = normalizeMoedaCode(proposta.moeda_original || proposta.moeda || 'BRL')
+  const hasRealConversion = moedaProp !== moedaOrig && Boolean(proposta.cotacao_moeda)
 
   const creatorLine = creatorInfo
     ? `<div><strong>Criado por:</strong> ${escapeHtml(creatorInfo.name)}${creatorInfo.email ? ` (${escapeHtml(creatorInfo.email)})` : ''}</div>`
@@ -254,89 +388,100 @@ export function buildProposalPdfHtml(
   `
       : ''
 
-  const isTaxValEmpty = (val: unknown, columnLabel?: string): boolean => {
-    if (val == null) return true
-    const s = String(val).trim().toLowerCase()
-    if (!s || s === '-' || s === 'n/a' || s === '0' || s === '0%' || s === '0,00%' || s === '0.00%')
-      return true
-    // Point 10: Se o valor for idêntico/auto-referente ao cabeçalho ("imposto ipi", "ipi", "imposto icms", "icms")
-    const clean = s.replace(/[:\-–—.,;!?]+$/g, '').trim()
-    const compact = clean.replace(/[^a-z0-9]/g, '')
-    if (
-      compact === 'impostoipi' ||
-      compact === 'ipi' ||
-      compact === 'impostoicms' ||
-      compact === 'icms'
-    ) {
-      return true
-    }
-    if (columnLabel) {
-      const colCompact = columnLabel.toLowerCase().replace(/[^a-z0-9]/g, '')
-      if (compact && colCompact && compact === colCompact) return true
-    }
-    return false
-  }
-
-  const isCommercialEmpty = (val: unknown, columnLabel?: string): boolean => {
-    if (val == null) return true
-    if (typeof val === 'string') {
-      const s = val.trim()
-      if (!s || s === '-' || s === '—' || s.toLowerCase() === 'n/a') return true
-      if (columnLabel) {
-        const normVal = s
-          .toLowerCase()
-          .replace(/[:\-–—.,;!?]+$/g, '')
-          .replace(/[^a-z0-9]/g, '')
-        const normCol = columnLabel
-          .toLowerCase()
-          .replace(/[:\-–—.,;!?]+$/g, '')
-          .replace(/[^a-z0-9]/g, '')
-        if (normVal && normCol && normVal === normCol) return true
-      }
-    }
-    return false
-  }
+  // Snapshot congelado do tipo de proposta (Regra 9)
+  const dadosSnapshot = proposta.dados_snapshot as Record<string, any> | null
+  const tpSnapshot =
+    (dadosSnapshot?.tipo_proposta_detalhes as Record<string, any>) ||
+    (tipoProposta as Record<string, any>) ||
+    null
 
   const rawIpiEdge =
     proposta.imposto_ipi != null && !isTaxValEmpty(proposta.imposto_ipi, 'Imposto IPI')
       ? `${proposta.imposto_ipi}${String(proposta.imposto_ipi).includes('%') ? '' : '%'}`
-      : tipoProposta?.imposto_ipi != null && !isTaxValEmpty(tipoProposta.imposto_ipi, 'Imposto IPI')
-        ? `${tipoProposta.imposto_ipi}${String(tipoProposta.imposto_ipi).includes('%') ? '' : '%'}`
+      : tpSnapshot?.imposto_ipi != null && !isTaxValEmpty(tpSnapshot.imposto_ipi, 'Imposto IPI')
+        ? `${tpSnapshot.imposto_ipi}${String(tpSnapshot.imposto_ipi).includes('%') ? '' : '%'}`
         : null
 
   const rawIcmsEdge =
     proposta.imposto_icms != null && !isTaxValEmpty(proposta.imposto_icms, 'Imposto ICMS')
       ? `${proposta.imposto_icms}${String(proposta.imposto_icms).includes('%') ? '' : '%'}`
-      : tipoProposta?.imposto_icms != null &&
-          !isTaxValEmpty(tipoProposta.imposto_icms, 'Imposto ICMS')
-        ? `${tipoProposta.imposto_icms}${String(tipoProposta.imposto_icms).includes('%') ? '' : '%'}`
+      : tpSnapshot?.imposto_icms != null && !isTaxValEmpty(tpSnapshot.imposto_icms, 'Imposto ICMS')
+        ? `${tpSnapshot.imposto_icms}${String(tpSnapshot.imposto_icms).includes('%') ? '' : '%'}`
         : null
 
+  // Regra 9: Campos do Tipo de Proposta
   const termsList: Array<[string, string | null | undefined]> = [
-    [
-      'Condições de Pagamento',
-      proposta.condicoes_pagamento || (tipoProposta?.condicoes_pagamento as string),
-    ],
-    ['Prazo de Entrega', proposta.prazo_entrega || (tipoProposta?.prazo_entrega as string)],
-    ['Validade da Oferta', proposta.validade_oferta || (tipoProposta?.validade_oferta as string)],
+    ['Condições de Pagamento', proposta.condicoes_pagamento || tpSnapshot?.condicoes_pagamento],
+    ['Prazo de Entrega', proposta.prazo_entrega || tpSnapshot?.prazo_entrega],
+    ['Validade da Oferta', proposta.validade_oferta || tpSnapshot?.validade_oferta],
     ['Cobertura de Garantia', proposta.cobertura_garantia],
-    ['Garantia', proposta.garantia_acessorios || (tipoProposta?.garantia as string)],
+    ['Garantia', proposta.garantia_acessorios || tpSnapshot?.garantia],
     ['Normas Aplicáveis', proposta.normas_aplicaveis],
     ['Normas de Segurança', proposta.normas_seguranca],
     ['Certificações', proposta.certificacoes],
     [
       'Assistência Técnica',
-      proposta.assistencia_tecnica_detalhada || (tipoProposta?.assistencia_tecnica as string),
+      proposta.assistencia_tecnica_detalhada || tpSnapshot?.assistencia_tecnica,
     ],
     ['Critérios de Aceitação', proposta.criterios_aceitacao],
     ['Materiais Utilizados', proposta.materiais_utilizados],
-    [
-      'Transporte/Seguro',
-      proposta.transporte_seguro || (tipoProposta?.transporte_seguro as string),
-    ],
+    ['Transporte/Seguro', proposta.transporte_seguro || tpSnapshot?.transporte_seguro],
     ['Imposto IPI', rawIpiEdge],
     ['Imposto ICMS', rawIcmsEdge],
-  ].filter(([lbl, val]) => {
+    ['Treinamento Técnico', proposta.treinamento_tecnico || tpSnapshot?.treinamento_tecnico],
+    ['Frase de Preço', proposta.frase_preco || tpSnapshot?.frase_preco],
+    ['Frase de Comissão', proposta.frase_comissao || tpSnapshot?.frase_comissao],
+    [
+      'Comissão',
+      tpSnapshot?.comissao != null && Number(tpSnapshot.comissao) > 0
+        ? `${tpSnapshot.comissao}%`
+        : null,
+    ],
+  ]
+
+  // Campos adicionais do tipo de proposta
+  if (tpSnapshot?.campos_adicionais) {
+    try {
+      const extras =
+        typeof tpSnapshot.campos_adicionais === 'string'
+          ? JSON.parse(tpSnapshot.campos_adicionais)
+          : tpSnapshot.campos_adicionais
+      if (Array.isArray(extras)) {
+        extras.forEach(
+          (extra: {
+            titulo?: string
+            conteudo?: string
+            chave?: string
+            valor?: string | number
+          }) => {
+            const lbl = (extra.titulo || extra.chave || '').trim()
+            const val =
+              extra.conteudo != null
+                ? String(extra.conteudo).trim()
+                : extra.valor != null
+                  ? String(extra.valor).trim()
+                  : ''
+            if (lbl && !isCommercialEmpty(val)) {
+              termsList.push([lbl, val])
+            }
+          },
+        )
+      } else if (extras && typeof extras === 'object') {
+        Object.entries(extras as Record<string, string | number | null | undefined>).forEach(
+          ([lbl, rawVal]) => {
+            const cleanLbl = (lbl || '').trim()
+            if (cleanLbl && !isCommercialEmpty(rawVal)) {
+              termsList.push([cleanLbl, String(rawVal).trim()])
+            }
+          },
+        )
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const filteredTerms = termsList.filter(([lbl, val]) => {
     if (isCommercialEmpty(val, lbl)) return false
     const lower = lbl.toLowerCase()
     if (lower.includes('ipi') || lower.includes('icms') || lower.includes('imposto')) {
@@ -345,53 +490,17 @@ export function buildProposalPdfHtml(
     return true
   }) as Array<[string, string | null | undefined]>
 
-  const stripBold = (s: string | null | undefined): string =>
-    s
-      ? String(s)
-          .replace(/<\/?b\b[^>]*>/gi, '')
-          .trim()
-      : ''
-
-  const renderCommercialFieldHtml = (val: string | null | undefined): string => {
-    if (!val) return ''
-    const str = String(val).trim()
-    const lines = str
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter((l) => l.length > 0)
-    if (lines.length <= 1 && !/<b\b/i.test(str)) {
-      return escapeHtml(str)
-    }
-
-    const boldWithCloseRegex =
-      /^(?:(\d{1,2}[.)\-–—]|•|p[oó]nto\s+\d{1,3}[:.\-–—]?)\s*)?<b\b[^>]*>([\s\S]*?)<\/b\s*>(.*)$/i
-    return lines
-      .map((line) => {
-        const match = line.match(boldWithCloseRegex)
-        if (match) {
-          const prefix = (match[1] || '').trim()
-          const rawTitle = (match[2] || '').trim()
-          const rawBody = (match[3] || '').trim()
-          const cleanTitle = stripBold(prefix ? `${prefix} ${rawTitle}` : rawTitle)
-          const cleanBody = stripBold(rawBody)
-          return `<div style="margin-bottom:4px;"><strong class="paragraph-title" style="display:block;font-weight:700;color:#0b3c26;margin-bottom:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${escapeHtml(cleanTitle)}</strong>${cleanBody ? `<span>${escapeHtml(cleanBody)}</span>` : ''}</div>`
-        }
-        return `<div style="margin-bottom:4px;">${escapeHtml(stripBold(line))}</div>`
-      })
-      .join('')
-  }
-
   const commercialSection =
-    termsList.length > 0
+    filteredTerms.length > 0
       ? `
-    <div style="background:#0b3c26;color:#ffffff;padding:6px 12px;border-radius:4px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="background:#0b3c26;color:#ffffff;padding:6px 12px;border-radius:4px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
       Termos de Fornecimento & Informações Comerciais
     </div>
-    <div style="border:1px solid #e2e8f0;border-radius:4px;background:#ffffff;margin-bottom:16px;">
-      ${termsList
+    <div style="border:1px solid #e2e8f0;border-radius:4px;background:#ffffff;margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;">
+      ${filteredTerms
         .map(
           ([lbl, val], idx) => `
-        <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:6px 12px;font-size:11px;align-items:baseline;${idx > 0 ? 'border-top:1px solid #f1f5f9;' : ''}">
+        <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:6px 12px;font-size:11px;align-items:baseline;${idx > 0 ? 'border-top:1px solid #f1f5f9;' : ''};page-break-inside:avoid;break-inside:avoid;">
           <div style="font-size:10px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;background:#f1f5f9;padding:3px 6px;border-radius:2px;border-left:2px solid #cbd5e1;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${escapeHtml(lbl)}</div>
           <div style="color:#0f172a;font-weight:500;line-height:1.4;">${renderCommercialFieldHtml(val)}</div>
         </div>`,
@@ -400,8 +509,9 @@ export function buildProposalPdfHtml(
     </div>`
       : ''
 
+  // Informações adicionais da proposta (Regra 9)
   let camposAdicionaisSection = ''
-  const snapshotCampos = (proposta.dados_snapshot as any)?.campos_adicionais
+  const snapshotCampos = dadosSnapshot?.campos_adicionais
   let camposData: any =
     Array.isArray(snapshotCampos) && snapshotCampos.length > 0
       ? snapshotCampos
@@ -440,58 +550,6 @@ export function buildProposalPdfHtml(
     }
   }
 
-  let tipoPropostaSection = ''
-  if (tipoProposta) {
-    const tp = tipoProposta as Record<string, any>
-    const tpLines: string[] = []
-    if (tp.treinamento_tecnico)
-      tpLines.push(
-        `<p><strong>Treinamento Tecnico:</strong> ${escapeHtml(tp.treinamento_tecnico)}</p>`,
-      )
-    if (tp.frase_preco)
-      tpLines.push(`<p><strong>Frase de Preco:</strong> ${escapeHtml(tp.frase_preco)}</p>`)
-    if (tp.frase_comissao)
-      tpLines.push(`<p><strong>Frase de Comissao:</strong> ${escapeHtml(tp.frase_comissao)}</p>`)
-    if (tp.comissao != null && tp.comissao !== 0)
-      tpLines.push(`<p><strong>Comissao:</strong> ${escapeHtml(tp.comissao)}%</p>`)
-    if (tp.validade_oferta && !proposta.validade_oferta)
-      tpLines.push(`<p><strong>Validade da Oferta:</strong> ${escapeHtml(tp.validade_oferta)}</p>`)
-    if (tp.condicoes_pagamento && !proposta.condicoes_pagamento)
-      tpLines.push(
-        `<p><strong>Condicoes de Pagamento:</strong> ${escapeHtml(tp.condicoes_pagamento)}</p>`,
-      )
-    if (tp.prazo_entrega && !proposta.prazo_entrega)
-      tpLines.push(`<p><strong>Prazo de Entrega:</strong> ${escapeHtml(tp.prazo_entrega)}</p>`)
-    if (tp.garantia && !proposta.garantia_acessorios)
-      tpLines.push(`<p><strong>Garantia:</strong> ${escapeHtml(tp.garantia)}</p>`)
-    if (tp.transporte_seguro && !proposta.transporte_seguro)
-      tpLines.push(`<p><strong>Transporte/Seguro:</strong> ${escapeHtml(tp.transporte_seguro)}</p>`)
-    if (tp.assistencia_tecnica && !proposta.assistencia_tecnica_detalhada)
-      tpLines.push(
-        `<p><strong>Assistencia Tecnica:</strong> ${escapeHtml(tp.assistencia_tecnica)}</p>`,
-      )
-    if (
-      tp.imposto_ipi != null &&
-      !isTaxValEmpty(tp.imposto_ipi, 'Imposto IPI') &&
-      !proposta.imposto_ipi
-    )
-      tpLines.push(
-        `<p><strong style="font-weight:700;background:#f1f5f9;padding:2px 4px;border-radius:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">Imposto IPI:</strong> ${escapeHtml(tp.imposto_ipi)}%</p>`,
-      )
-    if (
-      tp.imposto_icms != null &&
-      !isTaxValEmpty(tp.imposto_icms, 'Imposto ICMS') &&
-      !proposta.imposto_icms
-    )
-      tpLines.push(
-        `<p><strong style="font-weight:700;background:#f1f5f9;padding:2px 4px;border-radius:2px;-webkit-print-color-adjust:exact;print-color-adjust:exact;">Imposto ICMS:</strong> ${escapeHtml(tp.imposto_icms)}%</p>`,
-      )
-
-    if (tpLines.length > 0) {
-      tipoPropostaSection = `<div class="section-title">INFORMACOES DO TIPO DE PROPOSTA${tp.nome ? ' — ' + escapeHtml(tp.nome) : ''}</div><div class="commercial-info">${tpLines.join('')}</div>`
-    }
-  }
-
   const equipmentSection =
     equipmentItems && equipmentItems.length > 0
       ? buildEquipmentSection(equipmentItems, proposta)
@@ -501,12 +559,26 @@ export function buildProposalPdfHtml(
     ? `<div class="footer-creator">Documento gerado por ${escapeHtml(creatorInfo.name)}${creatorInfo.email ? ` — ${escapeHtml(creatorInfo.email)}` : ''}</div>`
     : ''
 
+  // Câmbio / Cotação condicional (Regra 1)
+  const cambioBanner = hasRealConversion
+    ? `<div style="margin-bottom:12px;padding:8px 10px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;font-size:11px;color:#1e293b;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;page-break-inside:avoid;break-inside:avoid;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:bold;color:#0f172a;text-transform:uppercase;font-size:10px;background:#e2e8f0;padding:2px 6px;border-radius:3px;">Câmbio / Cotação</span>
+          <span>Moeda da proposta: <strong>${moedaProp}</strong> (Original: ${moedaOrig})</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span>Taxa aplicada: <strong>1 ${moedaProp} = ${formatCurrencyByMoeda(proposta.cotacao_moeda, 'BRL')}</strong></span>
+          ${proposta.data_cotacao_moeda ? `<span style="color:#64748b;">Data da cotação: <strong>${escapeHtml(proposta.data_cotacao_moeda)}</strong></span>` : ''}
+        </div>
+      </div>`
+    : ''
+
   return `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Proposta Comercial - ${proposta.numero_proposta || 'Bener'}</title>
+  <title>Proposta Comercial - ${escapeHtml(proposta.numero_proposta || 'Bener')}</title>
   <style>
     body {
       font-family: Arial, Helvetica, sans-serif;
@@ -523,6 +595,8 @@ export function buildProposalPdfHtml(
       border-bottom: 3px solid #0b3c26;
       padding-bottom: 20px;
       margin-bottom: 20px;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .logo-img {
       height: 52px;
@@ -532,11 +606,18 @@ export function buildProposalPdfHtml(
     }
     .proposal-title {
       text-align: right;
+      max-width: 320px;
+      white-space: normal;
+      word-break: break-word;
     }
     .proposal-title h1 {
       font-size: 20px;
       color: #0b3c26;
       margin: 0 0 5px 0;
+    }
+    .proposal-number-text {
+      white-space: normal;
+      word-break: break-word;
     }
     .creator-info {
       background: #f0f7f3;
@@ -544,6 +625,8 @@ export function buildProposalPdfHtml(
       padding: 10px 15px;
       margin-bottom: 20px;
       font-size: 11px;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .creator-info div {
       margin: 2px 0;
@@ -556,6 +639,8 @@ export function buildProposalPdfHtml(
       margin-bottom: 25px;
       display: flex;
       justify-content: space-between;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .section-title {
       font-size: 14px;
@@ -564,16 +649,8 @@ export function buildProposalPdfHtml(
       border-left: 4px solid #0b3c26;
       padding-left: 10px;
       margin: 25px 0 15px 0;
-    }
-    .product-desc-title {
-      font-size: 18px;
-      font-weight: 800;
-      color: #0b3c26;
-      border-left: 5px solid #0b3c26;
-      padding-left: 12px;
-      margin: 30px 0 18px 0;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      page-break-after: avoid;
+      break-after: avoid;
     }
     .equipment-name {
       font-weight: 800;
@@ -581,19 +658,6 @@ export function buildProposalPdfHtml(
       color: #0b3c26;
       margin-left: 4px;
       display: inline-block;
-    }
-    .commercial-info p, .campos-adicionais p {
-      margin: 5px 0;
-    }
-    .total-box {
-      background: #0b3c26;
-      color: white;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: right;
-      font-size: 16px;
-      font-weight: bold;
-      margin-top: 20px;
     }
     .equipment-list {
       margin-bottom: 20px;
@@ -603,6 +667,8 @@ export function buildProposalPdfHtml(
       border-radius: 8px;
       padding: 12px;
       margin-bottom: 12px;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .equipment-header {
       display: flex;
@@ -619,12 +685,6 @@ export function buildProposalPdfHtml(
     .equipment-info {
       flex: 1;
     }
-    .equipment-number {
-      font-weight: bold;
-      font-size: 13px;
-      color: #0b3c26;
-    }
-
     .equipment-code, .equipment-abbr {
       font-size: 11px;
       color: #666;
@@ -645,21 +705,12 @@ export function buildProposalPdfHtml(
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    .equipment-tech {
-      font-size: 11px;
-      color: #555;
-      margin-top: 6px;
-    }
-    .equipment-tech pre {
-      font-family: inherit;
-      white-space: pre-wrap;
-      margin: 2px 0;
-      font-size: 11px;
-    }
     .equipment-tech-block {
       margin-top: 8px;
       padding-top: 6px;
       border-top: 1px solid #e2e8f0;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .equipment-tech-heading {
       display: flex;
@@ -676,7 +727,7 @@ export function buildProposalPdfHtml(
       display: inline-block;
       width: 3px;
       height: 12px;
-      background: #0b3c26;
+      background:#0b3c26;
       border-radius: 1px;
     }
     .equipment-tech-block pre {
@@ -690,6 +741,8 @@ export function buildProposalPdfHtml(
     }
     .spec-block {
       margin-bottom: 14px;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .spec-block-heading {
       display: flex;
@@ -703,6 +756,8 @@ export function buildProposalPdfHtml(
       color: #0b3c26;
       text-transform: uppercase;
       letter-spacing: 0.8px;
+      page-break-after: avoid;
+      break-after: avoid;
     }
     .spec-block-bar {
       display: inline-block;
@@ -719,32 +774,17 @@ export function buildProposalPdfHtml(
       white-space: pre-wrap;
       margin: 0;
     }
-    .equipment-commercial {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 6px;
-      font-size: 11px;
-      margin-top: 8px;
-      padding-top: 8px;
-      border-top: 1px solid #f1f5f9;
-    }
-    .equipment-total {
-      font-weight: bold;
-    }
     .equipment-accessories {
       font-size: 11px;
       margin-top: 8px;
       padding-top: 6px;
       border-top: 1px solid #f1f5f9;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .equipment-accessories ul {
       margin: 4px 0;
       padding-left: 16px;
-    }
-    .equipment-exchange {
-      font-size: 10px;
-      color: #888;
-      margin-top: 4px;
     }
     .footer {
       margin-top: 50px;
@@ -753,6 +793,8 @@ export function buildProposalPdfHtml(
       text-align: center;
       font-size: 10px;
       color: #888;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .footer-creator {
       margin-top: 8px;
@@ -809,8 +851,8 @@ export function buildProposalPdfHtml(
     </div>
     <div class="proposal-title">
       <h1>${proposta.modelo_licitacao ? 'PROPOSTA DE LICITAÇÃO' : 'PROPOSTA COMERCIAL'}</h1>
-      <div>Nº <strong>${proposta.numero_proposta || 'N/A'}</strong> (Rev. ${proposta.revisao || '0'})</div>
-      <div>Vinhedo, ${proposta.dt_cad ? new Date(proposta.dt_cad + (proposta.dt_cad.includes('T') ? '' : 'T12:00:00')).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+      <div class="proposal-number-text">Nº <strong>${escapeHtml(proposta.numero_proposta || 'N/A')}</strong> (Rev. ${escapeHtml(proposta.revisao || '0')})</div>
+      <div>${formatLongDate(proposta.dt_cad)}</div>
     </div>
   </div>
 
@@ -818,30 +860,19 @@ export function buildProposalPdfHtml(
 
   <div class="meta-box">
     <div>
-      <strong>Cliente:</strong> ${proposta.cliente_original || proposta.cliente || 'Não informado'}<br />
-      <strong>Contato:</strong> ${proposta.contato || '-'}<br />
-      <strong>Telefone:</strong> ${proposta.telefone || '-'}
+      <strong>Cliente:</strong> ${escapeHtml(proposta.cliente_original || proposta.cliente || 'Não informado')}<br />
+      <strong>Contato:</strong> ${escapeHtml(proposta.contato || '-')}<br />
+      <strong>Telefone:</strong> ${escapeHtml(proposta.telefone || '-')}
     </div>
     <div style="text-align: right;">
-      <strong>Representante:</strong> ${proposta.nome_representante_comercial || proposta.representante_original || '-'}<br />
-      <strong>Gerente:</strong> ${proposta.nome_gerente_produto || proposta.gerente_original || '-'}<br />
-      <strong>Moeda:</strong> ${proposta.moeda || 'BRL'}
-      ${(() => {
-        const norm = (m?: string | null) => {
-          if (!m) return 'BRL'
-          const c = m.trim().toUpperCase()
-          if (c === 'USD' || c === 'DOLAR' || c === 'DÓLAR') return 'USD'
-          if (c === 'EUR' || c === 'EURO') return 'EUR'
-          if (c === 'CHF' || c.startsWith('FRANCO')) return 'CHF'
-          return 'BRL'
-        }
-        const mOrig = norm(proposta.moeda_original || proposta.moeda || 'BRL')
-        const mProp = norm(proposta.moeda || 'BRL')
-        if (mProp !== mOrig && (proposta.cotacao_moeda || proposta.cambio_estimado)) {
-          return `<br /><span style="font-size:10px;color:#475569;">Cotação: 1 ${mProp} = R$ ${Number(proposta.cotacao_moeda || proposta.cambio_estimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${proposta.data_cotacao_moeda ? `(${proposta.data_cotacao_moeda})` : ''} — Original: ${mOrig}</span>`
-        }
-        return ''
-      })()}
+      <strong>Representante:</strong> ${escapeHtml(proposta.nome_representante_comercial || proposta.representante_original || '-')}<br />
+      <strong>Gerente:</strong> ${escapeHtml(proposta.nome_gerente_produto || proposta.gerente_original || '-')}<br />
+      <strong>Moeda:</strong> ${moedaProp}
+      ${
+        hasRealConversion
+          ? `<br /><span style="font-size:10px;color:#475569;">Cotação: 1 ${moedaProp} = ${formatCurrencyByMoeda(proposta.cotacao_moeda, 'BRL')} ${proposta.data_cotacao_moeda ? `(${escapeHtml(proposta.data_cotacao_moeda)})` : ''} — Original: ${moedaOrig}</span>`
+          : ''
+      }
     </div>
   </div>
 
@@ -876,14 +907,23 @@ export function buildProposalPdfHtml(
   }
 
   ${(() => {
+    // Regra 7: Acessórios com 3 estados mutuamente exclusivos
     const rawAcc = Array.isArray(proposta.acessorios_proposta)
       ? (proposta.acessorios_proposta as any[])
       : []
-    if (rawAcc.length === 0) return ''
+    const filteredAcc = rawAcc.filter((a) => a && a.inclusao !== 'nao_exibir')
+    if (filteredAcc.length === 0) return ''
 
-    const inclusos = rawAcc.filter((a) => a.inclusao !== 'opcional')
-    const naoInclusos = rawAcc.filter((a) => a.inclusao === 'opcional')
-    const propMoeda = proposta.moeda || 'BRL'
+    const inclusos = filteredAcc.filter(
+      (a) =>
+        a.inclusao === 'incluir' ||
+        a.inclusao === 'preco' ||
+        a.inclusao === undefined ||
+        a.inclusao === null,
+    )
+    const naoInclusos = filteredAcc.filter(
+      (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
+    )
     let out = ''
 
     if (inclusos.length > 0) {
@@ -912,7 +952,7 @@ export function buildProposalPdfHtml(
         <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:11px;line-height:1.55;color:#1e293b;">
           ${naoInclusos
             .map((a: any) => {
-              const itemMoeda = a.moeda || propMoeda
+              const itemMoeda = normalizeMoedaCode(a.moeda || moedaProp)
               const valFmt =
                 a.valor != null
                   ? `${itemMoeda} ${Number(a.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -927,18 +967,19 @@ export function buildProposalPdfHtml(
     return out
   })()}
 
+  ${cambioBanner}
+
   ${
     equipmentSection
       ? equipmentSection
       : (() => {
-          // If no separate equipment items, build single machine commercial sub-block
+          // Modo unitário: Regra 3 - sem coluna/box Tipo Fornecimento
           const mTitle = (
             proposta.versoes?.nome ||
             proposta.versao_original ||
             proposta.descricao_proposta ||
             'Equipamento'
           ).toUpperCase()
-          const mMoeda = proposta.moeda || 'BRL'
           const valFinal = Number(proposta.valor_final ?? proposta.valor_atual ?? 0)
           const pEsp =
             proposta.preco_especial != null && Number(proposta.preco_especial) > 0
@@ -957,15 +998,15 @@ export function buildProposalPdfHtml(
             n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
           return `
-          <div style="border-bottom:2px solid #0f172a;padding-bottom:6px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;display:flex;justify-content:space-between;align-items:center;">
+          <div style="border-bottom:2px solid #0f172a;padding-bottom:6px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;display:flex;justify-content:space-between;align-items:center;page-break-after:avoid;break-after:avoid;">
             <span>Condições Comerciais</span>
             <span style="font-size:10px;color:#64748b;font-weight:500;text-transform:none;">Fornecimento Unitário</span>
           </div>
-          <table style="width:100%;border-collapse:collapse;margin-bottom:12px;border:1px solid #cbd5e1;font-size:11px;background:#ffffff;">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:12px;border:1px solid #cbd5e1;font-size:11px;background:#ffffff;page-break-inside:avoid;break-inside:avoid;">
             <thead>
               <tr style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;color:#475569;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;">
                 <th style="padding:8px 10px;text-align:center;width:40px;">Item</th>
-                <th style="padding:8px 10px;text-align:left;">Descrição</th>
+                <th style="padding:8px 10px;text-align:left;">Descrição do Equipamento</th>
                 <th style="padding:8px 10px;text-align:center;width:50px;">Qtd</th>
                 <th style="padding:8px 10px;text-align:right;">Valor Unitário</th>
                 <th style="padding:8px 10px;text-align:right;">Desconto</th>
@@ -981,10 +1022,10 @@ export function buildProposalPdfHtml(
                   ${
                     hasDisc
                       ? `<div style="display:flex;flex-direction:column;align-items:flex-end;">
-                          <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;">${mMoeda} ${fmtM(valOrig)}</span>
-                          <span style="font-weight:bold;color:#0f172a;">${mMoeda} ${fmtM(valUnitEfetivo)}</span>
+                          <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;">${moedaProp} ${fmtM(valOrig)}</span>
+                          <span style="font-weight:bold;color:#0f172a;">${moedaProp} ${fmtM(valUnitEfetivo)}</span>
                          </div>`
-                      : `<span style="font-weight:bold;color:#0f172a;">${mMoeda} ${fmtM(valOrig)}</span>`
+                      : `<span style="font-weight:bold;color:#0f172a;">${moedaProp} ${fmtM(valOrig)}</span>`
                   }
                 </td>
                 <td style="padding:8px 10px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${dPerc > 0 ? `${dPerc}%` : '—'}</td>
@@ -992,10 +1033,10 @@ export function buildProposalPdfHtml(
                   ${
                     hasDisc
                       ? `<div style="display:flex;flex-direction:column;align-items:flex-end;">
-                          <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;">${mMoeda} ${fmtM(valOrig)}</span>
-                          <span style="font-weight:bold;color:#0f172a;font-size:12px;">${mMoeda} ${fmtM(valEfetivo)}</span>
+                          <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;">${moedaProp} ${fmtM(valOrig)}</span>
+                          <span style="font-weight:bold;color:#0f172a;font-size:12px;">${moedaProp} ${fmtM(valEfetivo)}</span>
                          </div>`
-                      : `<span style="font-weight:bold;color:#0f172a;font-size:12px;">${mMoeda} ${fmtM(valEfetivo)}</span>`
+                      : `<span style="font-weight:bold;color:#0f172a;font-size:12px;">${moedaProp} ${fmtM(valEfetivo)}</span>`
                   }
                 </td>
               </tr>
@@ -1005,7 +1046,7 @@ export function buildProposalPdfHtml(
         })()
   }
 
-  <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin:12px 0 20px 0;">
+  <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin:12px 0 20px 0;page-break-inside:avoid;break-inside:avoid;">
     <div>
       <div style="font-size:10px;text-transform:uppercase;font-weight:bold;letter-spacing:0.8px;color:#334155;">Valor Total do Fornecimento</div>
       <div style="font-size:10px;color:#64748b;">${equipmentItems && equipmentItems.length > 0 ? `Soma de ${equipmentItems.length} equipamento(s)` : 'Condição comercial integral'}</div>
@@ -1018,7 +1059,7 @@ export function buildProposalPdfHtml(
               const badge = formatPrecoEspecialDiscountBadge(valorOrig, proposta.preco_especial)
               return `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
                 <div style="display:flex;align-items:center;gap:6px;">
-                  <span style="font-size:11px;color:#94a3b8;text-decoration:line-through;font-weight:600;">${proposta.moeda || 'R$'} ${Number(valorOrig).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span style="font-size:11px;color:#94a3b8;text-decoration:line-through;font-weight:600;">${moedaProp} ${Number(valorOrig).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                   <span style="font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:#0f172a;background:#e2e8f0;font-weight:bold;padding:1px 5px;border-radius:2px;">Preço Especial</span>
                   ${
                     badge
@@ -1026,18 +1067,18 @@ export function buildProposalPdfHtml(
                       : ''
                   }
                 </div>
-                <span style="font-size:16px;font-weight:900;color:#0f172a;">${proposta.moeda || 'R$'} ${Number(proposta.preco_especial).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                <span style="font-size:16px;font-weight:900;color:#0f172a;">${moedaProp} ${Number(proposta.preco_especial).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
               </div>`
             })()
-          : `<span style="font-size:16px;font-weight:900;color:#0f172a;">${proposta.moeda || 'R$'} ${(proposta.valor_final || proposta.valor_atual || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>`
+          : `<span style="font-size:16px;font-weight:900;color:#0f172a;">${moedaProp} ${(proposta.valor_final || proposta.valor_atual || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>`
       }
     </div>
   </div>
 
   ${commercialSection}
-  ${tipoPropostaSection}
   ${camposAdicionaisSection}
 
+  <!-- Regra 8: Texto de encerramento verbatim -->
   <div style="margin-top:20px;margin-bottom:16px;font-size:11px;color:#0f172a;page-break-inside:avoid;break-inside:avoid;">
     <p style="text-align:justify;line-height:1.6;margin:0 0 12px 0;">
       Antecipadamente agradecemos vossa honrosa preferência, permanecendo ao vosso inteiro dispor, para dirimir e atender quaisquer eventuais esclarecimentos adicionais que se fizerem necessários.
@@ -1052,7 +1093,8 @@ export function buildProposalPdfHtml(
     <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone: (0**19) 3826-7373</p>
     <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
   </div>
-  <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #cbd5e1;">
+
+  <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #cbd5e1; page-break-inside:avoid; break-inside:avoid;">
     <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #0b3c26; margin-bottom: 12px; letter-spacing: 0.5px;">
       De Acordo e Assinaturas
     </div>
@@ -1064,7 +1106,7 @@ export function buildProposalPdfHtml(
             : '<div style="height: 50px;"></div>'
         }
         <div style="border-top: 1px solid #334155; width: 85%; padding-top: 4px; font-size: 11px;">
-          <strong>${proposta.cliente_original || proposta.cliente || 'Cliente'}</strong><br />
+          <strong>${escapeHtml(proposta.cliente_original || proposta.cliente || 'Cliente')}</strong><br />
           <span style="font-size: 9px; color: #64748b;">De Acordo do Cliente</span>
           ${proposta.data_assinatura_cliente ? `<br /><span style="font-size: 8px; color: #64748b;">Assinado em ${new Date(proposta.data_assinatura_cliente).toLocaleDateString('pt-BR')}</span>` : ''}
         </div>
@@ -1077,7 +1119,7 @@ export function buildProposalPdfHtml(
             : '<div style="height: 50px;"></div>'
         }
         <div style="border-top: 1px solid #334155; width: 85%; padding-top: 4px; font-size: 11px;">
-          <strong>${proposta.nome_representante_comercial || proposta.representante_original || 'Bener Comercial'}</strong><br />
+          <strong>${escapeHtml(proposta.nome_representante_comercial || proposta.representante_original || 'Bener Comercial')}</strong><br />
           <span style="font-size: 9px; color: #64748b;">Responsável Interno — Comercial</span>
           ${proposta.data_assinatura_representante ? `<br /><span style="font-size: 8px; color: #64748b;">Assinado em ${new Date(proposta.data_assinatura_representante).toLocaleDateString('pt-BR')}</span>` : ''}
         </div>

@@ -1,23 +1,45 @@
 /**
  * Builds a complete, standalone, styled HTML page for a proposal matching
- * the formal Bener document format (reference image image-e01f6.png).
- * Deployed with special price display support (v0.0.322).
+ * the formal Bener document format. Aligned with the 9 PDF rules (v0.0.17).
  */
 
 import { escapeHtml } from './escape-html.ts'
 const esc = escapeHtml
 
-function fmtMoney(value: number | null | undefined, moeda: string = 'BRL'): string {
-  const v = typeof value === 'number' && !isNaN(value) ? value : 0
-  const formatted = v.toLocaleString('pt-BR', {
+export function normalizeMoedaCode(raw?: string | null): string {
+  if (!raw) return 'BRL'
+  const c = raw.trim().toUpperCase()
+  if (c === 'USD' || c === 'DOLAR' || c === 'DÓLAR') return 'USD'
+  if (c === 'EUR' || c === 'EURO') return 'EUR'
+  if (c === 'CHF' || c === 'FRANCO' || c.startsWith('FRANCO')) return 'CHF'
+  if (c === 'BRL' || c === 'REAL' || c === 'REAIS' || c === 'R$') return 'BRL'
+  return c
+}
+
+export function formatCurrencyByMoeda(
+  value: number | string | null | undefined,
+  moeda: string = 'BRL',
+): string {
+  const num = typeof value === 'string' ? parseFloat(value) : (value ?? 0)
+  const normMoeda = normalizeMoedaCode(moeda)
+  const formatted = (isNaN(num as number) ? 0 : (num as number)).toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })
-  const symbol = moeda === 'BRL' ? 'R$' : moeda || 'R$'
-  return `${symbol} ${formatted}`
+  switch (normMoeda) {
+    case 'USD':
+      return `US$ ${formatted}`
+    case 'EUR':
+      return `€ ${formatted}`
+    case 'CHF':
+      return `CHF ${formatted}`
+    case 'BRL':
+    default:
+      return `R$ ${formatted}`
+  }
 }
 
-function formatPrecoEspecialDiscountBadge(
+export function formatPrecoEspecialDiscountBadge(
   valorOriginal: number | null | undefined,
   precoEspecial: number | null | undefined,
 ): string | null {
@@ -40,31 +62,6 @@ function formatPrecoEspecialDiscountBadge(
     ? String(rounded)
     : rounded.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
   return `−${formatted}%`
-}
-
-function formatBulletList(text: string | null | undefined): string {
-  if (!text) return ''
-  const trimmed = text.trim()
-  if (!trimmed) return ''
-  if (!trimmed.includes('•')) {
-    return trimmed
-  }
-  const parts = trimmed.split('•')
-  const resultLines: string[] = []
-  parts.forEach((part, index) => {
-    const item = part.trim()
-    if (!item) return
-    if (index === 0) {
-      if (!trimmed.startsWith('•')) {
-        resultLines.push(item)
-      } else {
-        resultLines.push(`• ${item}`)
-      }
-    } else {
-      resultLines.push(`• ${item}`)
-    }
-  })
-  return resultLines.join('\n')
 }
 
 export function segmentParagraphMarkers(raw: string | null | undefined): string {
@@ -252,6 +249,78 @@ export function renderMultilinhaHtml(raw: string | null | undefined, extraClass 
     .join('')
 }
 
+function isTaxValEmpty(val: unknown, columnLabel?: string): boolean {
+  if (val == null) return true
+  const s = String(val).trim().toLowerCase()
+  if (
+    !s ||
+    s === '-' ||
+    s === '—' ||
+    s === 'n/a' ||
+    s === '0' ||
+    s === '0%' ||
+    s === '0,00%' ||
+    s === '0.00%'
+  )
+    return true
+  const clean = s.replace(/[:\-–—.,;!?]+$/g, '').trim()
+  const compact = clean.replace(/[^a-z0-9]/g, '')
+  if (
+    compact === 'impostoipi' ||
+    compact === 'ipi' ||
+    compact === 'impostoicms' ||
+    compact === 'icms'
+  ) {
+    return true
+  }
+  if (columnLabel) {
+    const colCompact = columnLabel.toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (compact && colCompact && compact === colCompact) return true
+  }
+  return false
+}
+
+function isCommercialEmpty(val: unknown, columnLabel?: string): boolean {
+  if (val == null) return true
+  if (typeof val === 'string') {
+    const s = val.trim()
+    if (!s || s === '-' || s === '—' || s.toLowerCase() === 'n/a') return true
+    if (columnLabel) {
+      const normVal = s
+        .toLowerCase()
+        .replace(/[:\-–—.,;!?]+$/g, '')
+        .replace(/[^a-z0-9]/g, '')
+      const normCol = columnLabel
+        .toLowerCase()
+        .replace(/[:\-–—.,;!?]+$/g, '')
+        .replace(/[^a-z0-9]/g, '')
+      if (normVal && normCol && normVal === normCol) return true
+    }
+  }
+  return false
+}
+
+function renderBulletList(text: string | null | undefined): string {
+  if (!text) return ''
+  const trimmed = text.trim()
+  if (!trimmed) return ''
+  if (!trimmed.includes('•')) {
+    return esc(trimmed)
+  }
+  const parts = trimmed.split('•')
+  const items: string[] = []
+  parts.forEach((part, index) => {
+    const item = part.trim()
+    if (!item) return
+    if (index === 0 && !trimmed.startsWith('•')) {
+      items.push(esc(item))
+    } else {
+      items.push(`• ${esc(item)}`)
+    }
+  })
+  return items.join('\n')
+}
+
 export function buildPublicProposalHtml(
   proposta: any,
   _publicAppUrl: string = 'https://nexus.bener.com.br',
@@ -262,9 +331,22 @@ export function buildPublicProposalHtml(
   logoUrlOverride?: string | null,
 ): string {
   const c = proposta.clientes
-  const moeda = proposta.moeda || 'BRL'
+
+  // Normalização de Moeda (Regras 1 e 2)
+  const moedaProp = normalizeMoedaCode(proposta.moeda || 'BRL')
+  const moedaOrig = normalizeMoedaCode(proposta.moeda_original || proposta.moeda || 'BRL')
+  const hasRealConversion = moedaProp !== moedaOrig && Boolean(proposta.cotacao_moeda)
+
+  // Snapshot congelado (Regra 9)
+  const dadosSnapshot = proposta.dados_snapshot as Record<string, any> | null
+  const tpSnapshot =
+    (dadosSnapshot?.tipo_proposta_detalhes as Record<string, any>) ||
+    (tipoProposta as Record<string, any>) ||
+    null
+
+  const primaryFromSnapshot = dadosSnapshot?.primary_versao
   const primaryItem = (equipmentItems && equipmentItems[0]) || {}
-  const primaryVersao = primaryItem.versoes || proposta.versoes || {}
+  const primaryVersao = primaryFromSnapshot || primaryItem.versoes || proposta.versoes || {}
 
   const machineTitle = (
     primaryVersao?.nome ||
@@ -290,104 +372,92 @@ export function buildPublicProposalHtml(
   const clientEmail = c?.email || ''
   const contactName = c?.contato || proposta.contato || ''
 
-  const isTaxValEmpty = (val: unknown, columnLabel?: string): boolean => {
-    if (val == null) return true
-    const s = String(val).trim().toLowerCase()
-    if (!s || s === '-' || s === 'n/a' || s === '0' || s === '0%' || s === '0,00%' || s === '0.00%')
-      return true
-    // Point 10: Se o valor for idêntico/auto-referente ao cabeçalho ("imposto ipi", "ipi", "imposto icms", "icms")
-    const clean = s.replace(/[:\-–—.,;!?]+$/g, '').trim()
-    const compact = clean.replace(/[^a-z0-9]/g, '')
-    if (
-      compact === 'impostoipi' ||
-      compact === 'ipi' ||
-      compact === 'impostoicms' ||
-      compact === 'icms'
-    ) {
-      return true
-    }
-    if (columnLabel) {
-      const colCompact = columnLabel.toLowerCase().replace(/[^a-z0-9]/g, '')
-      if (compact && colCompact && compact === colCompact) return true
-    }
-    return false
-  }
-
-  const isCommercialEmpty = (val: unknown, columnLabel?: string): boolean => {
-    if (val == null) return true
-    if (typeof val === 'string') {
-      const s = val.trim()
-      if (!s || s === '-' || s === '—' || s.toLowerCase() === 'n/a') return true
-      if (columnLabel) {
-        const normVal = s
-          .toLowerCase()
-          .replace(/[:\-–—.,;!?]+$/g, '')
-          .replace(/[^a-z0-9]/g, '')
-        const normCol = columnLabel
-          .toLowerCase()
-          .replace(/[:\-–—.,;!?]+$/g, '')
-          .replace(/[^a-z0-9]/g, '')
-        if (normVal && normCol && normVal === normCol) return true
-      }
-    }
-    return false
-  }
-
   const rawIpiVal =
     proposta.imposto_ipi != null && !isTaxValEmpty(proposta.imposto_ipi, 'Imposto IPI')
       ? `${proposta.imposto_ipi}${String(proposta.imposto_ipi).includes('%') ? '' : '%'}`
-      : tipoProposta?.imposto_ipi != null && !isTaxValEmpty(tipoProposta.imposto_ipi, 'Imposto IPI')
-        ? `${tipoProposta.imposto_ipi}${String(tipoProposta.imposto_ipi).includes('%') ? '' : '%'}`
+      : tpSnapshot?.imposto_ipi != null && !isTaxValEmpty(tpSnapshot.imposto_ipi, 'Imposto IPI')
+        ? `${tpSnapshot.imposto_ipi}${String(tpSnapshot.imposto_ipi).includes('%') ? '' : '%'}`
         : null
 
   const rawIcmsVal =
     proposta.imposto_icms != null && !isTaxValEmpty(proposta.imposto_icms, 'Imposto ICMS')
       ? `${proposta.imposto_icms}${String(proposta.imposto_icms).includes('%') ? '' : '%'}`
-      : tipoProposta?.imposto_icms != null &&
-          !isTaxValEmpty(tipoProposta.imposto_icms, 'Imposto ICMS')
-        ? `${tipoProposta.imposto_icms}${String(tipoProposta.imposto_icms).includes('%') ? '' : '%'}`
+      : tpSnapshot?.imposto_icms != null && !isTaxValEmpty(tpSnapshot.imposto_icms, 'Imposto ICMS')
+        ? `${tpSnapshot.imposto_icms}${String(tpSnapshot.imposto_icms).includes('%') ? '' : '%'}`
         : null
 
+  // Regra 9: Termos do Tipo de Proposta
   const terms: Array<[string, string | null | undefined]> = [
-    [
-      'Condições de Pagamento',
-      proposta.condicoes_pagamento || (tipoProposta?.condicoes_pagamento as string),
-    ],
-    ['Prazo de Entrega', proposta.prazo_entrega || (tipoProposta?.prazo_entrega as string)],
-    ['Validade da Oferta', proposta.validade_oferta || (tipoProposta?.validade_oferta as string)],
+    ['Condições de Pagamento', proposta.condicoes_pagamento || tpSnapshot?.condicoes_pagamento],
+    ['Prazo de Entrega', proposta.prazo_entrega || tpSnapshot?.prazo_entrega],
+    ['Validade da Oferta', proposta.validade_oferta || tpSnapshot?.validade_oferta],
     ['Cobertura de Garantia', proposta.cobertura_garantia],
-    ['Garantia de Acessórios', proposta.garantia_acessorios || (tipoProposta?.garantia as string)],
+    ['Garantia de Acessórios', proposta.garantia_acessorios || tpSnapshot?.garantia],
     ['Normas Aplicáveis', proposta.normas_aplicaveis],
     ['Normas de Segurança', proposta.normas_seguranca],
     ['Certificações', proposta.certificacoes],
     [
       'Assistência Técnica',
-      proposta.assistencia_tecnica_detalhada || (tipoProposta?.assistencia_tecnica as string),
+      proposta.assistencia_tecnica_detalhada || tpSnapshot?.assistencia_tecnica,
     ],
     ['Critérios de Aceitação', proposta.criterios_aceitacao],
     ['Materiais Utilizados', proposta.materiais_utilizados],
-    [
-      'Transporte/Seguro',
-      proposta.transporte_seguro || (tipoProposta?.transporte_seguro as string),
-    ],
+    ['Transporte/Seguro', proposta.transporte_seguro || tpSnapshot?.transporte_seguro],
     ['Imposto IPI', rawIpiVal],
     ['Imposto ICMS', rawIcmsVal],
+    ['Treinamento Técnico', proposta.treinamento_tecnico || tpSnapshot?.treinamento_tecnico],
+    ['Frase de Preço', proposta.frase_preco || tpSnapshot?.frase_preco],
+    ['Frase de Comissão', proposta.frase_comissao || tpSnapshot?.frase_comissao],
     [
-      'Treinamento Técnico',
-      ((proposta as Record<string, unknown>).treinamento_tecnico as string) ||
-        (tipoProposta?.treinamento_tecnico as string),
+      'Comissão',
+      tpSnapshot?.comissao != null && Number(tpSnapshot.comissao) > 0
+        ? `${tpSnapshot.comissao}%`
+        : null,
     ],
-    [
-      'Frase de Preço',
-      ((proposta as Record<string, unknown>).frase_preco as string) ||
-        (tipoProposta?.frase_preco as string),
-    ],
-    [
-      'Frase de Comissão',
-      ((proposta as Record<string, unknown>).frase_comissao as string) ||
-        (tipoProposta?.frase_comissao as string),
-    ],
-  ].filter(([lbl, val]) => {
+  ]
+
+  if (tpSnapshot?.campos_adicionais) {
+    try {
+      const extras =
+        typeof tpSnapshot.campos_adicionais === 'string'
+          ? JSON.parse(tpSnapshot.campos_adicionais)
+          : tpSnapshot.campos_adicionais
+      if (Array.isArray(extras)) {
+        extras.forEach(
+          (extra: {
+            titulo?: string
+            conteudo?: string
+            chave?: string
+            valor?: string | number
+          }) => {
+            const lbl = (extra.titulo || extra.chave || '').trim()
+            const val =
+              extra.conteudo != null
+                ? String(extra.conteudo).trim()
+                : extra.valor != null
+                  ? String(extra.valor).trim()
+                  : ''
+            if (lbl && !isCommercialEmpty(val)) {
+              terms.push([lbl, val])
+            }
+          },
+        )
+      } else if (extras && typeof extras === 'object') {
+        Object.entries(extras as Record<string, string | number | null | undefined>).forEach(
+          ([lbl, rawVal]) => {
+            const cleanLbl = (lbl || '').trim()
+            if (cleanLbl && !isCommercialEmpty(rawVal)) {
+              terms.push([cleanLbl, String(rawVal).trim()])
+            }
+          },
+        )
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const filteredTerms = terms.filter(([lbl, val]) => {
     if (isCommercialEmpty(val, lbl)) return false
     const lower = lbl.toLowerCase()
     if (lower.includes('ipi') || lower.includes('icms') || lower.includes('imposto')) {
@@ -395,6 +465,31 @@ export function buildPublicProposalHtml(
     }
     return true
   }) as Array<[string, string | null | undefined]>
+
+  // Informações adicionais da proposta (fora do tipo) (Regra 9)
+  const snapshotCampos = dadosSnapshot?.campos_adicionais
+  let parsedCamposAdicionais: any[] = []
+  const rawCamposAdicionais =
+    Array.isArray(snapshotCampos) && snapshotCampos.length > 0
+      ? snapshotCampos
+      : proposta.campos_adicionais
+  if (Array.isArray(rawCamposAdicionais)) {
+    parsedCamposAdicionais = rawCamposAdicionais
+  } else if (typeof rawCamposAdicionais === 'string') {
+    try {
+      const p = JSON.parse(rawCamposAdicionais)
+      if (Array.isArray(p)) parsedCamposAdicionais = p
+    } catch {
+      // ignore
+    }
+  }
+  const validCamposAdicionais = parsedCamposAdicionais.filter(
+    (f) =>
+      f &&
+      ((f.titulo && String(f.titulo).trim() !== '') ||
+        (f.chave && String(f.chave).trim() !== '')) &&
+      !isCommercialEmpty(f.conteudo != null ? f.conteudo : f.valor),
+  )
 
   const valorFinal = Number(proposta.valor_final ?? proposta.valor_atual ?? 0)
   const precoEspecial =
@@ -408,7 +503,6 @@ export function buildPublicProposalHtml(
       : valorFinal
   const descPerc = Number(proposta.percentual_desconto || 0)
 
-  // Point 1: Rule for strikethrough original table price
   const hasItemDiscount =
     descPerc > 0 || (precoEspecial != null && precoEspecial > 0) || valorSemDesc > valorFinal
   const valorOriginalTabela =
@@ -424,6 +518,34 @@ export function buildPublicProposalHtml(
           precoEspecial < valorOriginalTabela
         ? Math.round(((valorOriginalTabela - precoEspecial) / valorOriginalTabela) * 100 * 10) / 10
         : 0
+
+  // Formatação de data com cidade: "Vinhedo, 22 de outubro de 2026" (Regra 5)
+  const formattedDateWithCity = (() => {
+    const raw = proposta.dt_cad
+    const d = raw ? new Date(raw + (raw.includes('T') ? '' : 'T12:00:00')) : new Date()
+    const dtStr = d.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    })
+    return `Vinhedo, ${dtStr}`
+  })()
+
+  // Regra 6: Paginação adaptativa sem gerar páginas em branco
+  const hasPage2Content =
+    Boolean(
+      primaryVersao?.especificacoes_tecnicas ||
+      proposta.especificacoes_tecnicas ||
+      proposta.descricao_proposta,
+    ) ||
+    Boolean(primaryVersao?.caracteristicas_construtivas) ||
+    Boolean(primaryVersao?.acessorios_standards) ||
+    (Array.isArray(proposta.acessorios_proposta) && proposta.acessorios_proposta.length > 0) ||
+    filteredTerms.length > 0 ||
+    validCamposAdicionais.length > 0 ||
+    Boolean(proposta.is_pacote && equipmentItems && equipmentItems.length > 0)
+
+  const page1Number = hasPage2Content ? 'Página 1/2' : 'Página 1/1'
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -465,13 +587,23 @@ export function buildPublicProposalHtml(
       cursor: pointer;
     }
     .page {
-      min-height: 297mm;
+      min-height: auto;
       padding: 45px 50px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .page:not(:last-child) {
+      page-break-after: page;
+      break-after: page;
+    }
+    .page:last-child {
+      page-break-after: auto;
+      break-after: auto;
     }
     .page-divider {
       border-top: 2px dashed #cbd5e1;
@@ -483,6 +615,10 @@ export function buildPublicProposalHtml(
       border-bottom: 1px solid #000;
       padding-bottom: 16px;
       margin-bottom: 24px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      page-break-after: avoid;
+      break-after: avoid;
     }
     .bener-logo-text {
       font-size: 24px;
@@ -503,21 +639,34 @@ export function buildPublicProposalHtml(
       font-size: 11px;
       color: #000;
       min-width: 190px;
+      max-width: 320px;
+      white-space: normal;
+      word-break: break-word;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .proposal-number-box p {
       margin: 1px 0;
       font-size: 11px;
+      white-space: normal;
+      word-break: break-word;
     }
     .proposal-number-box .prop-title {
       font-size: 13px;
       font-weight: 700;
       margin-bottom: 3px;
     }
+    .client-header {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
     .client-header p { margin: 2px 0; }
     .client-name { font-weight: bold; font-size: 14px; }
     .reception-text {
       margin-top: 36px;
       text-align: justify;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .reception-text p { margin: 12px 0; }
     .machine-title {
@@ -526,10 +675,14 @@ export function buildPublicProposalHtml(
       font-size: 15px;
       font-weight: bold;
       letter-spacing: 0.5px;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .image-container {
       text-align: center;
       margin: 24px 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .machine-img {
       max-height: 340px;
@@ -549,6 +702,8 @@ export function buildPublicProposalHtml(
       font-size: 10.5px;
       line-height: 1.35;
       margin-top: auto;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .footer p { margin: 2px 0; }
     .page-number {
@@ -558,7 +713,6 @@ export function buildPublicProposalHtml(
       margin-top: 6px;
     }
 
-    /* Page 2 Styles */
     .section-heading {
       font-size: 12px;
       font-weight: bold;
@@ -566,12 +720,16 @@ export function buildPublicProposalHtml(
       border-bottom: 1px solid #000;
       padding-bottom: 2px;
       margin: 18px 0 8px 0;
+      page-break-after: avoid;
+      break-after: avoid;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 11px;
       margin-bottom: 12px;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     table, th, td {
       border: 1px solid #000;
@@ -586,6 +744,8 @@ export function buildPublicProposalHtml(
       gap: 16px;
       margin-top: 32px;
       text-align: center;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
     .sig-line {
       border-top: 1px solid #000;
@@ -614,12 +774,19 @@ export function buildPublicProposalHtml(
       .print-bar { display: none; }
       .page-container { box-shadow: none; margin: 0; max-width: none; }
       .page {
-        min-height: 100vh;
-        page-break-after: always;
-        break-after: page;
+        min-height: auto;
         padding: 30px;
+        page-break-inside: avoid;
+        break-inside: avoid;
       }
-      .page:last-child { page-break-after: auto; break-after: auto; }
+      .page:not(:last-child) {
+        page-break-after: page;
+        break-after: page;
+      }
+      .page:last-child {
+        page-break-after: auto;
+        break-after: auto;
+      }
       .page-divider { border: none; }
     }
   </style>
@@ -643,9 +810,11 @@ export function buildPublicProposalHtml(
             }
           </div>
           <div class="proposal-number-box">
+            <!-- Regra 4: Nº Oferta completo sem ellipsis -->
             <p class="prop-title">${proposta.numero_proposta ? `Proposta Nº ${esc(proposta.numero_proposta)}` : 'Proposta Comercial'}</p>
             ${proposta.revisao ? `<p>Revisão: ${esc(proposta.revisao)}</p>` : ''}
-            <p>Data: ${esc(proposta.dt_cad || new Date().toLocaleDateString('pt-BR'))}</p>
+            <!-- Regra 5: Cidade + data na mesma linha -->
+            <p>${esc(formattedDateWithCity)}</p>
             <p>Modalidade: ${proposta.modelo_licitacao ? 'Licitação' : 'Proposta Comercial'}</p>
           </div>
         </div>
@@ -657,10 +826,8 @@ export function buildPublicProposalHtml(
           ${clientPhone ? `<p>Telefone: ${esc(clientPhone)}</p>` : ''}
           ${clientEmail ? `<p>E-mail: ${esc(clientEmail)}</p>` : ''}
           ${
-            proposta.moeda &&
-            proposta.moeda !== 'BRL' &&
-            (proposta.cotacao_moeda || proposta.cambio_estimado)
-              ? `<p style="font-size:11px;color:#334155;margin-top:4px;"><strong>Moeda da Proposta:</strong> ${esc(proposta.moeda)} &bull; <strong>Cotação:</strong> 1 ${esc(proposta.moeda)} = R$ ${Number(proposta.cotacao_moeda || proposta.cambio_estimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${proposta.data_cotacao_moeda ? `(${esc(proposta.data_cotacao_moeda)})` : ''}</p>`
+            hasRealConversion
+              ? `<p style="font-size:11px;color:#334155;margin-top:4px;"><strong>Moeda da Proposta:</strong> ${esc(moedaProp)} &bull; <strong>Cotação:</strong> 1 ${esc(moedaProp)} = ${formatCurrencyByMoeda(proposta.cotacao_moeda, 'BRL')} ${proposta.data_cotacao_moeda ? `(${esc(proposta.data_cotacao_moeda)})` : ''}</p>`
               : ''
           }
           <p style="padding-top: 10px;">A/C: <strong>${esc(contactName || 'Diretor / Gerente de Compras')}</strong></p>
@@ -689,12 +856,14 @@ export function buildPublicProposalHtml(
         <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial</p>
         <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373</p>
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
-        <div class="page-number">Página 1/2</div>
+        <div class="page-number">${page1Number}</div>
       </div>
     </div>
 
     <!-- PAGE 2: DETAILS -->
-    <div class="page page-divider">
+    ${
+      hasPage2Content
+        ? `<div class="page page-divider">
       <div>
         <!-- Top Header: Logo + Proposal Number (Identical to Page 1) -->
         <div class="proposal-top-header">
@@ -708,63 +877,65 @@ export function buildPublicProposalHtml(
           <div class="proposal-number-box">
             <p class="prop-title">${proposta.numero_proposta ? `Proposta Nº ${esc(proposta.numero_proposta)}` : 'Proposta Comercial'}</p>
             ${proposta.revisao ? `<p>Revisão: ${esc(proposta.revisao)}</p>` : ''}
-            <p>Data: ${esc(proposta.dt_cad || new Date().toLocaleDateString('pt-BR'))}</p>
+            <p>${esc(formattedDateWithCity)}</p>
             <p>Modalidade: ${proposta.modelo_licitacao ? 'Licitação' : 'Proposta Comercial'}</p>
           </div>
         </div>
 
-        <div style="margin-bottom:12px;">
+        <div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
             <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
             <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
           </div>
-          <div style="font-size:11px;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${esc(formatBulletList(primaryVersao?.especificacoes_tecnicas || proposta.especificacoes_tecnicas) || 'Conforme catálogo e especificações técnicas de fábrica.')}</div>
+          <div style="font-size:11px;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme catálogo e especificações técnicas de fábrica.')}</div>
         </div>
 
         ${
           primaryVersao?.caracteristicas_construtivas
-            ? `<div style="margin-bottom:12px;">
+            ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
                    <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
                    <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Características Construtivas</span>
                  </div>
-                 <div style="font-size:11px;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${esc(formatBulletList(primaryVersao.caracteristicas_construtivas))}</div>
+                 <div style="font-size:11px;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao.caracteristicas_construtivas)}</div>
                </div>`
             : ''
         }
 
         ${
           primaryVersao?.acessorios_standards
-            ? `<div style="margin-bottom:12px;">
+            ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
                    <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
                    <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Configuração Standard</span>
                  </div>
-                 <div style="font-size:11px;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${esc(formatBulletList(primaryVersao.acessorios_standards))}</div>
+                 <div style="font-size:11px;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao.acessorios_standards)}</div>
                </div>`
             : ''
         }
 
         ${(() => {
+          // Regra 7: Acessórios com 3 estados mutuamente exclusivos
           const rawAcc = Array.isArray(proposta.acessorios_proposta)
-            ? (proposta.acessorios_proposta as Array<{
-                id?: string
-                nome?: string
-                valor?: number
-                moeda?: string
-                inclusao?: 'preco' | 'opcional'
-                quantidade?: number
-              }>)
+            ? (proposta.acessorios_proposta as any[])
             : []
-          if (rawAcc.length === 0) return ''
+          const filteredAcc = rawAcc.filter((a) => a && a.inclusao !== 'nao_exibir')
+          if (filteredAcc.length === 0) return ''
 
-          const inclusos = rawAcc.filter((a) => a.inclusao !== 'opcional')
-          const naoInclusos = rawAcc.filter((a) => a.inclusao === 'opcional')
-          const propMoeda = proposta.moeda || 'BRL'
+          const inclusos = filteredAcc.filter(
+            (a) =>
+              a.inclusao === 'incluir' ||
+              a.inclusao === 'preco' ||
+              a.inclusao === undefined ||
+              a.inclusao === null,
+          )
+          const naoInclusos = filteredAcc.filter(
+            (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
+          )
           let out = ''
 
           if (inclusos.length > 0) {
-            out += `<div style="margin-bottom:12px;">
+            out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
                 <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
                 <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Inclusos no Preço</span>
@@ -781,7 +952,7 @@ export function buildPublicProposalHtml(
           }
 
           if (naoInclusos.length > 0) {
-            out += `<div style="margin-bottom:12px;">
+            out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
                 <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
                 <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Não Inclusos no Preço</span>
@@ -789,8 +960,9 @@ export function buildPublicProposalHtml(
               <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:11px;line-height:1.55;color:#1e293b;">
                 ${naoInclusos
                   .map((a) => {
-                    const itemMoeda = a.moeda || propMoeda
-                    const valFmt = a.valor != null ? fmtMoney(a.valor, itemMoeda) : null
+                    const itemMoeda = normalizeMoedaCode(a.moeda || moedaProp)
+                    const valFmt =
+                      a.valor != null ? formatCurrencyByMoeda(a.valor, itemMoeda) : null
                     return `<li style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px;"><div style="display:flex;align-items:baseline;gap:6px;"><span style="color:#0b3c26;font-weight:bold;">•</span><span>${a.quantidade ? `${a.quantidade}x ` : ''}${esc(a.nome || '—')}</span></div>${valFmt ? `<span style="font-weight:bold;color:#0f172a;white-space:nowrap;">${valFmt}</span>` : ''}</li>`
                   })
                   .join('')}
@@ -801,28 +973,27 @@ export function buildPublicProposalHtml(
           return out
         })()}
 
-        <div style="border-bottom:2px solid #0f172a;padding-bottom:5px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px 0;">
+        <div style="border-bottom:2px solid #0f172a;padding-bottom:5px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px 0;page-break-after:avoid;break-after:avoid;">
           <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0f172a;">Condições Comerciais</span>
           <span style="font-size:10px;color:#64748b;">${proposta.is_pacote ? 'Pacote de Máquinas' : 'Fornecimento Unitário'}</span>
         </div>
 
+        <!-- Regra 1: Bloco Câmbio/Cotação só aparece quando há conversão REAL -->
         ${
-          proposta.moeda &&
-          proposta.moeda !== 'BRL' &&
-          (proposta.cotacao_moeda || proposta.cambio_estimado)
-            ? `<div style="background:#f8fafc;border:1px solid #cbd5e1;padding:6px 10px;border-radius:3px;font-size:10px;color:#334155;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">
-                 <span>Moeda da proposta: <strong>${esc(proposta.moeda)}</strong></span>
-                 <span>Taxa de Câmbio: <strong>1 ${esc(proposta.moeda)} = R$ ${Number(proposta.cotacao_moeda || proposta.cambio_estimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> ${proposta.data_cotacao_moeda ? `(${esc(proposta.data_cotacao_moeda)})` : ''}</span>
+          hasRealConversion
+            ? `<div style="background:#f8fafc;border:1px solid #cbd5e1;padding:6px 10px;border-radius:3px;font-size:10px;color:#334155;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;page-break-inside:avoid;break-inside:avoid;">
+                 <span>Moeda da proposta: <strong>${esc(moedaProp)}</strong> (Original: ${esc(moedaOrig)})</span>
+                 <span>Taxa de Câmbio: <strong>1 ${esc(moedaProp)} = ${formatCurrencyByMoeda(proposta.cotacao_moeda, 'BRL')}</strong> ${proposta.data_cotacao_moeda ? `(${esc(proposta.data_cotacao_moeda)})` : ''}</span>
                </div>`
             : ''
         }
 
-        <table style="width:100%;border-collapse:collapse;margin-bottom:10px;border:1px solid #cbd5e1;font-size:10.5px;background:#ffffff;">
+        <!-- Regra 3: Tabela de Condições Comerciais SEM coluna Tipo Fornecimento -->
+        <table style="width:100%;border-collapse:collapse;margin-bottom:10px;border:1px solid #cbd5e1;font-size:10.5px;background:#ffffff;page-break-inside:avoid;break-inside:avoid;">
           <thead>
             <tr style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;color:#475569;font-size:9.5px;text-transform:uppercase;letter-spacing:0.5px;">
               <th style="padding:6px 8px;text-align:center;width:35px;">Item</th>
-              <th style="padding:6px 8px;text-align:left;">Descrição</th>
-              <th style="padding:6px 8px;text-align:left;">Tipo</th>
+              <th style="padding:6px 8px;text-align:left;">Descrição do Equipamento</th>
               <th style="padding:6px 8px;text-align:center;width:40px;">Qtd</th>
               <th style="padding:6px 8px;text-align:right;">Valor Unitário</th>
               <th style="padding:6px 8px;text-align:right;">Desconto</th>
@@ -836,7 +1007,7 @@ export function buildPublicProposalHtml(
                     .map((item: any, idx: number) => {
                       const itemNome =
                         item.versoes?.nome || item.versoes?.nome_abreviado || `Item ${idx + 1}`
-                      const itemMoeda = item.versoes?.moeda || moeda
+                      const itemMoeda = normalizeMoedaCode(item.versoes?.moeda || moedaProp)
                       const qtd = item.quantidade || 1
                       const valUnit = Number(item.valor_unitario || 0)
                       const descPct = Number(item.desconto_percentual || 0)
@@ -848,33 +1019,30 @@ export function buildPublicProposalHtml(
                           : subtotal * (1 - descPct / 100)
                       const itemHasDiscount = descPct > 0 || descVal > 0
                       const valorUnitEfetivo = qtd > 0 ? totalItem / qtd : totalItem
-                      const tipoDesc =
-                        item.tipo_proposta || (idx === 0 ? proposta.tipo_proposta : '')
 
                       return `<tr>
                         <td style="padding:6px 8px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">${idx + 1}</td>
                         <td style="padding:6px 8px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;">${esc(itemNome)}</td>
-                        <td style="padding:6px 8px;color:#334155;border-bottom:1px solid #e2e8f0;">${tipoDesc ? `<span style="padding:1px 5px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:3px;font-size:9.5px;">${esc(tipoDesc)}</span>` : '—'}</td>
                         <td style="padding:6px 8px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">${qtd}</td>
                         <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;">
                           ${
                             itemHasDiscount
                               ? `<div>
-                                  <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${fmtMoney(valUnit, itemMoeda)}</span>
-                                  <span style="font-weight:bold;color:#0f172a;">${fmtMoney(valorUnitEfetivo, itemMoeda)}</span>
+                                  <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valUnit, itemMoeda)}</span>
+                                  <span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valorUnitEfetivo, itemMoeda)}</span>
                                  </div>`
-                              : `<span style="font-weight:bold;color:#0f172a;">${fmtMoney(valUnit, itemMoeda)}</span>`
+                              : `<span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valUnit, itemMoeda)}</span>`
                           }
                         </td>
-                        <td style="padding:6px 8px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${descPct > 0 ? `${descPct}%` : descVal > 0 ? fmtMoney(descVal, itemMoeda) : '—'}</td>
+                        <td style="padding:6px 8px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${descPct > 0 ? `${descPct}%` : descVal > 0 ? formatCurrencyByMoeda(descVal, itemMoeda) : '—'}</td>
                         <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:bold;">
                           ${
                             itemHasDiscount
                               ? `<div>
-                                  <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${fmtMoney(subtotal, itemMoeda)}</span>
-                                  <span style="font-weight:900;color:#0f172a;">${fmtMoney(totalItem, itemMoeda)}</span>
+                                  <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(subtotal, itemMoeda)}</span>
+                                  <span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(totalItem, itemMoeda)}</span>
                                  </div>`
-                              : `<span style="font-weight:900;color:#0f172a;">${fmtMoney(totalItem, itemMoeda)}</span>`
+                              : `<span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(totalItem, itemMoeda)}</span>`
                           }
                         </td>
                       </tr>`
@@ -883,16 +1051,15 @@ export function buildPublicProposalHtml(
                 : `<tr>
                     <td style="padding:6px 8px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">1</td>
                     <td style="padding:6px 8px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;">${esc(machineTitle)}</td>
-                    <td style="padding:6px 8px;color:#334155;border-bottom:1px solid #e2e8f0;">${proposta.tipo_proposta ? `<span style="padding:1px 5px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:3px;font-size:9.5px;">${esc(proposta.tipo_proposta)}</span>` : '—'}</td>
                     <td style="padding:6px 8px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">1</td>
                     <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;">
                       ${
                         hasItemDiscount
                           ? `<div>
-                              <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${fmtMoney(valorOriginalTabela, moeda)}</span>
-                              <span style="font-weight:bold;color:#0f172a;">${fmtMoney(valorUnitarioEfetivo, moeda)}</span>
+                              <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>
+                              <span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valorUnitarioEfetivo, moedaProp)}</span>
                             </div>`
-                          : `<span style="font-weight:bold;color:#0f172a;">${fmtMoney(valorOriginalTabela, moeda)}</span>`
+                          : `<span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>`
                       }
                     </td>
                     <td style="padding:6px 8px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${effectiveDiscountPercent > 0 ? `${effectiveDiscountPercent}%` : '—'}</td>
@@ -900,10 +1067,10 @@ export function buildPublicProposalHtml(
                       ${
                         hasItemDiscount
                           ? `<div>
-                              <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${fmtMoney(valorOriginalTabela, moeda)}</span>
-                              <span style="font-weight:900;color:#0f172a;">${fmtMoney(valorEfetivoFinal, moeda)}</span>
+                              <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>
+                              <span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(valorEfetivoFinal, moedaProp)}</span>
                             </div>`
-                          : `<span style="font-weight:900;color:#0f172a;">${fmtMoney(valorEfetivoFinal, moeda)}</span>`
+                          : `<span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(valorEfetivoFinal, moedaProp)}</span>`
                       }
                     </td>
                   </tr>`
@@ -911,7 +1078,7 @@ export function buildPublicProposalHtml(
           </tbody>
         </table>
 
-        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;">
           <div>
             <div style="font-size:9.5px;text-transform:uppercase;font-weight:bold;letter-spacing:0.8px;color:#334155;">Valor Total do Fornecimento</div>
             <div style="font-size:9.5px;color:#64748b;">${proposta.is_pacote && equipmentItems && equipmentItems.length > 0 ? `Soma de ${equipmentItems.length} equipamento(s)` : 'Condição comercial integral'}</div>
@@ -921,7 +1088,7 @@ export function buildPublicProposalHtml(
               precoEspecial != null
                 ? `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
                     <div style="display:flex;align-items:center;gap:6px;">
-                      <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;font-weight:600;">${fmtMoney(valorFinal, moeda)}</span>
+                      <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;font-weight:600;">${formatCurrencyByMoeda(valorFinal, moedaProp)}</span>
                       <span style="font-size:8.5px;text-transform:uppercase;letter-spacing:0.5px;color:#0f172a;background:#e2e8f0;font-weight:bold;padding:1px 4px;border-radius:2px;">Preço Especial</span>
                       ${
                         discountBadge
@@ -929,24 +1096,24 @@ export function buildPublicProposalHtml(
                           : ''
                       }
                     </div>
-                    <span style="font-weight:900;color:#0f172a;font-size:14px;">${fmtMoney(precoEspecial, moeda)}</span>
+                    <span style="font-weight:900;color:#0f172a;font-size:14px;">${formatCurrencyByMoeda(precoEspecial, moedaProp)}</span>
                   </div>`
-                : `<span style="font-weight:900;color:#0f172a;font-size:14px;">${fmtMoney(valorFinal, moeda)}</span>`
+                : `<span style="font-weight:900;color:#0f172a;font-size:14px;">${formatCurrencyByMoeda(valorFinal, moedaProp)}</span>`
             }
           </div>
         </div>
 
         ${
-          terms.length > 0
-            ? `<div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+          filteredTerms.length > 0
+            ? `<div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
                  <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">Termos de Fornecimento</span>
                  <span style="font-size:10px;opacity:0.9;">Condições Gerais & Garantias</span>
                </div>
-               <div style="border:1px solid #e2e8f0;border-radius:3px;background:#ffffff;margin-bottom:16px;">
-                 ${terms
+               <div style="border:1px solid #e2e8f0;border-radius:3px;background:#ffffff;margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;">
+                 ${filteredTerms
                    .map(
                      ([lbl, val], idx) => `
-                   <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:6px 10px;font-size:11px;align-items:baseline;${idx > 0 ? 'border-top:1px solid #f1f5f9;' : ''}">
+                   <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:6px 10px;font-size:11px;align-items:baseline;${idx > 0 ? 'border-top:1px solid #f1f5f9;' : ''};page-break-inside:avoid;break-inside:avoid;">
                      <div style="font-size:10px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;background:#f1f5f9;padding:3px 6px;border-radius:2px;border-left:2px solid #cbd5e1;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${esc(lbl)}</div>
                      <div class="term-value" style="color:#0f172a;font-weight:500;white-space:pre-wrap;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(val)}</div>
                    </div>`,
@@ -955,6 +1122,40 @@ export function buildPublicProposalHtml(
                </div>`
             : ''
         }
+
+        ${
+          validCamposAdicionais.length > 0
+            ? `<div style="margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;">
+                 <div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
+                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">Informações Adicionais</span>
+                   <span style="font-size:10px;opacity:0.9;">Campos Específicos da Proposta</span>
+                 </div>
+                 <div style="border:1px solid #e2e8f0;border-radius:3px;background:#ffffff;page-break-inside:avoid;break-inside:avoid;">
+                   ${validCamposAdicionais
+                     .map((field, idx) => {
+                       const fieldTitle = String(field.titulo || field.chave || '').trim()
+                       const fieldVal = field.conteudo != null ? field.conteudo : field.valor
+                       return `
+                     <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:6px 10px;font-size:11px;align-items:baseline;${idx > 0 ? 'border-top:1px solid #f1f5f9;' : ''};page-break-inside:avoid;break-inside:avoid;">
+                       <div style="font-size:10px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;background:#f1f5f9;padding:3px 6px;border-radius:2px;border-left:2px solid #cbd5e1;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${esc(fieldTitle)}</div>
+                       <div class="term-value" style="color:#0f172a;font-weight:500;white-space:pre-wrap;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(fieldVal)}</div>
+                     </div>`
+                     })
+                     .join('')}
+                 </div>
+               </div>`
+            : ''
+        }
+
+        <!-- Regra 8: Texto de encerramento verbatim -->
+        <div class="closing-text" style="margin-top:20px;margin-bottom:16px;font-size:11px;color:#0f172a;page-break-inside:avoid;break-inside:avoid;">
+          <p style="text-align:justify;line-height:1.6;margin:0 0 12px 0;">
+            Antecipadamente agradecemos vossa honrosa preferência, permanecendo ao vosso inteiro dispor, para dirimir e atender quaisquer eventuais esclarecimentos adicionais que se fizerem necessários.
+          </p>
+          <p style="text-align:left;margin:0;">
+            Atenciosamente
+          </p>
+        </div>
 
         <div class="signatures-grid">
           <div>
@@ -992,7 +1193,9 @@ export function buildPublicProposalHtml(
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
         <div class="page-number">Página 2/2</div>
       </div>
-    </div>
+    </div>`
+        : ''
+    }
   </div>
 </body>
 </html>`

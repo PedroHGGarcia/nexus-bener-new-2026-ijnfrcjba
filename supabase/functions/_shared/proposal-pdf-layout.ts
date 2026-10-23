@@ -585,8 +585,19 @@ function fmt2(n: number | null | undefined): string {
   })
 }
 
+function normalizeMoeda(m: string | null | undefined): string {
+  if (!m) return 'BRL'
+  const c = m.trim().toUpperCase()
+  if (c === 'USD' || c === 'DOLAR' || c === 'DÓLAR') return 'USD'
+  if (c === 'EUR' || c === 'EURO') return 'EUR'
+  if (c === 'CHF' || c === 'FRANCO' || c.startsWith('FRANCO')) return 'CHF'
+  if (c === 'BRL' || c === 'REAL' || c === 'REAIS' || c === 'R$') return 'BRL'
+  return c
+}
+
 function fmtMoney(v: number | null | undefined, moeda: string | null | undefined): string {
-  const sym = moeda === 'USD' ? 'US$ ' : moeda === 'EUR' ? '\u20ac ' : 'R$ '
+  const norm = normalizeMoeda(moeda)
+  const sym = norm === 'USD' ? 'US$ ' : norm === 'EUR' ? '\u20ac ' : norm === 'CHF' ? 'CHF ' : 'R$ '
   return sym + fmt2(v)
 }
 
@@ -606,8 +617,14 @@ interface BuildInput {
 }
 
 export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Array> {
-  const { proposta: p, equipmentItems, tipoProposta: tp } = input
+  const { proposta: p, equipmentItems, tipoProposta: tpInput } = input
   const doc = new PdfDoc()
+
+  const dadosSnapshot = p.dados_snapshot as Record<string, any> | null
+  const tp =
+    (dadosSnapshot?.tipo_proposta_detalhes as Record<string, any>) ||
+    (tpInput as Record<string, any>) ||
+    null
 
   const numero = p.numero_proposta || '-'
   const revisao = p.revisao || ''
@@ -880,10 +897,19 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.y += 8
   }
 
-  // Accessories (proposal-level)
+  // Regra 7: Acessórios com 3 estados mutuamente exclusivos
   const acessorios = Array.isArray(p.acessorios_proposta) ? (p.acessorios_proposta as any[]) : []
-  const inclusos = acessorios.filter((a) => a.inclusao !== 'opcional')
-  const naoInclusos = acessorios.filter((a) => a.inclusao === 'opcional')
+  const filteredAcc = acessorios.filter((a) => a && a.inclusao !== 'nao_exibir')
+  const inclusos = filteredAcc.filter(
+    (a) =>
+      a.inclusao === 'incluir' ||
+      a.inclusao === 'preco' ||
+      a.inclusao === undefined ||
+      a.inclusao === null,
+  )
+  const naoInclusos = filteredAcc.filter(
+    (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
+  )
   const drawAccList = (title: string, list: any[], withPrice: boolean) => {
     if (list.length === 0) return
     sectionHeading(title)
@@ -893,7 +919,8 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       doc.txt(M_LEFT + 14, doc.y, '\u2022', { font: 'F2', size: 9, color: GREEN })
       doc.txt(M_LEFT + 24, doc.y, label, { font: 'F1', size: 9 })
       if (withPrice && a.valor != null) {
-        const price = fmtMoney(a.valor, a.moeda || moeda)
+        const itemMoeda = normalizeMoeda(a.moeda || moeda)
+        const price = fmtMoney(a.valor, itemMoeda)
         doc.txt(PAGE_W - M_RIGHT, doc.y, price, { font: 'F2', size: 9, align: 'right', w: 0 })
       }
       doc.y += 12
@@ -1150,18 +1177,10 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   }
   doc.y += totalH + 8
 
-  // Exchange block (only when currency differs from original)
-  const normalizeMoeda = (m: string | null | undefined): string => {
-    if (!m) return 'BRL'
-    const c = m.trim().toUpperCase()
-    if (c === 'USD' || c === 'DOLAR' || c === 'DÓLAR') return 'USD'
-    if (c === 'EUR' || c === 'EURO') return 'EUR'
-    if (c === 'CHF' || c.startsWith('FRANCO')) return 'CHF'
-    return 'BRL'
-  }
+  // Regra 1: Bloco Câmbio/Cotação só aparece quando há conversão REAL
   const moedaOrigNormalized = normalizeMoeda(p.moeda_original || p.moeda || 'BRL')
   const moedaPropNormalized = normalizeMoeda(moeda)
-  if (moedaPropNormalized !== moedaOrigNormalized && (p.cotacao_moeda || p.cambio_estimado)) {
+  if (moedaPropNormalized !== moedaOrigNormalized && p.cotacao_moeda) {
     ensureSpace(24)
     const taxa = Number(p.cotacao_moeda || p.cambio_estimado)
     const dataCot = p.data_cotacao_moeda || p.cambio_estimado_data
@@ -1211,8 +1230,12 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.y += 10
   }
 
-  // Custom fields
-  let campos = p.campos_adicionais
+  // Regra 9: Campos do Tipo de Proposta e Informações Adicionais da Proposta
+  const snapshotCampos = dadosSnapshot?.campos_adicionais
+  let campos: any =
+    Array.isArray(snapshotCampos) && snapshotCampos.length > 0
+      ? snapshotCampos
+      : p.campos_adicionais
   if (typeof campos === 'string') {
     try {
       campos = JSON.parse(campos)
@@ -1222,13 +1245,14 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   }
   if (Array.isArray(campos) && campos.length > 0) {
     for (const f of campos) {
-      if (!f?.titulo && !f?.conteudo) continue
+      const fTitle = String(f?.titulo || f?.chave || '').trim()
+      const fContent = f?.conteudo != null ? f.conteudo : f?.valor
+      if (!fTitle && !fContent) continue
       ensureSpace(30)
-      if (f.titulo) {
-        sectionHeading(String(f.titulo))
+      if (fTitle) {
+        sectionHeading(fTitle)
       }
-      if (f.conteudo)
-        doc.para(M_LEFT + 10, doc.contentW - 10, String(f.conteudo), { size: 9 }, 11.5)
+      if (fContent) doc.para(M_LEFT + 10, doc.contentW - 10, String(fContent), { size: 9 }, 11.5)
       doc.y += 6
     }
   }
