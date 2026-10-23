@@ -50,6 +50,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ClienteFormDialog } from '@/components/clientes/ClienteFormDialog'
 import { toast } from '@/hooks/use-toast'
 import { insertProposta, createPropostaVersion, uploadSignatureDataUrl } from '@/services/propostas'
+import { preOpenProposalPrintTab } from '@/lib/proposal-auto-open'
 import { buildPropostaSnapshot } from '@/lib/proposal-snapshot'
 import { ResponsavelInternoSignatureCard } from '@/components/propostas/ResponsavelInternoSignatureCard'
 import { PropostaWithRelations } from '@/types/proposta'
@@ -170,7 +171,11 @@ interface Props {
   userId?: string
   userName?: string
   editProposta?: PropostaWithRelations | null
-  onSaved: (id: string, emails?: string[]) => void
+  onSaved: (
+    id: string,
+    emails?: string[],
+    preOpenedTab?: import('@/lib/proposal-auto-open').PreOpenedPrintTab | null,
+  ) => void
   onCancel: () => void
 }
 
@@ -1101,7 +1106,9 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     return formatCurrencyByMoeda(val, form.moeda)
   }
 
-  const proceedWithSave = async () => {
+  const proceedWithSave = async (
+    preOpenedTab?: import('@/lib/proposal-auto-open').PreOpenedPrintTab | null,
+  ) => {
     setSaving(true)
     try {
       let projetoId: string | null = null
@@ -1415,8 +1422,11 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
           : 'A proposta comercial foi registrada no sistema.',
       })
 
-      onSaved(result.id, notificationEmails)
+      onSaved(result.id, notificationEmails, preOpenedTab)
     } catch (err) {
+      if (preOpenedTab) {
+        preOpenedTab.close()
+      }
       toast({
         title: 'Erro ao salvar proposta',
         description: err instanceof Error ? err.message : 'Ocorreu um erro desconhecido.',
@@ -1540,7 +1550,16 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
 
     setProjetoError(null)
 
-    await proceedWithSave()
+    // Pre-open print-ready PDF window synchronously inside the user-gesture click handler
+    // so modern browser popup blockers allow opening the generated document automatically.
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
   }
 
   return (

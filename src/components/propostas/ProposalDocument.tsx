@@ -264,17 +264,6 @@ export function ProposalDocument({ proposal }: Props) {
       'Frase de Preço',
       (proposal as { frase_preco?: string | null }).frase_preco || tipoProposta?.frase_preco,
     ],
-    [
-      'Frase de Comissão',
-      (proposal as { frase_comissao?: string | null }).frase_comissao ||
-        tipoProposta?.frase_comissao,
-    ],
-    [
-      'Comissão',
-      tipoProposta?.comissao != null && tipoProposta.comissao !== 0
-        ? `${tipoProposta.comissao}%`
-        : null,
-    ],
   ]
 
   if (tipoProposta?.campos_adicionais) {
@@ -943,18 +932,6 @@ export function ProposalDocument({ proposal }: Props) {
                             tipoCampos.push({
                               label: 'Frase de Preço',
                               value: String(itemTipoObj.frase_preco).trim(),
-                            })
-                          }
-                          if (!isCommercialFieldEmpty(itemTipoObj.frase_comissao)) {
-                            tipoCampos.push({
-                              label: 'Frase de Comissão',
-                              value: String(itemTipoObj.frase_comissao).trim(),
-                            })
-                          }
-                          if (itemTipoObj.comissao != null && Number(itemTipoObj.comissao) > 0) {
-                            tipoCampos.push({
-                              label: 'Comissão',
-                              value: `${itemTipoObj.comissao}%`,
                             })
                           }
                           if (!isTaxValueEmpty(itemTipoObj.imposto_ipi, 'Imposto IPI')) {
