@@ -401,7 +401,11 @@ export function buildProposalPdfHtml(
       : ''
 
   let camposAdicionaisSection = ''
-  let camposData: any = proposta.campos_adicionais
+  const snapshotCampos = (proposta.dados_snapshot as any)?.campos_adicionais
+  let camposData: any =
+    Array.isArray(snapshotCampos) && snapshotCampos.length > 0
+      ? snapshotCampos
+      : proposta.campos_adicionais
   if (typeof camposData === 'string') {
     try {
       camposData = JSON.parse(camposData)
@@ -410,15 +414,29 @@ export function buildProposalPdfHtml(
     }
   }
   if (Array.isArray(camposData) && camposData.length > 0) {
-    const campos = camposData
-      .filter((c: any) => c && (c.titulo || c.conteudo))
-      .map(
-        (c: any) =>
-          `<p><strong>${escapeHtml(c.titulo || '')}:</strong> ${escapeHtml(c.conteudo || '')}</p>`,
-      )
-      .join('')
-    if (campos) {
-      camposAdicionaisSection = `<div class="section-title">CAMPOS ADICIONAIS</div><div class="campos-adicionais">${campos}</div>`
+    const validCampos = camposData.filter(
+      (c: any) =>
+        c &&
+        ((c.titulo && String(c.titulo).trim() !== '') ||
+          (c.chave && String(c.chave).trim() !== '')) &&
+        !isCommercialEmpty(c.conteudo != null ? c.conteudo : c.valor),
+    )
+    if (validCampos.length > 0) {
+      camposAdicionaisSection = `
+      <div style="background:#0b3c26;color:#ffffff;padding:6px 12px;border-radius:4px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
+        Informações Adicionais
+      </div>
+      <div style="border:1px solid #e2e8f0;border-radius:4px;background:#ffffff;margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;">
+        ${validCampos
+          .map(
+            (c: any, idx: number) => `
+          <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:6px 12px;font-size:11px;align-items:baseline;${idx > 0 ? 'border-top:1px solid #f1f5f9;' : ''};page-break-inside:avoid;break-inside:avoid;">
+            <div style="font-size:10px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;background:#f1f5f9;padding:3px 6px;border-radius:2px;border-left:2px solid #cbd5e1;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${escapeHtml(String(c.titulo || c.chave || '').trim())}</div>
+            <div style="color:#0f172a;font-weight:500;line-height:1.4;">${renderCommercialFieldHtml(c.conteudo != null ? c.conteudo : c.valor)}</div>
+          </div>`,
+          )
+          .join('')}
+      </div>`
     }
   }
 
@@ -792,7 +810,7 @@ export function buildProposalPdfHtml(
     <div class="proposal-title">
       <h1>${proposta.modelo_licitacao ? 'PROPOSTA DE LICITAÇÃO' : 'PROPOSTA COMERCIAL'}</h1>
       <div>Nº <strong>${proposta.numero_proposta || 'N/A'}</strong> (Rev. ${proposta.revisao || '0'})</div>
-      <div>Data: ${proposta.dt_cad || new Date().toLocaleDateString('pt-BR')}</div>
+      <div>Vinhedo, ${proposta.dt_cad ? new Date(proposta.dt_cad + (proposta.dt_cad.includes('T') ? '' : 'T12:00:00')).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
     </div>
   </div>
 
@@ -808,13 +826,22 @@ export function buildProposalPdfHtml(
       <strong>Representante:</strong> ${proposta.nome_representante_comercial || proposta.representante_original || '-'}<br />
       <strong>Gerente:</strong> ${proposta.nome_gerente_produto || proposta.gerente_original || '-'}<br />
       <strong>Moeda:</strong> ${proposta.moeda || 'BRL'}
-      ${
-        proposta.moeda &&
-        proposta.moeda !== 'BRL' &&
-        (proposta.cotacao_moeda || proposta.cambio_estimado)
-          ? `<br /><span style="font-size:10px;color:#475569;">Cotação: 1 ${proposta.moeda} = R$ ${Number(proposta.cotacao_moeda || proposta.cambio_estimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${proposta.data_cotacao_moeda ? `(${proposta.data_cotacao_moeda})` : ''}</span>`
-          : ''
-      }
+      ${(() => {
+        const norm = (m?: string | null) => {
+          if (!m) return 'BRL'
+          const c = m.trim().toUpperCase()
+          if (c === 'USD' || c === 'DOLAR' || c === 'DÓLAR') return 'USD'
+          if (c === 'EUR' || c === 'EURO') return 'EUR'
+          if (c === 'CHF' || c.startsWith('FRANCO')) return 'CHF'
+          return 'BRL'
+        }
+        const mOrig = norm(proposta.moeda_original || proposta.moeda || 'BRL')
+        const mProp = norm(proposta.moeda || 'BRL')
+        if (mProp !== mOrig && (proposta.cotacao_moeda || proposta.cambio_estimado)) {
+          return `<br /><span style="font-size:10px;color:#475569;">Cotação: 1 ${mProp} = R$ ${Number(proposta.cotacao_moeda || proposta.cambio_estimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${proposta.data_cotacao_moeda ? `(${proposta.data_cotacao_moeda})` : ''} — Original: ${mOrig}</span>`
+        }
+        return ''
+      })()}
     </div>
   </div>
 
@@ -939,7 +966,6 @@ export function buildProposalPdfHtml(
               <tr style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;color:#475569;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;">
                 <th style="padding:8px 10px;text-align:center;width:40px;">Item</th>
                 <th style="padding:8px 10px;text-align:left;">Descrição</th>
-                <th style="padding:8px 10px;text-align:left;">Tipo</th>
                 <th style="padding:8px 10px;text-align:center;width:50px;">Qtd</th>
                 <th style="padding:8px 10px;text-align:right;">Valor Unitário</th>
                 <th style="padding:8px 10px;text-align:right;">Desconto</th>
@@ -950,7 +976,6 @@ export function buildProposalPdfHtml(
               <tr>
                 <td style="padding:8px 10px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">1</td>
                 <td style="padding:8px 10px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;">${escapeHtml(mTitle)}</td>
-                <td style="padding:8px 10px;color:#334155;border-bottom:1px solid #e2e8f0;">${proposta.tipo_proposta ? `<span style="padding:2px 6px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:3px;font-size:10px;">${escapeHtml(proposta.tipo_proposta)}</span>` : '—'}</td>
                 <td style="padding:8px 10px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">1 un.</td>
                 <td style="padding:8px 10px;text-align:right;border-bottom:1px solid #e2e8f0;">
                   ${
@@ -1010,8 +1035,17 @@ export function buildProposalPdfHtml(
   </div>
 
   ${commercialSection}
-  ${camposAdicionaisSection}
   ${tipoPropostaSection}
+  ${camposAdicionaisSection}
+
+  <div style="margin-top:20px;margin-bottom:16px;font-size:11px;color:#0f172a;page-break-inside:avoid;break-inside:avoid;">
+    <p style="text-align:justify;line-height:1.6;margin:0 0 12px 0;">
+      Antecipadamente agradecemos vossa honrosa preferência, permanecendo ao vosso inteiro dispor, para dirimir e atender quaisquer eventuais esclarecimentos adicionais que se fizerem necessários.
+    </p>
+    <p style="text-align:left;margin:0;">
+      Atenciosamente
+    </p>
+  </div>
 
   <div class="page-footer">
     <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) &ndash; Distrito Industrial</p>

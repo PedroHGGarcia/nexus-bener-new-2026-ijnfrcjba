@@ -708,29 +708,36 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
 
     // Sigla | N° Oferta | Mês | Ano box (right-aligned)
     const boxW = 250
-    const colW = boxW / 4
+    const colW = [45, 115, 45, 45]
     const boxX = PAGE_W - M_RIGHT - boxW
     const boxY = y0 + 34
     const rowH = 15
     doc.rect(boxX, boxY, boxW, rowH * 2, { stroke: INK, lw: 0.9 })
     const heads = ['Sigla', 'N° Oferta', 'Mês', 'Ano']
     const vals = [sigla || '—', numero, mes, ano]
+    let curX = boxX
     for (let i = 0; i < 4; i++) {
-      if (i > 0) doc.vline(boxX + colW * i, boxY, boxY + rowH * 2)
-      doc.txt(boxX + colW * i, boxY + 4, heads[i], {
+      if (i > 0) doc.vline(curX, boxY, boxY + rowH * 2)
+      doc.txt(curX, boxY + 4, heads[i], {
         font: 'F2',
         size: 8,
         align: 'center',
-        w: colW,
+        w: colW[i],
       })
-      doc.txt(boxX + colW * i, boxY + rowH + 3, vals[i], {
+      const isOffer = i === 1
+      const offerFontSize = isOffer && String(vals[i]).length > 10 ? 7.5 : 9
+      doc.txt(curX, boxY + rowH + 3, vals[i], {
         font: 'F1',
-        size: 9,
+        size: offerFontSize,
         align: 'center',
-        w: colW,
+        w: colW[i],
       })
+      curX += colW[i]
     }
-    doc.hline(boxX + colW * 1, boxX + colW * 3, boxY + rowH, { lw: 0.9, color: [0.2, 0.2, 0.2] })
+    doc.hline(boxX + colW[0], boxX + colW[0] + colW[1] + colW[2], boxY + rowH, {
+      lw: 0.9,
+      color: [0.2, 0.2, 0.2],
+    })
 
     doc.y = Math.max(y0 + 48, boxY + rowH * 2) + 10
     doc.hline(M_LEFT, PAGE_W - M_RIGHT, doc.y, { lw: 1.1, color: [0.15, 0.15, 0.15] })
@@ -914,13 +921,12 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   )
   doc.y += 18
 
-  const colW = [28, 150, 68, 30, 82, 58, 99]
+  const colW = [28, 190, 35, 95, 68, 99]
   const totalW = colW.reduce((a, b) => a + b, 0)
   const tblX = M_LEFT
   const heads = [
     'Item',
     'Descrição do Equipamento',
-    'Tipo Fornecimento',
     'Qtd',
     'Valor Unitário',
     'Desconto',
@@ -928,7 +934,6 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   ]
   const aligns: Array<'left' | 'center' | 'right'> = [
     'center',
-    'left',
     'left',
     'center',
     'right',
@@ -940,7 +945,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     const h = 18
     doc.rect(tblX, doc.y, totalW, h, { fill: LIGHT })
     let x = tblX
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < heads.length; i++) {
       doc.txt(x + 4, doc.y + 5, heads[i], {
         font: 'F2',
         size: 7.5,
@@ -1022,8 +1027,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
 
   for (const row of rows) {
     const descLines = doc.wrap(row.nome, colW[1] - 8, 8.5, true)
-    const tipoLines = row.tipo ? doc.wrap(row.tipo, colW[2] - 8, 8) : ['—']
-    const rowH = Math.max(16, Math.max(descLines.length, tipoLines.length) * 10 + 6)
+    const rowH = Math.max(16, descLines.length * 10 + 6)
     const before = doc.pageCount
     ensureSpace(rowH + 4)
     if (doc.pageCount !== before) drawThead()
@@ -1031,7 +1035,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.rect(tblX, yTop, totalW, rowH, { stroke: [0.75, 0.77, 0.8], lw: 0.5 })
     let x = tblX
     const midY = yTop + rowH / 2 - 3
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < heads.length; i++) {
       if (i > 0) doc.vline(x, yTop, yTop + rowH)
       const cw = colW[i]
       if (i === 0)
@@ -1046,10 +1050,8 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
           doc.txt(x + 4, yTop + 4 + li * 10, l, { font: 'F2', size: 8.5 }),
         )
       else if (i === 2)
-        tipoLines.forEach((l, li) => doc.txt(x + 4, yTop + 4 + li * 10, l, { font: 'F1', size: 8 }))
-      else if (i === 3)
         doc.txt(x, midY, String(row.qtd), { font: 'F1', size: 8.5, align: 'center', w: cw })
-      else if (i === 4) {
+      else if (i === 3) {
         if (row.hasDisc) {
           doc.txt(x, midY - 6, fmtMoney(row.valOrig, row.moeda), {
             font: 'F1',
@@ -1073,7 +1075,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
             w: cw,
           })
         }
-      } else if (i === 5)
+      } else if (i === 4)
         doc.txt(x, midY, row.descTxt, { font: 'F1', size: 8.5, align: 'right', w: cw })
       else {
         if (row.hasDisc) {
@@ -1121,49 +1123,45 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     size: 8,
     color: [0.25, 0.28, 0.32],
   })
+  const prevW = colW[0] + colW[1] + colW[2] + colW[3] + colW[4]
+  const lastColW = colW[5]
   if (totalOrig != null) {
-    doc.txt(
-      tblX + colW[0] + colW[1] + colW[2] + colW[3] + colW[4] + colW[5],
-      doc.y + 2,
-      fmtMoney(totalOrig, moeda),
-      {
-        font: 'F1',
-        size: 8,
-        color: GRAY,
-        align: 'right',
-        w: colW[6],
-        strike: true,
-      },
-    )
-    doc.txt(
-      tblX + colW[0] + colW[1] + colW[2] + colW[3] + colW[4] + colW[5],
-      doc.y + 10,
-      fmtMoney(totalValor, moeda),
-      {
-        font: 'F2',
-        size: 10,
-        align: 'right',
-        w: colW[6],
-      },
-    )
+    doc.txt(tblX + prevW, doc.y + 2, fmtMoney(totalOrig, moeda), {
+      font: 'F1',
+      size: 8,
+      color: GRAY,
+      align: 'right',
+      w: lastColW,
+      strike: true,
+    })
+    doc.txt(tblX + prevW, doc.y + 10, fmtMoney(totalValor, moeda), {
+      font: 'F2',
+      size: 10,
+      align: 'right',
+      w: lastColW,
+    })
   } else {
-    doc.txt(
-      tblX + colW[0] + colW[1] + colW[2] + colW[3] + colW[4] + colW[5],
-      doc.y + 5,
-      fmtMoney(totalValor, moeda),
-      {
-        font: 'F2',
-        size: 10.5,
-        align: 'right',
-        w: colW[6],
-      },
-    )
+    doc.txt(tblX + prevW, doc.y + 5, fmtMoney(totalValor, moeda), {
+      font: 'F2',
+      size: 10.5,
+      align: 'right',
+      w: lastColW,
+    })
   }
   doc.y += totalH + 8
 
   // Exchange block (only when currency differs from original)
-  const moedaOrig = (p.moeda_original || 'BRL').toUpperCase()
-  if (moeda !== moedaOrig && (p.cotacao_moeda || p.cambio_estimado)) {
+  const normalizeMoeda = (m: string | null | undefined): string => {
+    if (!m) return 'BRL'
+    const c = m.trim().toUpperCase()
+    if (c === 'USD' || c === 'DOLAR' || c === 'DÓLAR') return 'USD'
+    if (c === 'EUR' || c === 'EURO') return 'EUR'
+    if (c === 'CHF' || c.startsWith('FRANCO')) return 'CHF'
+    return 'BRL'
+  }
+  const moedaOrigNormalized = normalizeMoeda(p.moeda_original || p.moeda || 'BRL')
+  const moedaPropNormalized = normalizeMoeda(moeda)
+  if (moedaPropNormalized !== moedaOrigNormalized && (p.cotacao_moeda || p.cambio_estimado)) {
     ensureSpace(24)
     const taxa = Number(p.cotacao_moeda || p.cambio_estimado)
     const dataCot = p.data_cotacao_moeda || p.cambio_estimado_data
@@ -1175,7 +1173,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.txt(
       M_LEFT + 6,
       doc.y + 5,
-      `Câmbio: 1 ${moeda} = R$ ${fmt2(taxa)}${dataCot ? ` (data: ${dataCot})` : ''}`,
+      `Câmbio: 1 ${moedaPropNormalized} = R$ ${fmt2(taxa)}${dataCot ? ` (data: ${dataCot})` : ''} — Moeda Original: ${moedaOrigNormalized}`,
       {
         font: 'F1',
         size: 8.5,
