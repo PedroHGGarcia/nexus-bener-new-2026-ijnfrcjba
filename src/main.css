@@ -336,19 +336,29 @@
     print-color-adjust: exact !important;
   }
 
-  /* Page break rules for formal PDF documents.
-     A área útil A4 com margens 10/12mm é 277mm. A caixa precisa caber inteira
-     nessa área: min-height maior que ela estoura uma página em branco.
-     277mm - 8mm (padding 4mm topo + base) = 269mm. */
-  .proposal-page {
-    box-sizing: border-box !important;
+  /* A margem já vem do @page; o padding de tela deve sair */
+  .proposal-a4,
+  .proposal-document {
+    width: 100% !important;
+    max-width: 100% !important;
     min-height: 0 !important;
     height: auto !important;
     margin: 0 !important;
-    padding-top: 4mm !important;
-    padding-bottom: 4mm !important;
-    page-break-after: always;
-    break-after: page;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Altura zero: evita que o motor descarte área não aproveitada */
+  .proposal-page {
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    box-sizing: border-box !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
   .proposal-page:last-child {
     page-break-after: auto !important;
@@ -379,22 +389,6 @@
   }
   .proposal-document thead {
     display: table-header-group;
-  }
-
-  .proposal-a4,
-  .proposal-document {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
-  }
-
-  /* Rodapé de página mantido visível no DOM */
-  .proposal-page-num {
-    display: block !important;
   }
 
   /* Guarda-corpo: nenhum ancestral do documento pode gerar página em branco */
