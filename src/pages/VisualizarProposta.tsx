@@ -71,7 +71,7 @@ export default function VisualizarProposta() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 py-6 px-2 sm:px-4 print:py-0 print:px-0 print:bg-white">
+    <div className="min-h-screen bg-slate-100 py-6 px-2 sm:px-4 print:min-h-0 print:h-auto print:py-0 print:px-0 print:bg-white print:overflow-visible">
       {/* Top action bar - Hidden during print */}
       <div className="no-print max-w-4xl mx-auto mb-4 flex justify-between items-center bg-white p-3 sm:p-4 rounded-lg border shadow-sm">
         <div className="flex flex-col">
