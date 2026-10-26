@@ -205,9 +205,31 @@ export const A4_PRINT_STYLES = `
       margin: 0 !important;
       padding: 0 !important;
     }
-    .proposal-page {
-      min-height: 0 !important;
+    .proposal-document,
+    .proposal-page,
+    .proposal-sheet {
+      min-height: auto !important;
       height: auto !important;
+    }
+    .proposal-document > :first-child,
+    .proposal-page:first-child,
+    .proposal-page:first-of-type,
+    .proposal-sheet:first-child,
+    .proposal-sheet:first-of-type,
+    .proposal-cover,
+    [data-page="1"] {
+      break-before: avoid !important;
+      page-break-before: avoid !important;
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+    .proposal-page:not(:first-child),
+    .proposal-sheet:not(:first-child),
+    .proposal-page-break {
+      break-before: page !important;
+      page-break-before: always !important;
+    }
+    .proposal-page {
       padding: 0 !important;
       margin: 0 !important;
       box-shadow: none !important;

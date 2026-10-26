@@ -25,7 +25,7 @@ export default function ImprimirProposta() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-white print:hidden">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
@@ -33,16 +33,16 @@ export default function ImprimirProposta() {
 
   if (!proposal) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white text-destructive">
+      <div className="min-h-screen flex items-center justify-center bg-white text-destructive print:hidden">
         Proposta não encontrada
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 py-8 print:min-h-0 print:h-auto print:py-0 print:bg-white print:overflow-visible">
-      <div className="no-print mb-4 flex justify-center">
-        <Button onClick={() => window.print()} className="gap-2 bg-primary">
+    <div className="min-h-screen bg-slate-100 py-8 print:min-h-0 print:h-auto print:bg-white print:p-0 print:m-0 print:overflow-visible">
+      <div className="no-print print:hidden mb-4 flex justify-center">
+        <Button onClick={() => window.print()} className="gap-2 bg-primary print:hidden">
           <Printer className="w-4 h-4" /> Imprimir / Exportar PDF
         </Button>
       </div>

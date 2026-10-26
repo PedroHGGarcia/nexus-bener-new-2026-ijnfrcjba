@@ -469,8 +469,9 @@ export function ProposalDocument({ proposal }: Props) {
     >
       {/* ================= PAGE 1: COVER / RECEPTION ================= */}
       <div
-        className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:h-auto print:border-none"
-        style={{ boxSizing: 'border-box' }}
+        data-page="1"
+        className="proposal-page proposal-cover relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:h-auto print:border-none print:[break-before:avoid] print:[page-break-before:avoid]"
+        style={{ boxSizing: 'border-box', breakBefore: 'avoid', pageBreakBefore: 'avoid' }}
       >
         {/* Top & Main Body */}
         <div>
@@ -628,11 +629,12 @@ export function ProposalDocument({ proposal }: Props) {
         </div>
       </div>
 
-      {/* ================= PAGE 2: TECHNICAL & COMMERCIAL DETAILS ================= */}
+      {/* ================= PAGE 2+: TECHNICAL & COMMERCIAL DETAILS ================= */}
       {showAdditionalPages && (
         <div
-          className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:h-auto border-t-2 border-dashed border-slate-300 print:border-none"
-          style={{ boxSizing: 'border-box' }}
+          data-page="2"
+          className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:h-auto border-t-2 border-dashed border-slate-300 print:border-none print:[break-before:page] print:[page-break-before:always]"
+          style={{ boxSizing: 'border-box', breakBefore: 'page', pageBreakBefore: 'always' }}
         >
           <div>
             {/* Modo Pacote: Bloco estruturado por Máquina com Foto, Título e Acessórios vinculados */}

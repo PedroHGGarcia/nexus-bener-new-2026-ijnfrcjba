@@ -380,7 +380,7 @@ export function buildProposalPdfHtml(
   const creatorSection =
     creatorLine || createdDateLine || projectCreatorLine
       ? `
-  <div class="creator-info">
+  <div class="creator-info" style="display:none;">
     ${creatorLine}
     ${createdDateLine}
     ${projectCreatorLine}
@@ -613,13 +613,7 @@ export function buildProposalPdfHtml(
       word-break: break-word;
     }
     .creator-info {
-      background: #f0f7f3;
-      border-left: 4px solid #0b3c26;
-      padding: 10px 15px;
-      margin-bottom: 20px;
-      font-size: 11px;
-      page-break-inside: avoid;
-      break-inside: avoid;
+      display: none !important;
     }
     .creator-info div {
       margin: 2px 0;
@@ -821,8 +815,21 @@ export function buildProposalPdfHtml(
         max-width: 186mm !important;
         margin: 0 auto !important;
         padding: 0 0 40px 0 !important;
+        min-height: auto !important;
+        height: auto !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+      }
+      body > :first-child,
+      .header,
+      [data-page="1"] {
+        break-before: avoid !important;
+        page-break-before: avoid !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+      .creator-info {
+        display: none !important;
       }
       .page-footer {
         position: static;

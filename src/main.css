@@ -349,10 +349,15 @@
     border: none !important;
   }
 
-  /* Altura zero: evita que o motor descarte área não aproveitada */
-  .proposal-page {
-    min-height: 0 !important;
+  /* Altura zero / auto: mata qualquer min-height que estoure a área útil da folha 1 e empurre a capa */
+  .proposal-document,
+  .proposal-page,
+  .proposal-sheet {
+    min-height: auto !important;
     height: auto !important;
+  }
+
+  .proposal-page {
     margin: 0 !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
@@ -360,6 +365,29 @@
     break-inside: auto !important;
     page-break-inside: auto !important;
   }
+
+  /* Primeira página / capa: NUNCA quebra antes; zera margens/paddings superiores */
+  .proposal-document > :first-child,
+  .proposal-page:first-child,
+  .proposal-page:first-of-type,
+  .proposal-sheet:first-child,
+  .proposal-sheet:first-of-type,
+  .proposal-cover,
+  [data-page='1'] {
+    break-before: avoid !important;
+    page-break-before: avoid !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  /* Páginas seguintes forçam quebra de página */
+  .proposal-page:not(:first-child),
+  .proposal-sheet:not(:first-child),
+  .proposal-page-break {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
   .proposal-page:last-child {
     page-break-after: auto !important;
     break-after: auto !important;
@@ -401,12 +429,5 @@
   body {
     height: auto !important;
     min-height: 0 !important;
-  }
-
-  .proposal-document > .proposal-page:first-child {
-    break-before: avoid !important;
-    page-break-before: avoid !important;
-    margin-top: 0 !important;
-    padding-top: 0 !important;
   }
 }

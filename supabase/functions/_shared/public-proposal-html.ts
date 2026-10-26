@@ -782,12 +782,29 @@ export function buildPublicProposalHtml(
         width: 100% !important;
         max-width: 100% !important;
       }
+      .page-container,
+      .page {
+        min-height: auto !important;
+        height: auto !important;
+      }
+      .page-container > :first-child,
+      .page:first-child,
+      .page:first-of-type,
+      [data-page="1"] {
+        break-before: avoid !important;
+        page-break-before: avoid !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+      .page:not(:first-child),
+      .page-divider {
+        break-before: page !important;
+        page-break-before: always !important;
+      }
       .page {
         box-sizing: border-box !important;
         width: 100% !important;
         max-width: 100% !important;
-        min-height: 0 !important;
-        height: auto !important;
         padding: 4mm 0 !important;
         margin: 0 !important;
         page-break-inside: avoid;
@@ -823,7 +840,7 @@ export function buildPublicProposalHtml(
 
   <div class="page-container">
     <!-- PAGE 1: COVER -->
-    <div class="page">
+    <div class="page" data-page="1" style="break-before: avoid !important; page-break-before: avoid !important; margin-top: 0 !important; padding-top: 0 !important;">
       <div>
         <div style="page-break-inside:avoid;break-inside:avoid;">
           <!-- Top Header: Logo + Proposal Number -->
@@ -889,7 +906,7 @@ export function buildPublicProposalHtml(
     <!-- PAGE 2: DETAILS -->
     ${
       hasPage2Content
-        ? `<div class="page page-divider">
+        ? `<div class="page page-divider" data-page="2" style="break-before: page !important; page-break-before: always !important;">
       <div>
 
         <div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
