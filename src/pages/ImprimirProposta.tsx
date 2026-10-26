@@ -41,7 +41,7 @@ export default function ImprimirProposta() {
 
   return (
     <div className="min-h-screen bg-slate-100 py-8 print:min-h-0 print:h-auto print:bg-white print:p-0 print:m-0 print:overflow-visible">
-      <div className="no-print print:hidden mb-4 flex justify-center">
+      <div className="no-print print:hidden mb-4 flex justify-center print:m-0 print:p-0 print:h-0">
         <Button onClick={() => window.print()} className="gap-2 bg-primary print:hidden">
           <Printer className="w-4 h-4" /> Imprimir / Exportar PDF
         </Button>

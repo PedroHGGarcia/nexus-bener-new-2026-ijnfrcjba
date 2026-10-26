@@ -29,9 +29,9 @@ export const A4_PRINT_STYLES = `
     page-break-inside: avoid;
     break-inside: avoid;
   }
-  .proposal-page:not(:last-child) {
-    page-break-after: page;
-    break-after: page;
+  .proposal-page ~ .proposal-page {
+    break-before: page;
+    page-break-before: always;
   }
   .proposal-page:last-child {
     page-break-after: auto !important;
@@ -211,20 +211,17 @@ export const A4_PRINT_STYLES = `
       min-height: auto !important;
       height: auto !important;
     }
-    .proposal-document > :first-child,
-    .proposal-page:first-child,
-    .proposal-page:first-of-type,
-    .proposal-sheet:first-child,
-    .proposal-sheet:first-of-type,
     .proposal-cover,
-    [data-page="1"] {
+    [data-page="1"],
+    [data-sheet-index="0"] {
       break-before: avoid !important;
       page-break-before: avoid !important;
       margin-top: 0 !important;
       padding-top: 0 !important;
     }
-    .proposal-page:not(:first-child),
-    .proposal-sheet:not(:first-child),
+    .proposal-sheet ~ .proposal-sheet,
+    .proposal-page ~ .proposal-page,
+    [data-sheet-index] ~ [data-sheet-index],
     .proposal-page-break {
       break-before: page !important;
       page-break-before: always !important;

@@ -822,11 +822,19 @@ export function buildProposalPdfHtml(
       }
       body > :first-child,
       .header,
-      [data-page="1"] {
+      .proposal-cover,
+      [data-page="1"],
+      [data-sheet-index="0"] {
         break-before: avoid !important;
         page-break-before: avoid !important;
         margin-top: 0 !important;
         padding-top: 0 !important;
+      }
+      .proposal-sheet ~ .proposal-sheet,
+      .proposal-page ~ .proposal-page,
+      [data-sheet-index] ~ [data-sheet-index] {
+        break-before: page !important;
+        page-break-before: always !important;
       }
       .creator-info {
         display: none !important;

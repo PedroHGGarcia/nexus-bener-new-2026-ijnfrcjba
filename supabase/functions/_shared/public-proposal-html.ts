@@ -590,9 +590,9 @@ export function buildPublicProposalHtml(
       page-break-inside: avoid;
       break-inside: avoid;
     }
-    .page:not(:last-child) {
-      page-break-after: page;
-      break-after: page;
+    .page ~ .page {
+      break-before: page;
+      page-break-before: always;
     }
     .page:last-child {
       page-break-after: auto;
@@ -788,15 +788,18 @@ export function buildPublicProposalHtml(
         height: auto !important;
       }
       .page-container > :first-child,
-      .page:first-child,
-      .page:first-of-type,
-      [data-page="1"] {
+      .page[data-page="1"],
+      [data-page="1"],
+      [data-sheet-index="0"] {
         break-before: avoid !important;
         page-break-before: avoid !important;
         margin-top: 0 !important;
         padding-top: 0 !important;
       }
-      .page:not(:first-child),
+      .page ~ .page,
+      .proposal-sheet ~ .proposal-sheet,
+      .proposal-page ~ .proposal-page,
+      [data-sheet-index] ~ [data-sheet-index],
       .page-divider {
         break-before: page !important;
         page-break-before: always !important;
@@ -840,7 +843,7 @@ export function buildPublicProposalHtml(
 
   <div class="page-container">
     <!-- PAGE 1: COVER -->
-    <div class="page" data-page="1" style="break-before: avoid !important; page-break-before: avoid !important; margin-top: 0 !important; padding-top: 0 !important;">
+    <div class="page proposal-cover" data-sheet-index="0" data-page="1" style="break-before: avoid !important; page-break-before: avoid !important; margin-top: 0 !important; padding-top: 0 !important;">
       <div>
         <div style="page-break-inside:avoid;break-inside:avoid;">
           <!-- Top Header: Logo + Proposal Number -->
@@ -906,7 +909,7 @@ export function buildPublicProposalHtml(
     <!-- PAGE 2: DETAILS -->
     ${
       hasPage2Content
-        ? `<div class="page page-divider" data-page="2" style="break-before: page !important; page-break-before: always !important;">
+        ? `<div class="page page-divider" data-sheet-index="1" data-page="2" style="break-before: page !important; page-break-before: always !important;">
       <div>
 
         <div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">

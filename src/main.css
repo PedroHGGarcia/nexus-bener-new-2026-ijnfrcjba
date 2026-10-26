@@ -303,8 +303,15 @@
 }
 
 @media print {
-  .no-print {
+  /* Ocultar qualquer coisa fora do documento e remover margens/paddings residuais */
+  .no-print,
+  .no-print * {
     display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    border: none !important;
   }
 
   /* Hide "criado com o skip" badge from printed output */
@@ -322,11 +329,13 @@
     display: none !important;
   }
 
-  /* Ensure root and body have no phantom overflow */
+  /* Zerar margens/padding/altura dos ancestrais na impressão */
   html,
   body,
-  #root {
-    background: white !important;
+  #root,
+  .min-h-screen,
+  body > div {
+    background: #fff !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
@@ -357,7 +366,8 @@
     height: auto !important;
   }
 
-  .proposal-page {
+  .proposal-page,
+  .proposal-sheet {
     margin: 0 !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
@@ -366,35 +376,34 @@
     page-break-inside: auto !important;
   }
 
-  /* Primeira página / capa: NUNCA quebra antes; zera margens/paddings superiores */
-  .proposal-document > :first-child,
-  .proposal-page:first-child,
-  .proposal-page:first-of-type,
-  .proposal-sheet:first-child,
-  .proposal-sheet:first-of-type,
+  /* Blindagem direta da capa por atributo/classe: NUNCA quebra antes */
   .proposal-cover,
-  [data-page='1'] {
+  [data-page='1'],
+  [data-sheet-index='0'] {
     break-before: avoid !important;
     page-break-before: avoid !important;
     margin-top: 0 !important;
     padding-top: 0 !important;
   }
 
-  /* Páginas seguintes forçam quebra de página */
-  .proposal-page:not(:first-child),
-  .proposal-sheet:not(:first-child),
+  /* Quebra de página SÓ entre folhas subsequentes, via combinador de irmãos — nada de break-before genérico */
+  .proposal-sheet ~ .proposal-sheet,
+  .proposal-page ~ .proposal-page,
+  [data-sheet-index] ~ [data-sheet-index],
   .proposal-page-break {
     break-before: page !important;
     page-break-before: always !important;
   }
 
-  .proposal-page:last-child {
+  .proposal-page:last-child,
+  .proposal-sheet:last-child {
     page-break-after: auto !important;
     break-after: auto !important;
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
   }
-  .proposal-page:last-child > *:last-child {
+  .proposal-page:last-child > *:last-child,
+  .proposal-sheet:last-child > *:last-child {
     margin-bottom: 0 !important;
   }
 
