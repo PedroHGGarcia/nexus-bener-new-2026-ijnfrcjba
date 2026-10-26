@@ -465,11 +465,12 @@ export function ProposalDocument({ proposal }: Props) {
         minHeight: '297mm',
         maxWidth: '100%',
         fontFamily: "'Courier New', Courier, monospace, 'Lucida Console'",
+        page: 'proposta',
       }}
     >
       {/* ================= PAGE 1: COVER / RECEPTION ================= */}
       <div
-        className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:border-none"
+        className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-[269mm] print:border-none"
         style={{ boxSizing: 'border-box' }}
       >
         {/* Top & Main Body */}
@@ -622,7 +623,7 @@ export function ProposalDocument({ proposal }: Props) {
             Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373
           </p>
           <p className="font-normal">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
-          <div className="text-right text-[11px] font-bold mt-2">
+          <div className="proposal-page-num text-right text-[11px] font-bold mt-2">
             Página 1/{showAdditionalPages ? '2' : '1'}
           </div>
         </div>
@@ -631,7 +632,7 @@ export function ProposalDocument({ proposal }: Props) {
       {/* ================= PAGE 2: TECHNICAL & COMMERCIAL DETAILS ================= */}
       {showAdditionalPages && (
         <div
-          className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 border-t-2 border-dashed border-slate-300 print:border-none"
+          className="proposal-page relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-[269mm] border-t-2 border-dashed border-slate-300 print:border-none"
           style={{ boxSizing: 'border-box' }}
         >
           <div>
@@ -1577,7 +1578,9 @@ export function ProposalDocument({ proposal }: Props) {
               Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373
             </p>
             <p className="font-normal">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
-            <div className="text-right text-[11px] font-bold mt-2">Página 2/2</div>
+            <div className="proposal-page-num text-right text-[11px] font-bold mt-2">
+              Página 2/2
+            </div>
           </div>
         </div>
       )}
