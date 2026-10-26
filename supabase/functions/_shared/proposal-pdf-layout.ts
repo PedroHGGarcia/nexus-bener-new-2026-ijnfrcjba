@@ -884,7 +884,6 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
 
   if (hasAdditionalContent) {
     doc.newPage()
-    drawHeader()
   }
 
   // ===== TECHNICAL SECTIONS =====

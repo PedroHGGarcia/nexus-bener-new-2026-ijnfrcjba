@@ -130,10 +130,7 @@ export const A4_PRINT_STYLES = `
   }
   .footer p { margin: 1px 0; }
   .page-number {
-    text-align: right;
-    font-size: 10px;
-    font-weight: bold;
-    margin-top: 4px;
+    display: none !important;
   }
 
   .section-heading {

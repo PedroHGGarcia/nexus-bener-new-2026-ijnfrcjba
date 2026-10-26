@@ -474,36 +474,39 @@ export function ProposalDocument({ proposal }: Props) {
       >
         {/* Top & Main Body */}
         <div>
-          {/* Section 0: Top Header — old-system style: logo + razão social + data + Sigla/N° Oferta/Mês/Ano */}
-          <div className="border-b border-black pb-4 mb-6">
-            {headerInstitucional}
-            <div className="flex justify-end mt-3">{siglaBox}</div>
-          </div>
+          {/* Header + Client + Reception wrapped to avoid breaking apart */}
+          <div className="break-inside-avoid">
+            {/* Section 0: Top Header — old-system style: logo + razão social + data + Sigla/N° Oferta/Mês/Ano */}
+            <div className="border-b border-black pb-4 mb-6">
+              {headerInstitucional}
+              <div className="flex justify-end mt-3">{siglaBox}</div>
+            </div>
 
-          {/* Section 1: Client Header (Top Left) */}
-          <div className="text-left text-xs sm:text-[13px] leading-relaxed tracking-tight text-black space-y-0.5">
-            <p className="font-normal">À</p>
-            <p className="font-bold text-sm sm:text-[14px]">{clientCompanyName}</p>
-            {clientAddressLine && <p className="font-normal">{clientAddressLine}</p>}
-            {clientPhone && <p className="font-normal">Telefone: {clientPhone}</p>}
-            {clientEmail && <p className="font-normal">E-mail: {clientEmail}</p>}
+            {/* Section 1: Client Header (Top Left) */}
+            <div className="text-left text-xs sm:text-[13px] leading-relaxed tracking-tight text-black space-y-0.5">
+              <p className="font-normal">À</p>
+              <p className="font-bold text-sm sm:text-[14px]">{clientCompanyName}</p>
+              {clientAddressLine && <p className="font-normal">{clientAddressLine}</p>}
+              {clientPhone && <p className="font-normal">Telefone: {clientPhone}</p>}
+              {clientEmail && <p className="font-normal">E-mail: {clientEmail}</p>}
 
-            {contactName ? (
-              <p className="font-normal pt-2">
-                A/C: <span className="font-bold">{contactName}</span>
+              {contactName ? (
+                <p className="font-normal pt-2">
+                  A/C: <span className="font-bold">{contactName}</span>
+                </p>
+              ) : (
+                <p className="font-normal pt-2">A/C: Diretor / Gerente de Compras</p>
+              )}
+            </div>
+
+            {/* Section 2: Reception Text */}
+            <div className="mt-6 sm:mt-8 text-xs sm:text-[13px] leading-relaxed text-black space-y-2 text-justify">
+              <p className="font-normal">Prezados Senhores,</p>
+              <p className="font-normal indent-0">
+                Atendendo a sua prezada consulta, temos o prazer de submeter a vossa devida
+                apreciação nossa proposta acima citada, para o fornecimento de:
               </p>
-            ) : (
-              <p className="font-normal pt-2">A/C: Diretor / Gerente de Compras</p>
-            )}
-          </div>
-
-          {/* Section 2: Reception Text */}
-          <div className="mt-6 sm:mt-8 text-xs sm:text-[13px] leading-relaxed text-black space-y-2 text-justify">
-            <p className="font-normal">Prezados Senhores,</p>
-            <p className="font-normal indent-0">
-              Atendendo a sua prezada consulta, temos o prazer de submeter a vossa devida apreciação
-              nossa proposta acima citada, para o fornecimento de:
-            </p>
+            </div>
           </div>
 
           {/* Modo Pacote: Header com TODAS as máquinas lado a lado (ou em blocos) com foto, título e tipo */}
@@ -632,12 +635,6 @@ export function ProposalDocument({ proposal }: Props) {
           style={{ boxSizing: 'border-box' }}
         >
           <div>
-            {/* Page 2 Header info: Identical to Page 1 (old-system style) */}
-            <div className="border-b border-black pb-4 mb-6">
-              {headerInstitucional}
-              <div className="flex justify-end mt-3">{siglaBox}</div>
-            </div>
-
             {/* Modo Pacote: Bloco estruturado por Máquina com Foto, Título e Acessórios vinculados */}
             {proposal.is_pacote && equipmentItems.length > 0 ? (
               <section className="mb-5 text-xs">

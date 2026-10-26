@@ -825,42 +825,44 @@ export function buildPublicProposalHtml(
     <!-- PAGE 1: COVER -->
     <div class="page">
       <div>
-        <!-- Top Header: Logo + Proposal Number -->
-        <div class="proposal-top-header">
-          <div style="display:flex;align-items:center;gap:8px;">
+        <div style="page-break-inside:avoid;break-inside:avoid;">
+          <!-- Top Header: Logo + Proposal Number -->
+          <div class="proposal-top-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${
+                logoUrlOverride
+                  ? `<img src="${esc(logoUrlOverride)}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" /><span class="bener-logo-text" style="display:none;">BENER</span>`
+                  : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" /><div style="display:none;flex-direction:column;"><span class="bener-logo-text">BENER</span><span style="font-size:10px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;">Máquinas que Transformam</span></div>`
+              }
+            </div>
+            <div class="proposal-number-box">
+              <!-- Regra 4: Nº Oferta completo sem ellipsis -->
+              <p class="prop-title">${proposta.numero_proposta ? `Proposta Nº ${esc(proposta.numero_proposta)}` : 'Proposta Comercial'}</p>
+              ${proposta.revisao ? `<p>Revisão: ${esc(proposta.revisao)}</p>` : ''}
+              <!-- Regra 5: Cidade + data na mesma linha -->
+              <p>${esc(formattedDateWithCity)}</p>
+              <p>Modalidade: ${proposta.modelo_licitacao ? 'Licitação' : 'Proposta Comercial'}</p>
+            </div>
+          </div>
+
+          <div class="client-header">
+            <p>À</p>
+            <p class="client-name">${esc(clientCompanyName)}</p>
+            ${clientAddressLine ? `<p>${esc(clientAddressLine)}</p>` : ''}
+            ${clientPhone ? `<p>Telefone: ${esc(clientPhone)}</p>` : ''}
+            ${clientEmail ? `<p>E-mail: ${esc(clientEmail)}</p>` : ''}
             ${
-              logoUrlOverride
-                ? `<img src="${esc(logoUrlOverride)}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" /><span class="bener-logo-text" style="display:none;">BENER</span>`
-                : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" /><div style="display:none;flex-direction:column;"><span class="bener-logo-text">BENER</span><span style="font-size:10px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;">Máquinas que Transformam</span></div>`
+              hasRealConversion
+                ? `<p style="font-size:11px;color:#334155;margin-top:4px;"><strong>Moeda da Proposta:</strong> ${esc(moedaProp)} &bull; <strong>Cotação:</strong> 1 ${esc(moedaProp)} = ${formatCurrencyByMoeda(proposta.cotacao_moeda, 'BRL')} ${proposta.data_cotacao_moeda ? `(${esc(proposta.data_cotacao_moeda)})` : ''}</p>`
+                : ''
             }
+            <p style="padding-top: 10px;">A/C: <strong>${esc(contactName || 'Diretor / Gerente de Compras')}</strong></p>
           </div>
-          <div class="proposal-number-box">
-            <!-- Regra 4: Nº Oferta completo sem ellipsis -->
-            <p class="prop-title">${proposta.numero_proposta ? `Proposta Nº ${esc(proposta.numero_proposta)}` : 'Proposta Comercial'}</p>
-            ${proposta.revisao ? `<p>Revisão: ${esc(proposta.revisao)}</p>` : ''}
-            <!-- Regra 5: Cidade + data na mesma linha -->
-            <p>${esc(formattedDateWithCity)}</p>
-            <p>Modalidade: ${proposta.modelo_licitacao ? 'Licitação' : 'Proposta Comercial'}</p>
+
+          <div class="reception-text">
+            <p>Prezados Senhores,</p>
+            <p>Atendendo a sua prezada consulta, temos o prazer de submeter a vossa devida apreciação nossa proposta acima citada, para o fornecimento de:</p>
           </div>
-        </div>
-
-        <div class="client-header">
-          <p>À</p>
-          <p class="client-name">${esc(clientCompanyName)}</p>
-          ${clientAddressLine ? `<p>${esc(clientAddressLine)}</p>` : ''}
-          ${clientPhone ? `<p>Telefone: ${esc(clientPhone)}</p>` : ''}
-          ${clientEmail ? `<p>E-mail: ${esc(clientEmail)}</p>` : ''}
-          ${
-            hasRealConversion
-              ? `<p style="font-size:11px;color:#334155;margin-top:4px;"><strong>Moeda da Proposta:</strong> ${esc(moedaProp)} &bull; <strong>Cotação:</strong> 1 ${esc(moedaProp)} = ${formatCurrencyByMoeda(proposta.cotacao_moeda, 'BRL')} ${proposta.data_cotacao_moeda ? `(${esc(proposta.data_cotacao_moeda)})` : ''}</p>`
-              : ''
-          }
-          <p style="padding-top: 10px;">A/C: <strong>${esc(contactName || 'Diretor / Gerente de Compras')}</strong></p>
-        </div>
-
-        <div class="reception-text">
-          <p>Prezados Senhores,</p>
-          <p>Atendendo a sua prezada consulta, temos o prazer de submeter a vossa devida apreciação nossa proposta acima citada, para o fornecimento de:</p>
         </div>
 
         <div class="machine-title">
@@ -881,7 +883,6 @@ export function buildPublicProposalHtml(
         <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial</p>
         <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373</p>
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
-        <div class="page-number">${page1Number}</div>
       </div>
     </div>
 
@@ -890,22 +891,6 @@ export function buildPublicProposalHtml(
       hasPage2Content
         ? `<div class="page page-divider">
       <div>
-        <!-- Top Header: Logo + Proposal Number (Identical to Page 1) -->
-        <div class="proposal-top-header">
-          <div style="display:flex;align-items:center;gap:8px;">
-            ${
-              logoUrlOverride
-                ? `<img src="${esc(logoUrlOverride)}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" /><span class="bener-logo-text" style="display:none;">BENER</span>`
-                : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" /><div style="display:none;flex-direction:column;"><span class="bener-logo-text">BENER</span><span style="font-size:10px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;">Máquinas que Transformam</span></div>`
-            }
-          </div>
-          <div class="proposal-number-box">
-            <p class="prop-title">${proposta.numero_proposta ? `Proposta Nº ${esc(proposta.numero_proposta)}` : 'Proposta Comercial'}</p>
-            ${proposta.revisao ? `<p>Revisão: ${esc(proposta.revisao)}</p>` : ''}
-            <p>${esc(formattedDateWithCity)}</p>
-            <p>Modalidade: ${proposta.modelo_licitacao ? 'Licitação' : 'Proposta Comercial'}</p>
-          </div>
-        </div>
 
         <div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
@@ -1216,7 +1201,6 @@ export function buildPublicProposalHtml(
         <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial</p>
         <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373</p>
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
-        <div class="page-number">Página 2/2</div>
       </div>
     </div>`
         : ''

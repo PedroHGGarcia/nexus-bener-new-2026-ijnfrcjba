@@ -333,30 +333,32 @@ export function generatePropostaHtml(
   return `
     <div class="proposal-page">
       <div>
-        <div class="proposal-top-header">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <img src="${benerLogo}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" />
+        <div style="page-break-inside:avoid;break-inside:avoid;">
+          <div class="proposal-top-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <img src="${benerLogo}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" />
+            </div>
+            <div class="proposal-number-box">
+              <p class="prop-title">${proposal.numero_proposta ? `Proposta Nº ${esc(proposal.numero_proposta)}` : 'Proposta Comercial'}</p>
+              ${proposal.revisao ? `<p>Revisão: ${esc(proposal.revisao)}</p>` : ''}
+              <p>Data: ${esc(proposal.dt_cad || new Date().toLocaleDateString('pt-BR'))}</p>
+              <p>Modalidade: ${proposal.modelo_licitacao ? 'Licitação' : 'Proposta Comercial'}</p>
+            </div>
           </div>
-          <div class="proposal-number-box">
-            <p class="prop-title">${proposal.numero_proposta ? `Proposta Nº ${esc(proposal.numero_proposta)}` : 'Proposta Comercial'}</p>
-            ${proposal.revisao ? `<p>Revisão: ${esc(proposal.revisao)}</p>` : ''}
-            <p>Data: ${esc(proposal.dt_cad || new Date().toLocaleDateString('pt-BR'))}</p>
-            <p>Modalidade: ${proposal.modelo_licitacao ? 'Licitação' : 'Proposta Comercial'}</p>
+
+          <div class="client-header">
+            <p>À</p>
+            <p class="client-name">${esc(clientCompanyName)}</p>
+            ${clientAddressLine ? `<p>${esc(clientAddressLine)}</p>` : ''}
+            ${clientPhone ? `<p>Telefone: ${esc(clientPhone)}</p>` : ''}
+            ${clientEmail ? `<p>E-mail: ${esc(clientEmail)}</p>` : ''}
+            <p style="padding-top: 8px;">A/C: <strong>${esc(contactName || 'Diretor / Gerente de Compras')}</strong></p>
           </div>
-        </div>
 
-        <div class="client-header">
-          <p>À</p>
-          <p class="client-name">${esc(clientCompanyName)}</p>
-          ${clientAddressLine ? `<p>${esc(clientAddressLine)}</p>` : ''}
-          ${clientPhone ? `<p>Telefone: ${esc(clientPhone)}</p>` : ''}
-          ${clientEmail ? `<p>E-mail: ${esc(clientEmail)}</p>` : ''}
-          <p style="padding-top: 8px;">A/C: <strong>${esc(contactName || 'Diretor / Gerente de Compras')}</strong></p>
-        </div>
-
-        <div class="reception-text">
-          <p>Prezados Senhores,</p>
-          <p>Atendendo a sua prezada consulta, temos o prazer de submeter a vossa devida apreciação nossa proposta acima citada, para o fornecimento de:</p>
+          <div class="reception-text">
+            <p>Prezados Senhores,</p>
+            <p>Atendendo a sua prezada consulta, temos o prazer de submeter a vossa devida apreciação nossa proposta acima citada, para o fornecimento de:</p>
+          </div>
         </div>
 
         <div class="machine-title">
@@ -377,7 +379,6 @@ export function generatePropostaHtml(
         <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial</p>
         <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373</p>
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
-        <div class="page-number">${page1PageNumber}</div>
       </div>
     </div>
 
@@ -385,17 +386,6 @@ export function generatePropostaHtml(
       hasAnyPage2Content
         ? `<div class="proposal-page">
       <div>
-        <div class="proposal-top-header">
-          <div style="display:flex;align-items:center;gap:8px;">
-            <img src="${benerLogo}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" />
-          </div>
-          <div class="proposal-number-box">
-            <p class="prop-title">${proposal.numero_proposta ? `Proposta Nº ${esc(proposal.numero_proposta)}` : 'Proposta Comercial'}</p>
-            ${proposal.revisao ? `<p>Revisão: ${esc(proposal.revisao)}</p>` : ''}
-            <p>Data: ${esc(proposal.dt_cad || new Date().toLocaleDateString('pt-BR'))}</p>
-            <p>Modalidade: ${proposal.modelo_licitacao ? 'Licitação' : 'Proposta Comercial'}</p>
-          </div>
-        </div>
 
         ${
           technicalSpecsHtml
@@ -914,7 +904,6 @@ export function generatePropostaHtml(
         <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial</p>
         <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373</p>
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
-        <div class="page-number">Página 2/2</div>
       </div>
     </div>`
         : ''
