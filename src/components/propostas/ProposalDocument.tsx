@@ -450,8 +450,16 @@ export function ProposalDocument({ proposal }: Props) {
         : 0
 
   // Ponto 13: Cálculo de Serviços e Comissão Bener (Admissão Temporária / Importação Direta)
-  const currentTipoNome = proposal.tipo_proposta || tipoProposta?.nome || null
-  const currentTipoComissao = tipoProposta?.comissao != null ? Number(tipoProposta.comissao) : 0
+  const overrideTp = (proposal.tipo_proposta_override || snapshotRoot?.tipo_proposta_override) as
+    | TipoProposta
+    | undefined
+  const currentTipoNome = overrideTp?.nome || proposal.tipo_proposta || tipoProposta?.nome || null
+  const currentTipoComissao =
+    overrideTp?.comissao != null
+      ? Number(overrideTp.comissao)
+      : tipoProposta?.comissao != null
+        ? Number(tipoProposta.comissao)
+        : 0
 
   // Base de cálculo dos itens (máquina + opcionais inclusos)
   const baseCalculoItens = useMemo(() => {
@@ -1423,6 +1431,20 @@ export function ProposalDocument({ proposal }: Props) {
                         </td>
                       </tr>
                     )}
+                    {comissaoServicosInfo && (
+                      <tr>
+                        <td className="text-center font-semibold text-slate-700">—</td>
+                        <td className="text-left font-semibold text-slate-900 break-words leading-tight">
+                          {comissaoServicosInfo.textoDescritivo}
+                        </td>
+                        <td className="text-center font-medium text-slate-800">—</td>
+                        <td className="text-right font-medium text-slate-700">—</td>
+                        <td className="text-right font-medium text-slate-700">—</td>
+                        <td className="text-right font-bold text-slate-950 whitespace-nowrap">
+                          {fmtCurrency(comissaoServicosInfo.valorCalculado, proposal.moeda)}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                   <tfoot>
                     <tr>
@@ -1441,7 +1463,7 @@ export function ProposalDocument({ proposal }: Props) {
                       <td className="text-right font-medium text-slate-700">—</td>
                       <td className="text-right font-medium text-slate-700">—</td>
                       <td className="text-right font-bold text-slate-950 whitespace-nowrap">
-                        {fmtCurrency(proposal.valor_final, proposal.moeda)}
+                        {fmtCurrency(valorTotalFornecimentoExibido, proposal.moeda)}
                       </td>
                     </tr>
                   </tfoot>
