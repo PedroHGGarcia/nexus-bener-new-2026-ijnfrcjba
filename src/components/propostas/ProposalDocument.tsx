@@ -460,8 +460,33 @@ export function ProposalDocument({ proposal }: Props) {
         ? Number(tipoProposta.comissao)
         : 0
 
-  // Base de cálculo dos itens (máquina + opcionais inclusos)
+  // Base de cálculo da comissão:
+  // REGRA NOVA: comissão calculada SEMPRE sobre o VALOR FINAL da proposta (com preço especial aplicado).
+  const proposalAny = proposal as any
   const baseCalculoItens = useMemo(() => {
+    // 1. Se houver base persistida válida no snapshot/proposta, respeita
+    const basePersistida = Number(
+      proposalAny.base_comissao_servicos || snapshotRoot?.base_comissao_servicos || 0,
+    )
+    if (basePersistida > 0) {
+      return basePersistida
+    }
+
+    // 2. Preço especial ou valor final da proposta
+    const precoEspecialVal =
+      proposal.preco_especial != null && Number(proposal.preco_especial) > 0
+        ? Number(proposal.preco_especial)
+        : null
+    if (precoEspecialVal != null && precoEspecialVal > 0) {
+      return precoEspecialVal
+    }
+
+    const valorFinalNum = Number(proposal.valor_final ?? proposal.valor_atual ?? 0)
+    if (valorFinalNum > 0) {
+      return valorFinalNum
+    }
+
+    // 3. Fallback: soma dos itens com desconto
     let total = 0
     if (proposal.is_pacote && equipmentItems.length > 0) {
       equipmentItems.forEach((item) => {
@@ -478,7 +503,7 @@ export function ProposalDocument({ proposal }: Props) {
       total = valorEfetivoFinal
     }
 
-    // Soma opcionais inclusos (se houver acessórios adicionais na proposta marcados como inclusos/preco)
+    // Soma opcionais inclusos
     if (Array.isArray(proposal.acessorios_proposta)) {
       type AccItem = {
         valor?: number
@@ -502,15 +527,54 @@ export function ProposalDocument({ proposal }: Props) {
     }
 
     return Math.round(total * 100) / 100
-  }, [proposal.is_pacote, equipmentItems, valorEfetivoFinal, proposal.acessorios_proposta])
+  }, [
+    proposalAny.base_comissao_servicos,
+    snapshotRoot?.base_comissao_servicos,
+    proposal.preco_especial,
+    proposal.valor_final,
+    proposal.valor_atual,
+    proposal.is_pacote,
+    equipmentItems,
+    valorEfetivoFinal,
+    proposal.acessorios_proposta,
+  ])
 
   const comissaoServicosInfo = useMemo(() => {
+    // 3 níveis: persistido direto na proposta > snapshot > cálculo via calcComissaoServicosBener
+    const valPersistido = Number(
+      proposalAny.valor_comissao_servicos ?? snapshotRoot?.valor_comissao_servicos ?? 0,
+    )
+    const pctPersistido = Number(
+      proposalAny.percentual_comissao_servicos ??
+        snapshotRoot?.percentual_comissao_servicos ??
+        currentTipoComissao,
+    )
+
+    if (valPersistido > 0) {
+      return {
+        isApplicable: true,
+        percentual: pctPersistido,
+        baseCalculo: baseCalculoItens,
+        valorCalculado: valPersistido,
+        textoDescritivo:
+          'Pagamento Brasil: Serviços e Comissão Bener. Itens considerados p/ base de cálculo: Máquina; Opcionais Inclusos e Impostos sobre serviços Bener',
+      }
+    }
+
     return calcComissaoServicosBener({
       tipoNome: currentTipoNome,
       comissaoPct: currentTipoComissao,
       baseValor: baseCalculoItens,
     })
-  }, [currentTipoNome, currentTipoComissao, baseCalculoItens])
+  }, [
+    proposalAny.valor_comissao_servicos,
+    proposalAny.percentual_comissao_servicos,
+    snapshotRoot?.valor_comissao_servicos,
+    snapshotRoot?.percentual_comissao_servicos,
+    currentTipoNome,
+    currentTipoComissao,
+    baseCalculoItens,
+  ])
 
   const valorComissaoCalculada = comissaoServicosInfo?.valorCalculado || 0
 

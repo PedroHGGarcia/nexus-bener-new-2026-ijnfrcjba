@@ -618,8 +618,13 @@ export function buildProposalPdfHtml(
           ? Number(proposta.percentual_comissao_servicos)
           : (dadosSnapshot?.percentual_comissao_servicos as number) || 0
 
-  // Base de cálculo da comissão: Máquina + Opcionais Inclusos
+  // Base de cálculo da comissão: SEMPRE o VALOR FINAL da proposta (com preço especial aplicado se houver)
   let baseCalculoItens = 0
+  const valorFinalComPrecoEspecial =
+    proposta.preco_especial != null && Number(proposta.preco_especial) > 0
+      ? Number(proposta.preco_especial)
+      : Number(proposta.valor_final ?? proposta.valor_atual ?? 0)
+
   if (proposta.base_comissao_servicos != null && Number(proposta.base_comissao_servicos) > 0) {
     baseCalculoItens = Number(proposta.base_comissao_servicos)
   } else if (
@@ -627,6 +632,8 @@ export function buildProposalPdfHtml(
     Number(dadosSnapshot.base_comissao_servicos) > 0
   ) {
     baseCalculoItens = Number(dadosSnapshot.base_comissao_servicos)
+  } else if (valorFinalComPrecoEspecial > 0) {
+    baseCalculoItens = valorFinalComPrecoEspecial
   } else if (equipmentItems && equipmentItems.length > 0) {
     equipmentItems.forEach((it: any) => {
       const qtd = it.quantidade || 1

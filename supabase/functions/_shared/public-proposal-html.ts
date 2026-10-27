@@ -1029,6 +1029,9 @@ export function buildPublicProposalHtml(
                   : (dadosSnapshot?.percentual_comissao_servicos as number) || 0
 
           let baseCalculoItens = 0
+          const valorFinalEfetivoPrecoEspecial =
+            precoEspecial != null && precoEspecial > 0 ? precoEspecial : valorEfetivoFinal
+
           if (
             proposta.base_comissao_servicos != null &&
             Number(proposta.base_comissao_servicos) > 0
@@ -1039,6 +1042,8 @@ export function buildPublicProposalHtml(
             Number(dadosSnapshot.base_comissao_servicos) > 0
           ) {
             baseCalculoItens = Number(dadosSnapshot.base_comissao_servicos)
+          } else if (valorFinalEfetivoPrecoEspecial > 0) {
+            baseCalculoItens = valorFinalEfetivoPrecoEspecial
           } else if (equipmentItems && equipmentItems.length > 0) {
             equipmentItems.forEach((it: any) => {
               const qtd = it.quantidade || 1

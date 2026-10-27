@@ -1097,6 +1097,11 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
           : (dadosSnapshot?.percentual_comissao_servicos as number) || 0
 
   let baseCalculoLayout = 0
+  const valorFinalLayoutComPrecoEspecial =
+    p.preco_especial != null && Number(p.preco_especial) > 0
+      ? Number(p.preco_especial)
+      : Number(p.valor_final ?? p.valor_atual ?? 0)
+
   if (p.base_comissao_servicos != null && Number(p.base_comissao_servicos) > 0) {
     baseCalculoLayout = Number(p.base_comissao_servicos)
   } else if (
@@ -1104,6 +1109,8 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     Number(dadosSnapshot.base_comissao_servicos) > 0
   ) {
     baseCalculoLayout = Number(dadosSnapshot.base_comissao_servicos)
+  } else if (valorFinalLayoutComPrecoEspecial > 0) {
+    baseCalculoLayout = valorFinalLayoutComPrecoEspecial
   } else if (rows.length > 0) {
     baseCalculoLayout = rows.reduce((acc, r) => acc + r.total, 0)
     inclusos.forEach((a: any) => {

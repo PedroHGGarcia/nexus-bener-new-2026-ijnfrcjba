@@ -173,9 +173,8 @@ export interface ComissaoServicosResult {
 
 /**
  * Calcula a comissão/serviços Bener para tipos Admissão Temporária e Importação Direta.
- * Base de cálculo:
- * - modo 'completa' (padrão): Máquina + Opcionais Inclusos (+ impostos sobre serviços se houver).
- * - modo 'maquina': apenas o valor da Máquina.
+ * REGRA: A base de cálculo é SEMPRE o VALOR FINAL da proposta (valor com preço especial/desconto aplicado).
+ * O parâmetro `modo` é mantido por compatibilidade de assinatura, mas ignorado.
  */
 export function calcComissaoServicosBener(params: {
   tipoNome?: string | null
@@ -183,7 +182,7 @@ export function calcComissaoServicosBener(params: {
   baseValor: number
   modo?: BaseComissaoModo
 }): ComissaoServicosResult | null {
-  const { tipoNome, comissaoPct, baseValor, modo = 'completa' } = params
+  const { tipoNome, comissaoPct, baseValor, modo } = params
   if (!isTipoAdmissaoOrImportacao(tipoNome)) return null
   const pct = Number(comissaoPct || 0)
   if (pct <= 0) return null

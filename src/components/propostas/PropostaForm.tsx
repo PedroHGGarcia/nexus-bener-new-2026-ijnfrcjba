@@ -246,7 +246,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     modeloId: null,
     versaoId: null,
   })
-  const [baseComissaoModo, setBaseComissaoModo] = useState<BaseComissaoModo>('completa')
+  const baseComissaoModo: BaseComissaoModo = 'completa'
   const [converterMoeda, setConverterMoeda] = useState(false)
   const [moedaManualOverride, setMoedaManualOverride] = useState(false)
   const [itensMoedasMap, setItensMoedasMap] = useState<Record<string, string>>({})
@@ -525,11 +525,6 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     const editMoeda = normalizeMoedaCode(editProposta.moeda || 'BRL')
     const hasActiveConversion = Boolean(editProposta.cotacao_moeda) && editMoeda !== editMoedaOrig
     setConverterMoeda(hasActiveConversion)
-
-    const savedSnapshotModo = (editProposta.dados_snapshot as any)?.base_comissao_modo
-    if (savedSnapshotModo === 'maquina' || savedSnapshotModo === 'completa') {
-      setBaseComissaoModo(savedSnapshotModo)
-    }
 
     setForm({
       cliente: editProposta.cliente || '',
@@ -1153,13 +1148,18 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     return tipoPropostaOverride || tipos.find((t) => t.nome === form.tipo_proposta) || null
   }, [tipoPropostaOverride, tipos, form.tipo_proposta])
 
-  // Base de cálculo da comissão:
-  // - Modo 'completa': Máquina + Opcionais Inclusos (mantém regra do Ponto 13)
-  // - Modo 'maquina': apenas o valor da Máquina (equipamentosComDesconto)
-  const baseCalculoComissao =
-    baseComissaoModo === 'maquina'
-      ? equipamentosComDesconto
-      : equipamentosComDesconto + acessoriosComDesconto
+  // Subtotal sem desconto dos itens
+  const valorSemDescontoBase = equipamentosSubtotal + acessoriosSubtotal
+  // Valor dos itens após descontos individuais
+  const valorAtualBase = equipamentosComDesconto + acessoriosComDesconto
+
+  // REGRA NOVA: A comissão é calculada SEMPRE sobre o VALOR FINAL da proposta (com preço especial aplicado se houver)
+  const baseCalculoComissao = useMemo(() => {
+    if (form.tem_preco_especial && form.preco_especial != null && Number(form.preco_especial) > 0) {
+      return Number(form.preco_especial)
+    }
+    return valorAtualBase
+  }, [form.tem_preco_especial, form.preco_especial, valorAtualBase])
 
   const comissaoServicosInfo = useMemo(() => {
     if (!currentTipoObj) return null
@@ -1169,15 +1169,11 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       baseValor: baseCalculoComissao,
       modo: baseComissaoModo,
     })
-  }, [currentTipoObj, baseCalculoComissao, baseComissaoModo])
+  }, [currentTipoObj, baseCalculoComissao])
 
   const valorComissaoCalculada = comissaoServicosInfo?.valorCalculado || 0
 
-  // Subtotal sem desconto e valor base dos itens
-  const valorSemDescontoBase = equipamentosSubtotal + acessoriosSubtotal
   const valorSemDesconto = valorSemDescontoBase + valorComissaoCalculada
-
-  const valorAtualBase = equipamentosComDesconto + acessoriosComDesconto
   const valorAtual = valorAtualBase + valorComissaoCalculada
 
   // Ponto 1: Desconto Geral (%) removido do cálculo; descontos ocorrem apenas por item ou Preço Especial
@@ -2566,64 +2562,6 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
             </Collapsible>
           )}
 
-          {/* Seletor discreto de Base de Cálculo da Comissão Bener — exibido apenas quando comissão > 0% para Admissão Temporária / Importação Direta */}
-          {Number(currentTipoObj?.comissao || 0) > 0 &&
-            isTipoAdmissaoOrImportacao(currentTipoObj?.nome || form.tipo_proposta) && (
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2 rounded-md bg-slate-50/70 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 text-xs animate-in fade-in-50 duration-150">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-xs font-medium text-foreground whitespace-nowrap">
-                    Base da comissão ({Number(currentTipoObj?.comissao || 0)}%):
-                  </span>
-                  {currentTipoObj?.nome && (
-                    <span
-                      className="text-[11px] text-muted-foreground truncate hidden sm:inline max-w-[200px]"
-                      title={currentTipoObj.nome}
-                    >
-                      ({currentTipoObj.nome})
-                    </span>
-                  )}
-                </div>
-
-                <div
-                  role="radiogroup"
-                  aria-label="Base de cálculo da comissão Bener"
-                  className="inline-flex items-center rounded-md bg-slate-200/70 dark:bg-slate-800/80 p-0.5 text-xs self-start sm:self-auto shrink-0"
-                >
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={baseComissaoModo === 'completa'}
-                    onClick={() => setBaseComissaoModo('completa')}
-                    title="Base completa: Máquina + Opcionais Inclusos + Impostos Bener (Padrão)"
-                    className={cn(
-                      'inline-flex items-center px-2.5 py-1 rounded text-xs font-medium transition-all select-none',
-                      baseComissaoModo === 'completa'
-                        ? 'bg-white dark:bg-slate-950 text-foreground shadow-xs font-semibold'
-                        : 'text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    Junto do preço especial
-                  </button>
-
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={baseComissaoModo === 'maquina'}
-                    onClick={() => setBaseComissaoModo('maquina')}
-                    title="Independente do preço especial: Comissão somando apenas sobre o valor da máquina"
-                    className={cn(
-                      'inline-flex items-center px-2.5 py-1 rounded text-xs font-medium transition-all select-none',
-                      baseComissaoModo === 'maquina'
-                        ? 'bg-white dark:bg-slate-950 text-foreground shadow-xs font-semibold'
-                        : 'text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    Só a máquina
-                  </button>
-                </div>
-              </div>
-            )}
-
           {/* 3. Card de Discriminação de Valores ocupando a largura */}
           <div className="p-4 sm:p-5 rounded-lg bg-slate-50/70 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 space-y-3.5">
             <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-slate-800">
@@ -2675,9 +2613,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                       Serviços e Comissão Bener ({comissaoServicosInfo.percentual}%):
                     </span>
                     <span className="text-[10px] text-muted-foreground">
-                      Base:{' '}
-                      {baseComissaoModo === 'maquina' ? 'Apenas Máquina' : 'Máquina + Opcionais'} (
-                      {fmtCurrency(baseCalculoComissao)})
+                      Base: Valor Final da Proposta ({fmtCurrency(baseCalculoComissao)})
                     </span>
                   </div>
                   <span className="font-semibold tabular-nums text-right whitespace-nowrap">
