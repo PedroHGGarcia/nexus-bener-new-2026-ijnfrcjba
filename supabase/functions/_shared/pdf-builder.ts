@@ -830,12 +830,6 @@ export function buildProposalPdfHtml(
         margin-top: 0 !important;
         padding-top: 0 !important;
       }
-      .proposal-sheet ~ .proposal-sheet,
-      .proposal-page ~ .proposal-page,
-      [data-sheet-index] ~ [data-sheet-index] {
-        break-before: page !important;
-        page-break-before: always !important;
-      }
       .creator-info {
         display: none !important;
       }

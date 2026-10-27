@@ -591,8 +591,6 @@ export function buildPublicProposalHtml(
       break-inside: avoid;
     }
     .page ~ .page {
-      break-before: page;
-      page-break-before: always;
     }
     .page:last-child {
       page-break-after: auto;
@@ -796,14 +794,7 @@ export function buildPublicProposalHtml(
         margin-top: 0 !important;
         padding-top: 0 !important;
       }
-      .page ~ .page,
-      .proposal-sheet ~ .proposal-sheet,
-      .proposal-page ~ .proposal-page,
-      [data-sheet-index] ~ [data-sheet-index],
-      .page-divider {
-        break-before: page !important;
-        page-break-before: always !important;
-      }
+
       .page {
         box-sizing: border-box !important;
         width: 100% !important;
@@ -909,7 +900,7 @@ export function buildPublicProposalHtml(
     <!-- PAGE 2: DETAILS -->
     ${
       hasPage2Content
-        ? `<div class="page page-divider" data-sheet-index="1" data-page="2" style="break-before: page !important; page-break-before: always !important;">
+        ? `<div class="page page-divider" data-sheet-index="1" data-page="2">
       <div>
 
         <div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">

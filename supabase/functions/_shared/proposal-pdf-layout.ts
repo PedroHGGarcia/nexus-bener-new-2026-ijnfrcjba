@@ -136,6 +136,7 @@ class PdfDoc {
     return PAGE_H - M_BOTTOM
   }
   private flushPage(): void {
+    if (this.ops.length === 0) return
     this.pages.push(this.ops.join('\n'))
     this.ops = []
   }
