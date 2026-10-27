@@ -276,7 +276,6 @@ export function ProposalDocument({ proposal }: Props) {
     ['Materiais Utilizados', proposal.materiais_utilizados],
     ['Imposto IPI', isTaxValueEmpty(rawIpiVal, 'Imposto IPI') ? null : rawIpiVal],
     ['Imposto ICMS', isTaxValueEmpty(rawIcmsVal, 'Imposto ICMS') ? null : rawIcmsVal],
-    ['Frase de Preço', rawFrasePreco],
   ]
 
   if (tipoProposta?.campos_adicionais) {

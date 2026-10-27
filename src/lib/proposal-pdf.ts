@@ -196,7 +196,6 @@ export function generatePropostaHtml(
       (proposal as { treinamento_tecnico?: string | null }).treinamento_tecnico ||
         tipoProposta?.treinamento_tecnico,
     ],
-    ['Frase de Preço', proposalFrasePreco],
   ]
 
   if (tipoProposta?.campos_adicionais) {

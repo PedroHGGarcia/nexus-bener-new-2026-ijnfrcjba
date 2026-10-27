@@ -407,7 +407,6 @@ export function buildPublicProposalHtml(
     ['Imposto IPI', rawIpiVal],
     ['Imposto ICMS', rawIcmsVal],
     ['Treinamento Técnico', proposta.treinamento_tecnico || tpSnapshot?.treinamento_tecnico],
-    ['Frase de Preço', proposta.frase_preco || tpSnapshot?.frase_preco],
   ]
 
   if (tpSnapshot?.campos_adicionais) {

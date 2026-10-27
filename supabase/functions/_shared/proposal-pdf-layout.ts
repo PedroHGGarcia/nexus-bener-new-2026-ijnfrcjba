@@ -710,7 +710,6 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
         : null,
   )
   addTerm('Treinamento Técnico', p.treinamento_tecnico || tp?.treinamento_tecnico)
-  addTerm('Frase de Preço', p.frase_preco || tp?.frase_preco)
 
   const hasAdditionalContent =
     Boolean(
