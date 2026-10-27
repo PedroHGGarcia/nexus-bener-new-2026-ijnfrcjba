@@ -2566,75 +2566,63 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
             </Collapsible>
           )}
 
-          {/* Ponto 13 + Tarefa A: Seletor de Base de Cálculo da Comissão Bener */}
-          {isTipoAdmissaoOrImportacao(currentTipoObj?.nome || form.tipo_proposta) && (
-            <div className="p-4 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 space-y-2.5 animate-in fade-in-50 duration-200">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
-                  Base de Cálculo da Comissão Bener ({currentTipoObj?.comissao || 0}%)
-                </Label>
-                <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
-                  {currentTipoObj?.nome}
-                </span>
-              </div>
-              <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80">
-                Defina como a comissão deve ser calculada nesta proposta:
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                <label
-                  className={cn(
-                    'flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors text-left text-xs',
-                    baseComissaoModo === 'completa'
-                      ? 'bg-white dark:bg-slate-900 border-[#0b3c26] text-foreground shadow-xs font-medium ring-1 ring-[#0b3c26]'
-                      : 'bg-white/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-muted-foreground hover:bg-white dark:hover:bg-slate-900',
+          {/* Seletor discreto de Base de Cálculo da Comissão Bener — exibido apenas quando comissão > 0% para Admissão Temporária / Importação Direta */}
+          {Number(currentTipoObj?.comissao || 0) > 0 &&
+            isTipoAdmissaoOrImportacao(currentTipoObj?.nome || form.tipo_proposta) && (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2 rounded-md bg-slate-50/70 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 text-xs animate-in fade-in-50 duration-150">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-xs font-medium text-foreground whitespace-nowrap">
+                    Base da comissão ({Number(currentTipoObj?.comissao || 0)}%):
+                  </span>
+                  {currentTipoObj?.nome && (
+                    <span
+                      className="text-[11px] text-muted-foreground truncate hidden sm:inline max-w-[200px]"
+                      title={currentTipoObj.nome}
+                    >
+                      ({currentTipoObj.nome})
+                    </span>
                   )}
-                >
-                  <input
-                    type="radio"
-                    name="base_comissao_modo"
-                    value="completa"
-                    checked={baseComissaoModo === 'completa'}
-                    onChange={() => setBaseComissaoModo('completa')}
-                    className="mt-0.5 accent-[#0b3c26] text-[#0b3c26]"
-                  />
-                  <div className="space-y-0.5 min-w-0">
-                    <span className="font-semibold block text-foreground">
-                      Junto do preço especial (Base completa)
-                    </span>
-                    <span className="text-[11px] text-muted-foreground block">
-                      Máquina + Opcionais Inclusos + Impostos Bener (Padrão)
-                    </span>
-                  </div>
-                </label>
+                </div>
 
-                <label
-                  className={cn(
-                    'flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors text-left text-xs',
-                    baseComissaoModo === 'maquina'
-                      ? 'bg-white dark:bg-slate-900 border-[#0b3c26] text-foreground shadow-xs font-medium ring-1 ring-[#0b3c26]'
-                      : 'bg-white/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-muted-foreground hover:bg-white dark:hover:bg-slate-900',
-                  )}
+                <div
+                  role="radiogroup"
+                  aria-label="Base de cálculo da comissão Bener"
+                  className="inline-flex items-center rounded-md bg-slate-200/70 dark:bg-slate-800/80 p-0.5 text-xs self-start sm:self-auto shrink-0"
                 >
-                  <input
-                    type="radio"
-                    name="base_comissao_modo"
-                    value="maquina"
-                    checked={baseComissaoModo === 'maquina'}
-                    onChange={() => setBaseComissaoModo('maquina')}
-                    className="mt-0.5 accent-[#0b3c26] text-[#0b3c26]"
-                  />
-                  <div className="space-y-0.5 min-w-0">
-                    <span className="font-semibold block text-foreground">
-                      Independente do preço especial (Sobre a máquina)
-                    </span>
-                    <span className="text-[11px] text-muted-foreground block">
-                      Comissão somando apenas sobre o valor da máquina
-                    </span>
-                  </div>
-                </label>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={baseComissaoModo === 'completa'}
+                    onClick={() => setBaseComissaoModo('completa')}
+                    title="Base completa: Máquina + Opcionais Inclusos + Impostos Bener (Padrão)"
+                    className={cn(
+                      'inline-flex items-center px-2.5 py-1 rounded text-xs font-medium transition-all select-none',
+                      baseComissaoModo === 'completa'
+                        ? 'bg-white dark:bg-slate-950 text-foreground shadow-xs font-semibold'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    Junto do preço especial
+                  </button>
+
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={baseComissaoModo === 'maquina'}
+                    onClick={() => setBaseComissaoModo('maquina')}
+                    title="Independente do preço especial: Comissão somando apenas sobre o valor da máquina"
+                    className={cn(
+                      'inline-flex items-center px-2.5 py-1 rounded text-xs font-medium transition-all select-none',
+                      baseComissaoModo === 'maquina'
+                        ? 'bg-white dark:bg-slate-950 text-foreground shadow-xs font-semibold'
+                        : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    Só a máquina
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* 3. Card de Discriminação de Valores ocupando a largura */}
           <div className="p-4 sm:p-5 rounded-lg bg-slate-50/70 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 space-y-3.5">
@@ -2677,24 +2665,26 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
               </div>
             )}
 
-            {/* Ponto 13: Linha informativa de Serviços e Comissão Bener (Admissão Temporária / Importação Direta) */}
-            {comissaoServicosInfo && (
-              <div className="flex items-start justify-between text-xs py-1 border-t border-slate-200/70 dark:border-slate-800 text-[#0b3c26] dark:text-emerald-400 gap-2">
-                <div className="flex flex-col">
-                  <span className="font-medium leading-snug">
-                    Serviços e Comissão Bener ({comissaoServicosInfo.percentual}%):
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    Base:{' '}
-                    {baseComissaoModo === 'maquina' ? 'Apenas Máquina' : 'Máquina + Opcionais'} (
-                    {fmtCurrency(baseCalculoComissao)})
+            {/* Ponto 13: Linha informativa de Serviços e Comissão Bener (Admissão Temporária / Importação Direta) — oculta quando percentual = 0% */}
+            {comissaoServicosInfo &&
+              Number(comissaoServicosInfo.percentual || 0) > 0 &&
+              comissaoServicosInfo.valorCalculado > 0 && (
+                <div className="flex items-start justify-between text-xs py-1 border-t border-slate-200/70 dark:border-slate-800 text-[#0b3c26] dark:text-emerald-400 gap-2">
+                  <div className="flex flex-col">
+                    <span className="font-medium leading-snug">
+                      Serviços e Comissão Bener ({comissaoServicosInfo.percentual}%):
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Base:{' '}
+                      {baseComissaoModo === 'maquina' ? 'Apenas Máquina' : 'Máquina + Opcionais'} (
+                      {fmtCurrency(baseCalculoComissao)})
+                    </span>
+                  </div>
+                  <span className="font-semibold tabular-nums text-right whitespace-nowrap">
+                    + {fmtCurrency(comissaoServicosInfo.valorCalculado)}
                   </span>
                 </div>
-                <span className="font-semibold tabular-nums text-right whitespace-nowrap">
-                  + {fmtCurrency(comissaoServicosInfo.valorCalculado)}
-                </span>
-              </div>
-            )}
+              )}
           </div>
 
           {/* 4. FORA DO CARD, ABAIXO DELE: Valor Final da Proposta (destaque aprovado pela Bianca) */}
