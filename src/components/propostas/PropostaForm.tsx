@@ -42,6 +42,7 @@ import {
   Plus,
   Eye,
   ChevronDown,
+  RotateCcw,
 } from 'lucide-react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -58,12 +59,7 @@ import { PropostaWithRelations } from '@/types/proposta'
 import { fetchVersoes, fetchVersaoById } from '@/services/versoes'
 import { useGerenteCategoryRestriction } from '@/hooks/use-gerente-restriction'
 import { Versao } from '@/types/versao'
-import {
-  fetchTiposProposta,
-  fetchTiposPropostaByVersaoId,
-  updateTipoProposta,
-  checkNomeDuplicate,
-} from '@/services/tipos-proposta'
+import { fetchTiposProposta, fetchTiposPropostaByVersaoId } from '@/services/tipos-proposta'
 import { supabase } from '@/lib/supabase/client'
 import { VersaoWithModelo } from '@/types/versao'
 import { TipoProposta } from '@/types/tipo-proposta'
@@ -212,6 +208,9 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
   const [tipoEditing, setTipoEditing] = useState<TipoProposta | null>(null)
   const [tipoForm, setTipoForm] = useState<TipoFormData | null>(null)
   const [tipoSaving, setTipoSaving] = useState(false)
+  const [tipoPropostaOverride, setTipoPropostaOverride] = useState<TipoProposta | null>(
+    (editProposta?.tipo_proposta_override as TipoProposta | null) || null,
+  )
   // When true, after the tipos list refreshes we re-run onTipoPropostaChange
   // with the currently-selected tipo name so the form picks up any updated values.
   const pendingTipoReapply = useRef(false)
@@ -558,6 +557,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         : [],
       is_pacote: editProposta.is_pacote ?? false,
     })
+    setTipoPropostaOverride((editProposta.tipo_proposta_override as TipoProposta | null) || null)
     if (editProposta.projeto) {
       setProjetoMode('existing')
       setProjetoExistenteId(editProposta.projeto)
@@ -915,58 +915,96 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     setTipoForm((prev) => (prev ? { ...prev, [key]: value as never } : prev))
 
   const openTipoSheet = () => {
-    const t = tipos.find((x) => x.nome === form.tipo_proposta)
+    const rootT = tipos.find((x) => x.nome === form.tipo_proposta)
+    const t = tipoPropostaOverride || rootT
     if (!t) return
     setTipoEditing(t)
     setTipoForm(tipoToForm(t))
     setTipoSheetOpen(true)
   }
 
-  const handleTipoSheetSave = async (e: React.FormEvent) => {
+  const handleRestoreTipoRaiz = () => {
+    setTipoPropostaOverride(null)
+    const t = tipos.find((x) => x.nome === form.tipo_proposta)
+    if (t) {
+      setForm((prev) => ({
+        ...prev,
+        transporte_seguro: t.transporte_seguro || '',
+        validade_oferta: t.validade_oferta || '30 dias',
+        prazo_entrega: t.prazo_entrega || '',
+        condicoes_pagamento: t.condicoes_pagamento || '',
+        imposto_ipi:
+          t.imposto_ipi != null && String(t.imposto_ipi).trim() !== '' ? t.imposto_ipi : null,
+        imposto_icms:
+          t.imposto_icms != null && String(t.imposto_icms).trim() !== '' ? t.imposto_icms : null,
+        garantia_acessorios: t.garantia || '',
+        assistencia_tecnica_detalhada: t.assistencia_tecnica || '',
+        campos_adicionais: Array.isArray(t.campos_adicionais)
+          ? (t.campos_adicionais as unknown as CustomField[])
+          : [],
+      }))
+    }
+    toast({ title: 'Valores originais restaurados' })
+  }
+
+  const handleTipoSheetSave = (e: React.FormEvent) => {
     e.preventDefault()
     if (!tipoEditing || !tipoForm) return
     if (!tipoForm.nome.trim()) {
       toast({ title: 'Nome é obrigatório', variant: 'destructive' })
       return
     }
-    const isDup = await checkNomeDuplicate(tipoForm.nome.trim(), tipoEditing.id)
-    if (isDup) {
-      toast({
-        title: 'Nome duplicado',
-        description: 'Já existe outro tipo de proposta com este nome.',
-        variant: 'destructive',
-      })
-      return
+
+    const mergedOverride: TipoProposta = {
+      ...(tipoPropostaOverride || tipoEditing),
+      id: tipoEditing.id,
+      nome: tipoForm.nome.trim(),
+      status: tipoForm.status,
+      aplicar_fator_nac: tipoForm.aplicar_fator_nac,
+      comissao: tipoForm.comissao,
+      frase_preco: tipoForm.frase_preco,
+      frase_comissao: tipoForm.frase_comissao,
+      prazo_entrega: tipoForm.prazo_entrega,
+      condicoes_pagamento: tipoForm.condicoes_pagamento,
+      garantia: tipoForm.garantia,
+      assistencia_tecnica: tipoForm.assistencia_tecnica,
+      treinamento_tecnico: tipoForm.treinamento_tecnico,
+      transporte_seguro: tipoForm.transporte_seguro,
+      validade_oferta: tipoForm.validade_oferta,
+      imposto_ipi: tipoForm.imposto_ipi,
+      imposto_icms: tipoForm.imposto_icms,
+      campos_adicionais: tipoForm.campos_adicionais,
     }
-    setTipoSaving(true)
-    try {
-      const userNameForAudit = user?.name || user?.email || userName || 'Sistema'
-      await updateTipoProposta({
-        id: tipoEditing.id,
-        ...tipoForm,
-        nome: tipoForm.nome.trim(),
-        atualizado_por: userNameForAudit,
-      })
-      toast({ title: 'Tipo atualizado' })
-      // Re-fetch tipos for the active version and re-apply to the form
-      const refreshed = activeVersaoId
-        ? await fetchTiposPropostaByVersaoId(activeVersaoId, true)
-        : await fetchTiposProposta(true)
-      setTipos(refreshed)
-      nomeForReapply.current = tipoForm.nome.trim()
-      pendingTipoReapply.current = true
-      setTipoSheetOpen(false)
-      setTipoEditing(null)
-      setTipoForm(null)
-    } catch (err) {
-      toast({
-        title: 'Erro ao salvar',
-        description: err instanceof Error ? err.message : '',
-        variant: 'destructive',
-      })
-    } finally {
-      setTipoSaving(false)
-    }
+
+    setTipoPropostaOverride(mergedOverride)
+
+    setForm((prev) => ({
+      ...prev,
+      transporte_seguro: tipoForm.transporte_seguro,
+      validade_oferta: tipoForm.validade_oferta,
+      prazo_entrega: tipoForm.prazo_entrega,
+      condicoes_pagamento: tipoForm.condicoes_pagamento,
+      imposto_ipi:
+        tipoForm.imposto_ipi != null && String(tipoForm.imposto_ipi).trim() !== ''
+          ? tipoForm.imposto_ipi
+          : null,
+      imposto_icms:
+        tipoForm.imposto_icms != null && String(tipoForm.imposto_icms).trim() !== ''
+          ? tipoForm.imposto_icms
+          : null,
+      garantia_acessorios: tipoForm.garantia,
+      assistencia_tecnica_detalhada: tipoForm.assistencia_tecnica,
+      campos_adicionais: tipoForm.campos_adicionais,
+    }))
+
+    toast({
+      title: 'Tipo personalizado',
+      description: 'As alterações foram aplicadas apenas nesta proposta.',
+    })
+
+    setTipoSheetOpen(false)
+    setTipoEditing(null)
+    setTipoForm(null)
   }
 
   // Detecta se as máquinas selecionadas no modo pacote possuem moedas diferentes entre si
@@ -1287,6 +1325,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         cliente: form.cliente || null,
         contato_id: contatoId || null,
         tipo_proposta: mainTipoProposta,
+        tipo_proposta_override: tipoPropostaOverride || null,
         representante: finalRepresentanteId,
         gerente: finalGerenteId,
         assinante_representante_id: finalRepresentanteId,
@@ -1357,6 +1396,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         is_pacote: form.is_pacote,
         versaoId: itensVersoes[0]?.versao_id || null,
         tipo_proposta: mainTipoProposta,
+        tipo_proposta_override: tipoPropostaOverride || null,
         userName,
         itens: itensVersoes.map((item, idx) => ({
           versao_id: item.versao_id,
@@ -1391,6 +1431,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
 
       const payloadWithSnapshot = {
         ...payload,
+        tipo_proposta_override: tipoPropostaOverride || null,
         itens_snapshot,
         dados_snapshot,
       }
@@ -2115,6 +2156,33 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
               )}
             </div>
 
+            {tipoPropostaOverride !== null && (
+              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-md bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/80">
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className="bg-amber-100 text-amber-900 border-amber-300 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-700 text-xs font-semibold gap-1"
+                  >
+                    Personalizado nesta proposta
+                  </Badge>
+                  <span className="text-xs text-amber-800 dark:text-amber-300 hidden sm:inline">
+                    Termos comerciais customizados apenas para este documento.
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs bg-white dark:bg-slate-900 hover:bg-amber-100 dark:hover:bg-amber-950 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 gap-1.5"
+                  onClick={handleRestoreTipoRaiz}
+                  title="Restaurar valores padrão do catálogo raiz"
+                >
+                  <RotateCcw className="w-3 h-3 text-amber-700 dark:text-amber-400" />
+                  Restaurar original da raiz
+                </Button>
+              </div>
+            )}
+
             {!activeVersaoId ? (
               <div className="p-4 rounded-lg bg-muted/40 border border-dashed flex items-center gap-3 text-sm text-muted-foreground">
                 <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
@@ -2745,6 +2813,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     },
                 proposta_versoes: tempProposalVersoes,
                 tipo_proposta: form.tipo_proposta,
+                tipo_proposta_override: tipoPropostaOverride || null,
                 moeda: converterMoeda ? form.moeda || 'BRL' : form.moeda_original || 'BRL',
                 moeda_original: form.moeda_original || 'BRL',
                 cotacao_moeda:
