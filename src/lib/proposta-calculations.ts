@@ -157,6 +157,8 @@ export function isTipoAdmissaoOrImportacao(tipoNome?: string | null): boolean {
   return false
 }
 
+export type BaseComissaoModo = 'completa' | 'maquina'
+
 export const TEXTO_COMISSAO_BENER_VERBATIM =
   'Pagamento Brasil: Serviços e Comissão Bener. Itens considerados p/ base de cálculo: Máquina; Opcionais Inclusos e Impostos sobre serviços Bener'
 
@@ -166,18 +168,22 @@ export interface ComissaoServicosResult {
   baseCalculo: number
   valorCalculado: number
   textoDescritivo: string
+  modo?: BaseComissaoModo
 }
 
 /**
  * Calcula a comissão/serviços Bener para tipos Admissão Temporária e Importação Direta.
- * Base de cálculo: Máquina + Opcionais Inclusos (+ impostos sobre serviços se houver).
+ * Base de cálculo:
+ * - modo 'completa' (padrão): Máquina + Opcionais Inclusos (+ impostos sobre serviços se houver).
+ * - modo 'maquina': apenas o valor da Máquina.
  */
 export function calcComissaoServicosBener(params: {
   tipoNome?: string | null
   comissaoPct?: number | null
   baseValor: number
+  modo?: BaseComissaoModo
 }): ComissaoServicosResult | null {
-  const { tipoNome, comissaoPct, baseValor } = params
+  const { tipoNome, comissaoPct, baseValor, modo = 'completa' } = params
   if (!isTipoAdmissaoOrImportacao(tipoNome)) return null
   const pct = Number(comissaoPct || 0)
   if (pct <= 0) return null
@@ -191,5 +197,6 @@ export function calcComissaoServicosBener(params: {
     baseCalculo: base,
     valorCalculado,
     textoDescritivo: TEXTO_COMISSAO_BENER_VERBATIM,
+    modo,
   }
 }

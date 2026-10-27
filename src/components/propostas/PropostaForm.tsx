@@ -95,6 +95,8 @@ import {
   convertCurrency,
   formatPrecoEspecialDiscountBadge,
   calcComissaoServicosBener,
+  isTipoAdmissaoOrImportacao,
+  BaseComissaoModo,
 } from '@/lib/proposta-calculations'
 import { useAuth } from '@/hooks/use-auth'
 import { cn } from '@/lib/utils'
@@ -241,6 +243,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     modeloId: null,
     versaoId: null,
   })
+  const [baseComissaoModo, setBaseComissaoModo] = useState<BaseComissaoModo>('completa')
   const [converterMoeda, setConverterMoeda] = useState(false)
   const [moedaManualOverride, setMoedaManualOverride] = useState(false)
   const [itensMoedasMap, setItensMoedasMap] = useState<Record<string, string>>({})
@@ -519,6 +522,11 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     const editMoeda = normalizeMoedaCode(editProposta.moeda || 'BRL')
     const hasActiveConversion = Boolean(editProposta.cotacao_moeda) && editMoeda !== editMoedaOrig
     setConverterMoeda(hasActiveConversion)
+
+    const savedSnapshotModo = (editProposta.dados_snapshot as any)?.base_comissao_modo
+    if (savedSnapshotModo === 'maquina' || savedSnapshotModo === 'completa') {
+      setBaseComissaoModo(savedSnapshotModo)
+    }
 
     setForm({
       cliente: editProposta.cliente || '',
@@ -1142,8 +1150,13 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     return tipoPropostaOverride || tipos.find((t) => t.nome === form.tipo_proposta) || null
   }, [tipoPropostaOverride, tipos, form.tipo_proposta])
 
-  // Base de cálculo da comissão: Máquina + Opcionais Inclusos
-  const baseCalculoComissao = equipamentosComDesconto + acessoriosComDesconto
+  // Base de cálculo da comissão:
+  // - Modo 'completa': Máquina + Opcionais Inclusos (mantém regra do Ponto 13)
+  // - Modo 'maquina': apenas o valor da Máquina (equipamentosComDesconto)
+  const baseCalculoComissao =
+    baseComissaoModo === 'maquina'
+      ? equipamentosComDesconto
+      : equipamentosComDesconto + acessoriosComDesconto
 
   const comissaoServicosInfo = useMemo(() => {
     if (!currentTipoObj) return null
@@ -1151,8 +1164,9 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       tipoNome: currentTipoObj.nome,
       comissaoPct: currentTipoObj.comissao,
       baseValor: baseCalculoComissao,
+      modo: baseComissaoModo,
     })
-  }, [currentTipoObj, baseCalculoComissao])
+  }, [currentTipoObj, baseCalculoComissao, baseComissaoModo])
 
   const valorComissaoCalculada = comissaoServicosInfo?.valorCalculado || 0
 
@@ -1462,12 +1476,14 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
               base_comissao_servicos: comissaoServicosInfo.baseCalculo,
               percentual_comissao_servicos: comissaoServicosInfo.percentual,
               comissao_servicos_aplicavel: true,
+              base_comissao_modo: baseComissaoModo,
             }
           : {
               valor_comissao_servicos: 0,
               base_comissao_servicos: baseCalculoComissao,
               percentual_comissao_servicos: Number(currentTipoObj?.comissao || 0),
               comissao_servicos_aplicavel: false,
+              base_comissao_modo: baseComissaoModo,
             },
         knownVersoes: versoes,
       })
@@ -1682,18 +1698,19 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       {/* 1. Cliente & Equipe Comercial */}
       <Card>
         <CardContent className="p-5 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
+          <div className="space-y-4">
+            {/* Linha 1: Cliente em linha própria (campo principal e obrigatório com largura total) */}
+            <div className="w-full">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Cliente *
               </Label>
-              <div className="mt-1 flex items-center gap-1.5">
+              <div className="mt-1 flex items-center gap-2">
                 <div className="flex-1 min-w-0">
                   <SearchableCombobox
                     value={form.cliente || null}
                     onChange={(v) => upd('cliente', v || '')}
                     placeholder="Selecione um cliente..."
-                    searchPlaceholder="Buscar por nome ou CNPJ..."
+                    searchPlaceholder="Buscar por nome, razão social ou CNPJ..."
                     disabled={isEditing}
                     fetchOptions={async (query, page) => {
                       const from = (page - 1) * 20
@@ -1701,9 +1718,12 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
 
                       let q = supabase
                         .from('clientes')
-                        .select('id, fantasia, documento, estado, maquina_interesse', {
-                          count: 'exact',
-                        })
+                        .select(
+                          'id, fantasia, razao_social, documento, cidade, estado, maquina_interesse',
+                          {
+                            count: 'exact',
+                          },
+                        )
                         .eq('status', 'Ativo')
 
                       // Se o usuário logado for vendedor ou representante, filtra clientes criados por ele OU de seus estados de atuação
@@ -1743,7 +1763,9 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
 
                       if (query && query.trim()) {
                         const trimmed = query.trim()
-                        q = q.or(`fantasia.ilike.%${trimmed}%,documento.ilike.%${trimmed}%`)
+                        q = q.or(
+                          `fantasia.ilike.%${trimmed}%,razao_social.ilike.%${trimmed}%,documento.ilike.%${trimmed}%`,
+                        )
                       }
 
                       const { data, count, error } = await q.order('fantasia').range(from, to)
@@ -1756,14 +1778,28 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                         (c: {
                           id: string
                           fantasia: string
+                          razao_social?: string | null
                           documento: string | null
+                          cidade?: string | null
+                          estado?: string | null
                           maquina_interesse?: string | null
-                        }) => ({
-                          value: c.id,
-                          label: c.maquina_interesse
-                            ? `${c.fantasia} — Interesse: ${c.maquina_interesse}`
-                            : c.fantasia,
-                        }),
+                        }) => {
+                          const nomePrincipal = c.fantasia || c.razao_social || 'Cliente sem nome'
+                          const subParts: string[] = []
+                          if (c.documento) subParts.push(`Doc: ${c.documento}`)
+                          const local = [c.cidade, c.estado].filter(Boolean).join(' - ')
+                          if (local) subParts.push(local)
+                          if (c.maquina_interesse)
+                            subParts.push(`Interesse: ${c.maquina_interesse}`)
+
+                          return {
+                            value: c.id,
+                            label: c.maquina_interesse
+                              ? `${nomePrincipal} — Interesse: ${c.maquina_interesse}`
+                              : nomePrincipal,
+                            sublabel: subParts.join(' • '),
+                          }
+                        },
                       )
 
                       const hasMore = count != null ? to + 1 < count : items.length === 20
@@ -1777,9 +1813,9 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                       <TooltipTrigger asChild>
                         <Button
                           type="button"
-                          variant="ghost"
+                          variant="outline"
                           size="icon"
-                          className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground"
+                          className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground border-slate-200 dark:border-slate-800"
                           onClick={() => setClienteDialogOpen(true)}
                           aria-label="Cadastrar novo cliente"
                         >
@@ -1793,202 +1829,216 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
               </div>
             </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  Representante Comercial
-                  {(isRepUser || authLoading) && <Lock className="w-3 h-3 text-muted-foreground" />}
-                </Label>
-                {isRepUser && (
-                  <span className="text-[11px] text-muted-foreground">
-                    Vinculado ao seu usuário
-                  </span>
-                )}
-              </div>
-              <div className="mt-1">
-                {authLoading ? (
-                  <div className="h-10 px-3 flex items-center border rounded-md bg-muted/30 text-sm text-muted-foreground">
-                    Carregando permissões do usuário...
-                  </div>
-                ) : isRepUser ? (
-                  loadingUserRep ? (
+            {/* Linha 2: Equipe Comercial com largura confortável em 3 colunas (responsivo: 1 col no mobile, 3 col a partir de md) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+              {/* Representante Comercial */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    Representante Comercial
+                    {(isRepUser || authLoading) && (
+                      <Lock className="w-3 h-3 text-muted-foreground" />
+                    )}
+                  </Label>
+                  {isRepUser && (
+                    <span className="text-[11px] text-muted-foreground">
+                      Vinculado ao seu usuário
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1">
+                  {authLoading ? (
                     <div className="h-10 px-3 flex items-center border rounded-md bg-muted/30 text-sm text-muted-foreground">
-                      Carregando representante vinculado...
+                      Carregando permissões do usuário...
                     </div>
-                  ) : hasRepError || !userRepresentante ? (
-                    <div className="p-3 border border-destructive/40 bg-destructive/5 rounded-md text-xs text-destructive flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-semibold">Nenhum cadastro de representante vinculado</p>
-                        <p className="mt-0.5 text-muted-foreground">
-                          Seu perfil é de representante/vendedor, porém não localizamos seu cadastro
-                          de representante comercial pelo e-mail ({user?.email}). Entre em contato
-                          com o suporte para liberar a emissão.
-                        </p>
+                  ) : isRepUser ? (
+                    loadingUserRep ? (
+                      <div className="h-10 px-3 flex items-center border rounded-md bg-muted/30 text-sm text-muted-foreground">
+                        Carregando representante vinculado...
                       </div>
-                    </div>
+                    ) : hasRepError || !userRepresentante ? (
+                      <div className="p-3 border border-destructive/40 bg-destructive/5 rounded-md text-xs text-destructive flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold">
+                            Nenhum cadastro de representante vinculado
+                          </p>
+                          <p className="mt-0.5 text-muted-foreground">
+                            Seu perfil é de representante/vendedor, porém não localizamos seu
+                            cadastro de representante comercial pelo e-mail ({user?.email}). Entre
+                            em contato com o suporte para liberar a emissão.
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-10 px-3 flex items-center justify-between border rounded-md bg-muted/40 text-sm font-medium text-foreground cursor-not-allowed select-none">
+                        <span className="truncate">
+                          {userRepresentante?.fantasia ||
+                            userRepresentante?.razao_social ||
+                            'Representante'}
+                        </span>
+                        <Lock className="w-4 h-4 text-muted-foreground shrink-0 ml-2" />
+                      </div>
+                    )
                   ) : (
-                    <div className="h-10 px-3 flex items-center justify-between border rounded-md bg-muted/40 text-sm font-medium text-foreground cursor-not-allowed select-none">
-                      <span className="truncate">
-                        {userRepresentante?.fantasia ||
-                          userRepresentante?.razao_social ||
-                          'Representante'}
-                      </span>
-                      <Lock className="w-4 h-4 text-muted-foreground shrink-0 ml-2" />
-                    </div>
-                  )
-                ) : (
-                  <SearchableCombobox
-                    value={form.representante || null}
-                    onChange={(v) => onRepresentanteChange(v || '')}
-                    placeholder="Selecione o representante ou gerente..."
-                    searchPlaceholder="Buscar representante ou gerente..."
-                    disabled={isEditing}
-                    fetchOptions={async (query, page) => {
-                      const trimmed = query.trim().toLowerCase()
-                      const pageSize = 25
-                      const from = (page - 1) * pageSize
-                      const to = page * pageSize - 1
+                    <SearchableCombobox
+                      value={form.representante || null}
+                      onChange={(v) => onRepresentanteChange(v || '')}
+                      placeholder="Selecione o representante ou gerente..."
+                      searchPlaceholder="Buscar representante ou gerente..."
+                      disabled={isEditing}
+                      fetchOptions={async (query, page) => {
+                        const trimmed = query.trim().toLowerCase()
+                        const pageSize = 25
+                        const from = (page - 1) * pageSize
+                        const to = page * pageSize - 1
 
-                      // 1. Buscar representantes comerciais ativos
-                      let q = supabase
-                        .from('representantes')
-                        .select('id, fantasia, razao_social, status', { count: 'exact' })
-                        .eq('status', 'Ativo')
+                        // 1. Buscar representantes comerciais ativos
+                        let q = supabase
+                          .from('representantes')
+                          .select('id, fantasia, razao_social, status', { count: 'exact' })
+                          .eq('status', 'Ativo')
 
-                      if (trimmed) {
-                        q = q.ilike('fantasia', `%${trimmed}%`)
-                      }
+                        if (trimmed) {
+                          q = q.ilike('fantasia', `%${trimmed}%`)
+                        }
 
-                      const { data: repData, count: repCount } = await q
-                        .order('fantasia')
-                        .range(from, to)
+                        const { data: repData, count: repCount } = await q
+                          .order('fantasia')
+                          .range(from, to)
 
-                      const repItems = (repData ?? []).map(
-                        (r: { id: string; fantasia: string }) => ({
-                          value: r.id,
-                          label: r.fantasia || 'Sem nome',
-                        }),
-                      )
+                        const repItems: SearchableComboboxOption[] = (repData ?? []).map(
+  (r: { id: string; fantasia: string; razao_social?: string }) => ({
+    value: r.id,
+    label: r.fantasia || r.razao_social || 'Sem nome',
+    sublabel: r.razao_social && r.razao_social !== r.fantasia ? r.razao_social : undefined,
+  }),
+)
 
-                      // 2. Gerentes ativos agrupados após representantes na 1ª página ou quando filtrados
-                      // Filtra gerentes cujo nome combine com o termo de busca
-                      const matchingGerentes = gerentes
-                        .filter((g) => g.status === 'Ativo')
-                        .filter((g) => !trimmed || g.nome.toLowerCase().includes(trimmed))
-                        .map((g) => ({
-                          value: `gerente:${g.id}`,
-                          label: `${g.nome} (Gerência)`,
-                        }))
+// 2. Gerentes ativos agrupados após representantes na 1ª página ou quando filtrados
+const matchingGerentes: SearchableComboboxOption[] = gerentes
+  .filter((g) => g.status === 'Ativo')
+  .filter((g) => !trimmed || g.nome.toLowerCase().includes(trimmed))
+  .map((g) => ({
+    value: `gerente:${g.id}`,
+    label: `${g.nome} (Gerência)`,
+  }))
 
-                      // Na primeira página, acrescenta os gerentes ao final dos representantes
-                      let items = repItems
-                      if (page === 1) {
-                        items = [...repItems, ...matchingGerentes]
-                      }
+let items: SearchableComboboxOption[] = repItems
+if (page === 1) {
+  items = [...repItems, ...matchingGerentes]
+}
 
-                      const totalReps = repCount ?? 0
-                      const hasMore = to + 1 < totalReps
+                        const totalReps = repCount ?? 0
+                        const hasMore = to + 1 < totalReps
 
-                      return { items, hasMore }
-                    }}
-                  />
-                )}
+                        return { items, hasMore }
+                      }}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                  Gerente de Produto
-                  {(isRepUser || authLoading) && <Lock className="w-3 h-3 text-muted-foreground" />}
-                </Label>
-                {isRepUser && (form.gerente || resolvedGerenteLockedId) && (
-                  <span className="text-[11px] text-muted-foreground">
-                    Vinculado ao seu cadastro
-                  </span>
-                )}
-              </div>
-              <div className="mt-1">
-                {authLoading ? (
-                  <div className="h-10 px-3 flex items-center border rounded-md bg-muted/30 text-sm text-muted-foreground">
-                    Carregando permissões do usuário...
-                  </div>
-                ) : isRepUser ? (
-                  loadingUserRep ? (
+              {/* Gerente de Produto */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    Gerente de Produto
+                    {(isRepUser || authLoading) && (
+                      <Lock className="w-3 h-3 text-muted-foreground" />
+                    )}
+                  </Label>
+                  {isRepUser && (form.gerente || resolvedGerenteLockedId) && (
+                    <span className="text-[11px] text-muted-foreground">
+                      Vinculado ao seu cadastro
+                    </span>
+                  )}
+                </div>
+                <div className="mt-1">
+                  {authLoading ? (
                     <div className="h-10 px-3 flex items-center border rounded-md bg-muted/30 text-sm text-muted-foreground">
-                      Carregando gerente vinculado...
+                      Carregando permissões do usuário...
                     </div>
-                  ) : form.gerente || resolvedGerenteLockedId ? (
-                    <div className="h-10 px-3 flex items-center justify-between border rounded-md bg-muted/40 text-sm font-medium text-foreground cursor-not-allowed select-none">
-                      <span className="truncate">
-                        {form.nome_gerente_produto ||
-                          resolvedGerenteLockedNome ||
-                          selectedGerenteObj?.nome ||
-                          'Gerente vinculado'}
-                      </span>
-                      <Lock className="w-4 h-4 text-muted-foreground shrink-0 ml-2" />
-                    </div>
+                  ) : isRepUser ? (
+                    loadingUserRep ? (
+                      <div className="h-10 px-3 flex items-center border rounded-md bg-muted/30 text-sm text-muted-foreground">
+                        Carregando gerente vinculado...
+                      </div>
+                    ) : form.gerente || resolvedGerenteLockedId ? (
+                      <div className="h-10 px-3 flex items-center justify-between border rounded-md bg-muted/40 text-sm font-medium text-foreground cursor-not-allowed select-none">
+                        <span className="truncate">
+                          {form.nome_gerente_produto ||
+                            resolvedGerenteLockedNome ||
+                            selectedGerenteObj?.nome ||
+                            'Gerente vinculado'}
+                        </span>
+                        <Lock className="w-4 h-4 text-muted-foreground shrink-0 ml-2" />
+                      </div>
+                    ) : (
+                      <div className="h-10 px-3 flex items-center justify-between border border-dashed rounded-md bg-muted/20 text-xs text-muted-foreground select-none">
+                        <span className="truncate italic">
+                          Nenhum gerente vinculado ao seu cadastro
+                        </span>
+                        <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 ml-2" />
+                      </div>
+                    )
                   ) : (
-                    <div className="h-10 px-3 flex items-center justify-between border border-dashed rounded-md bg-muted/20 text-xs text-muted-foreground select-none">
-                      <span className="truncate italic">
-                        Nenhum gerente vinculado ao seu cadastro
-                      </span>
-                      <Info className="w-3.5 h-3.5 text-muted-foreground shrink-0 ml-2" />
-                    </div>
-                  )
-                ) : (
-                  <SearchableCombobox
-                    value={form.gerente || null}
-                    onChange={(v) => onGerenteChange(v || '')}
-                    placeholder="Selecione o gerente..."
-                    searchPlaceholder="Buscar por nome..."
-                    disabled={isEditing}
-                    fetchOptions={async (query, page) => {
-                      const from = (page - 1) * 20
-                      const to = page * 20 - 1
+                    <SearchableCombobox
+                      value={form.gerente || null}
+                      onChange={(v) => onGerenteChange(v || '')}
+                      placeholder="Selecione o gerente..."
+                      searchPlaceholder="Buscar por nome..."
+                      disabled={isEditing}
+                      fetchOptions={async (query, page) => {
+                        const from = (page - 1) * 20
+                        const to = page * 20 - 1
 
-                      let q = supabase
-                        .from('gerentes')
-                        .select('id, nome', { count: 'exact' })
-                        .eq('status', 'Ativo')
+                        let q = supabase
+                          .from('gerentes')
+                          .select('id, nome, email', { count: 'exact' })
+                          .eq('status', 'Ativo')
 
-                      if (query && query.trim()) {
-                        const trimmed = query.trim()
-                        q = q.ilike('nome', `%${trimmed}%`)
-                      }
+                        if (query && query.trim()) {
+                          const trimmed = query.trim()
+                          q = q.ilike('nome', `%${trimmed}%`)
+                        }
 
-                      const { data, count, error } = await q.order('nome').range(from, to)
+                        const { data, count, error } = await q.order('nome').range(from, to)
 
-                      if (error || !data) {
-                        return { items: [], hasMore: false }
-                      }
+                        if (error || !data) {
+                          return { items: [], hasMore: false }
+                        }
 
-                      const items = data.map((g: { id: string; nome: string }) => ({
-                        value: g.id,
-                        label: g.nome,
-                      }))
+                        const items = data.map(
+                          (g: { id: string; nome: string; email?: string }) => ({
+                            value: g.id,
+                            label: g.nome,
+                            sublabel: g.email || undefined,
+                          }),
+                        )
 
-                      const hasMore = count != null ? to + 1 < count : items.length === 20
-                      return { items, hasMore }
-                    }}
-                  />
-                )}
+                        const hasMore = count != null ? to + 1 < count : items.length === 20
+                        return { items, hasMore }
+                      }}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div>
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Assessor Técnico
-              </Label>
-              <div className="mt-1">
-                <Input
-                  value="Jorge Polezi"
-                  readOnly
-                  disabled
-                  placeholder="Jorge Polezi"
-                  className="h-10 text-sm font-medium bg-muted/40 cursor-not-allowed select-none text-foreground"
-                />
+              {/* Assessor Técnico */}
+              <div>
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Assessor Técnico
+                </Label>
+                <div className="mt-1">
+                  <Input
+                    value="Jorge Polezi"
+                    readOnly
+                    disabled
+                    placeholder="Jorge Polezi"
+                    className="h-10 text-sm font-medium bg-muted/40 cursor-not-allowed select-none text-foreground"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -2510,6 +2560,76 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
             </Collapsible>
           )}
 
+          {/* Ponto 13 + Tarefa A: Seletor de Base de Cálculo da Comissão Bener */}
+          {isTipoAdmissaoOrImportacao(currentTipoObj?.nome || form.tipo_proposta) && (
+            <div className="p-4 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/60 space-y-2.5 animate-in fade-in-50 duration-200">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5">
+                  Base de Cálculo da Comissão Bener ({currentTipoObj?.comissao || 0}%)
+                </Label>
+                <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                  {currentTipoObj?.nome}
+                </span>
+              </div>
+              <p className="text-xs text-emerald-800/80 dark:text-emerald-300/80">
+                Defina como a comissão deve ser calculada nesta proposta:
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                <label
+                  className={cn(
+                    'flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors text-left text-xs',
+                    baseComissaoModo === 'completa'
+                      ? 'bg-white dark:bg-slate-900 border-[#0b3c26] text-foreground shadow-xs font-medium ring-1 ring-[#0b3c26]'
+                      : 'bg-white/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-muted-foreground hover:bg-white dark:hover:bg-slate-900',
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="base_comissao_modo"
+                    value="completa"
+                    checked={baseComissaoModo === 'completa'}
+                    onChange={() => setBaseComissaoModo('completa')}
+                    className="mt-0.5 accent-[#0b3c26] text-[#0b3c26]"
+                  />
+                  <div className="space-y-0.5 min-w-0">
+                    <span className="font-semibold block text-foreground">
+                      Junto do preço especial (Base completa)
+                    </span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      Máquina + Opcionais Inclusos + Impostos Bener (Padrão)
+                    </span>
+                  </div>
+                </label>
+
+                <label
+                  className={cn(
+                    'flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-colors text-left text-xs',
+                    baseComissaoModo === 'maquina'
+                      ? 'bg-white dark:bg-slate-900 border-[#0b3c26] text-foreground shadow-xs font-medium ring-1 ring-[#0b3c26]'
+                      : 'bg-white/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-muted-foreground hover:bg-white dark:hover:bg-slate-900',
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="base_comissao_modo"
+                    value="maquina"
+                    checked={baseComissaoModo === 'maquina'}
+                    onChange={() => setBaseComissaoModo('maquina')}
+                    className="mt-0.5 accent-[#0b3c26] text-[#0b3c26]"
+                  />
+                  <div className="space-y-0.5 min-w-0">
+                    <span className="font-semibold block text-foreground">
+                      Independente do preço especial (Sobre a máquina)
+                    </span>
+                    <span className="text-[11px] text-muted-foreground block">
+                      Comissão somando apenas sobre o valor da máquina
+                    </span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          )}
+
           {/* 3. Card de Discriminação de Valores ocupando a largura */}
           <div className="p-4 sm:p-5 rounded-lg bg-slate-50/70 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 space-y-3.5">
             <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-slate-800">
@@ -2554,9 +2674,16 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
             {/* Ponto 13: Linha informativa de Serviços e Comissão Bener (Admissão Temporária / Importação Direta) */}
             {comissaoServicosInfo && (
               <div className="flex items-start justify-between text-xs py-1 border-t border-slate-200/70 dark:border-slate-800 text-[#0b3c26] dark:text-emerald-400 gap-2">
-                <span className="font-medium leading-snug">
-                  Serviços e Comissão Bener ({comissaoServicosInfo.percentual}%):
-                </span>
+                <div className="flex flex-col">
+                  <span className="font-medium leading-snug">
+                    Serviços e Comissão Bener ({comissaoServicosInfo.percentual}%):
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    Base:{' '}
+                    {baseComissaoModo === 'maquina' ? 'Apenas Máquina' : 'Máquina + Opcionais'} (
+                    {fmtCurrency(baseCalculoComissao)})
+                  </span>
+                </div>
                 <span className="font-semibold tabular-nums text-right whitespace-nowrap">
                   + {fmtCurrency(comissaoServicosInfo.valorCalculado)}
                 </span>
@@ -2926,6 +3053,13 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                   '',
                 nome_assessor_tecnico: 'Jorge Polezi',
                 is_pacote: form.is_pacote,
+                dados_snapshot: {
+                  valor_comissao_servicos: comissaoServicosInfo?.valorCalculado ?? null,
+                  base_comissao_servicos: comissaoServicosInfo?.baseCalculo ?? null,
+                  percentual_comissao_servicos: comissaoServicosInfo?.percentual ?? null,
+                  comissao_servicos_aplicavel: Boolean(comissaoServicosInfo),
+                  base_comissao_modo: baseComissaoModo,
+                },
               }
 
               return <ProposalDocument proposal={tempProposal} />

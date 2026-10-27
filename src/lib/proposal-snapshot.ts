@@ -70,6 +70,7 @@ export interface PropostaSnapshotRoot {
   base_comissao_servicos?: number | null
   percentual_comissao_servicos?: number | null
   comissao_servicos_aplicavel?: boolean | null
+  base_comissao_modo?: 'completa' | 'maquina' | null
 }
 
 /**
@@ -157,6 +158,7 @@ export async function buildPropostaSnapshot(params: {
     base_comissao_servicos?: number | null
     percentual_comissao_servicos?: number | null
     comissao_servicos_aplicavel?: boolean | null
+    base_comissao_modo?: 'completa' | 'maquina' | null
   } | null
   // Cache opcional de versões já carregadas em memória para evitar requests redundantes
   knownVersoes?: VersaoWithModelo[]
@@ -302,6 +304,7 @@ export async function buildPropostaSnapshot(params: {
     base_comissao_servicos: comissao_servicos?.base_comissao_servicos ?? null,
     percentual_comissao_servicos: comissao_servicos?.percentual_comissao_servicos ?? null,
     comissao_servicos_aplicavel: comissao_servicos?.comissao_servicos_aplicavel ?? null,
+    base_comissao_modo: comissao_servicos?.base_comissao_modo ?? null,
   }
 
   return { itens_snapshot: itensSnapshot, dados_snapshot: dadosSnapshot }

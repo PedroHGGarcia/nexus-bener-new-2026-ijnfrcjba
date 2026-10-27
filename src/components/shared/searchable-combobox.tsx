@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils'
 export interface SearchableComboboxOption {
   value: string
   label: string
+  sublabel?: string
 }
 
 interface Props {
@@ -27,6 +28,8 @@ interface Props {
     page: number,
   ) => Promise<{ items: SearchableComboboxOption[]; hasMore: boolean }>
   disabled?: boolean
+  className?: string
+  popoverClassName?: string
 }
 
 export function SearchableCombobox({
@@ -36,6 +39,8 @@ export function SearchableCombobox({
   searchPlaceholder = 'Buscar...',
   fetchOptions,
   disabled,
+  className,
+  popoverClassName,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -106,11 +111,16 @@ export function SearchableCombobox({
           variant="outline"
           role="combobox"
           disabled={disabled}
-          className={cn('w-full justify-between font-normal', !selected && 'text-muted-foreground')}
+          title={selected ? selected.label : selectedLabelFallback || placeholder}
+          className={cn(
+            'w-full justify-between font-normal text-left h-10 px-3',
+            !selected && 'text-muted-foreground',
+            className,
+          )}
         >
-          <span className="truncate">
+          <span className="truncate flex-1 min-w-0 pr-2">
             {selected ? selected.label : selectedLabelFallback || placeholder}
-            {loading && <Loader2 className="w-3 h-3 inline ml-1 animate-spin" />}
+            {loading && <Loader2 className="w-3 h-3 inline ml-1.5 animate-spin" />}
           </span>
           <div className="flex items-center gap-1 shrink-0">
             {value && !disabled && (
@@ -137,10 +147,16 @@ export function SearchableCombobox({
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent
+        className={cn(
+          'p-0 z-50 w-[max(var(--radix-popover-trigger-width),380px)] min-w-[min(100vw-2rem,360px)] sm:min-w-[460px] max-w-[94vw] shadow-lg border-slate-200 dark:border-slate-800',
+          popoverClassName,
+        )}
+        align="start"
+      >
         <Command shouldFilter={false}>
           <CommandInput value={query} onValueChange={setQuery} placeholder={searchPlaceholder} />
-          <CommandList ref={listRef} onScroll={handleScroll} className="max-h-60">
+          <CommandList ref={listRef} onScroll={handleScroll} className="max-h-72 overflow-y-auto">
             {loading && options.length === 0 ? (
               <div className="p-2 space-y-2">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -158,20 +174,37 @@ export function SearchableCombobox({
                     onChange(opt.value)
                     setOpen(false)
                   }}
+                  title={opt.label}
+                  className="py-2.5 px-3 cursor-pointer flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800/60 last:border-b-0 hover:bg-accent/70"
                 >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === opt.value ? 'opacity-100' : 'opacity-0',
-                    )}
-                  />
-                  {opt.label}
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Check
+                      className={cn(
+                        'h-4 w-4 shrink-0 text-primary',
+                        value === opt.value ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span
+                        className="text-xs sm:text-sm font-medium text-foreground truncate whitespace-nowrap block"
+                        title={opt.label}
+                      >
+                        {opt.label}
+                      </span>
+                      {opt.sublabel && (
+                        <span className="text-[11px] text-muted-foreground truncate whitespace-nowrap block">
+                          {opt.sublabel}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </CommandItem>
               ))
             )}
             {loading && options.length > 0 && (
-              <div className="p-2 text-center">
-                <Loader2 className="w-4 h-4 animate-spin inline" />
+              <div className="p-2 text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
+                <Loader2 className="w-3.5 h-3.5 animate-spin inline" />
+                <span>Carregando mais opções...</span>
               </div>
             )}
           </CommandList>
