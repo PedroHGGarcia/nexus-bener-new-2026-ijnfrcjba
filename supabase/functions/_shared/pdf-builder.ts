@@ -1,5 +1,58 @@
 import { escapeHtml } from './escape-html.ts'
 
+export const TEXTO_COMISSAO_BENER_VERBATIM =
+  'Pagamento Brasil: Serviços e Comissão Bener. Itens considerados p/ base de cálculo: Máquina; Opcionais Inclusos e Impostos sobre serviços Bener'
+
+export function isTipoAdmissaoOrImportacao(tipoNome?: string | null): boolean {
+  if (!tipoNome || typeof tipoNome !== 'string') return false
+  const clean = tipoNome
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
+  if (clean.includes('admissao temporaria') || clean.includes('importacao direta')) {
+    return true
+  }
+
+  // Sigla "AT" (Admissão Temporária) como palavra isolada
+  if (/\b(at)\b/i.test(tipoNome)) {
+    return true
+  }
+
+  return false
+}
+
+export interface ComissaoServicosResult {
+  isApplicable: boolean
+  percentual: number
+  baseCalculo: number
+  valorCalculado: number
+  textoDescritivo: string
+}
+
+export function calcComissaoServicosBener(params: {
+  tipoNome?: string | null
+  comissaoPct?: number | null
+  baseValor: number
+}): ComissaoServicosResult | null {
+  const { tipoNome, comissaoPct, baseValor } = params
+  if (!isTipoAdmissaoOrImportacao(tipoNome)) return null
+  const pct = Number(comissaoPct || 0)
+  if (pct <= 0) return null
+  const base = Math.max(0, Number(baseValor || 0))
+  if (base <= 0) return null
+
+  const valorCalculado = Math.round(((base * pct) / 100) * 100) / 100
+  return {
+    isApplicable: true,
+    percentual: pct,
+    baseCalculo: base,
+    valorCalculado,
+    textoDescritivo: TEXTO_COMISSAO_BENER_VERBATIM,
+  }
+}
+
 export function normalizeMoedaCode(raw?: string | null): string {
   if (!raw) return 'BRL'
   const c = raw.trim().toUpperCase()
@@ -156,7 +209,7 @@ function formatLongDate(dtCad: string | null | undefined): string {
   return `Vinhedo, ${formatted}`
 }
 
-function buildEquipmentSection(items: any[], proposta: any): string {
+function buildEquipmentSection(items: any[], proposta: any, comissaoRowHtml: string = ''): string {
   const fmtVal = (v: number | null | undefined) =>
     (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -344,7 +397,7 @@ function buildEquipmentSection(items: any[], proposta: any): string {
     <span>Detalhamento de Equipamentos & Condições Comerciais</span>
     <span style="font-size:10px;color:#64748b;font-weight:500;text-transform:none;">Pacote de Máquinas</span>
   </div>
-  <div class="equipment-list">${itemsHtml}</div>
+  <div class="equipment-list">${itemsHtml}${comissaoRowHtml}</div>
 `
 }
 
@@ -548,9 +601,133 @@ export function buildProposalPdfHtml(
     }
   }
 
+  // Ponto 13: Cálculo e resolução de comissão de Admissão Temporária / Importação Direta
+  const tipoNomeEfetivo =
+    tpOverride?.nome ||
+    proposta.tipo_proposta ||
+    (dadosSnapshot?.tipo_proposta as string) ||
+    (tpSnapshot?.nome as string) ||
+    (equipmentItems && equipmentItems[0]?.tipo_proposta) ||
+    null
+
+  const comissaoPctEfetiva =
+    tpOverride?.comissao != null
+      ? Number(tpOverride.comissao)
+      : tpSnapshot?.comissao != null
+        ? Number(tpSnapshot.comissao)
+        : proposta.percentual_comissao_servicos != null
+          ? Number(proposta.percentual_comissao_servicos)
+          : (dadosSnapshot?.percentual_comissao_servicos as number) || 0
+
+  // Base de cálculo da comissão: Máquina + Opcionais Inclusos
+  let baseCalculoItens = 0
+  if (proposta.base_comissao_servicos != null && Number(proposta.base_comissao_servicos) > 0) {
+    baseCalculoItens = Number(proposta.base_comissao_servicos)
+  } else if (
+    dadosSnapshot?.base_comissao_servicos != null &&
+    Number(dadosSnapshot.base_comissao_servicos) > 0
+  ) {
+    baseCalculoItens = Number(dadosSnapshot.base_comissao_servicos)
+  } else if (equipmentItems && equipmentItems.length > 0) {
+    equipmentItems.forEach((it: any) => {
+      const qtd = it.quantidade || 1
+      const valUnit = Number(it.valor_unitario || 0)
+      const descVal = Number(it.desconto_valor || 0)
+      const descPct = Number(it.desconto_percentual || 0)
+      const subtotal = qtd * valUnit
+      const tot = descVal > 0 ? Math.max(0, subtotal - descVal) : subtotal * (1 - descPct / 100)
+      baseCalculoItens += tot
+    })
+    const rawAcc = Array.isArray(proposta.acessorios_proposta)
+      ? (proposta.acessorios_proposta as any[])
+      : []
+    rawAcc.forEach((a: any) => {
+      if (
+        a &&
+        a.inclusao !== 'nao_exibir' &&
+        (a.inclusao === 'incluir' || a.inclusao === 'preco' || a.inclusao == null)
+      ) {
+        const qtd = Number(a.quantidade || 1)
+        const val = Number(a.valor || 0)
+        const desc = Number(a.desconto_valor || 0)
+        const pct = Number(a.desconto_percentual || 0)
+        const sub = qtd * val
+        const tot = desc > 0 ? Math.max(0, sub - desc) : sub * (1 - pct / 100)
+        baseCalculoItens += tot
+      }
+    })
+  } else {
+    const rawValSem = Number(proposta.valor_sem_desconto || 0)
+    const rawValFinal = Number(proposta.valor_final || proposta.valor_atual || 0)
+    baseCalculoItens = rawValSem > 0 ? rawValSem : rawValFinal
+  }
+
+  // Valor da comissão: persistido > payload > cálculo via calcComissaoServicosBener
+  let valorComissaoCalculada = 0
+  let comissaoAplicavel = false
+
+  if (proposta.valor_comissao_servicos != null && Number(proposta.valor_comissao_servicos) > 0) {
+    valorComissaoCalculada = Number(proposta.valor_comissao_servicos)
+    comissaoAplicavel = true
+  } else if (
+    dadosSnapshot?.valor_comissao_servicos != null &&
+    Number(dadosSnapshot.valor_comissao_servicos) > 0
+  ) {
+    valorComissaoCalculada = Number(dadosSnapshot.valor_comissao_servicos)
+    comissaoAplicavel = true
+  } else {
+    const calcRes = calcComissaoServicosBener({
+      tipoNome: tipoNomeEfetivo,
+      comissaoPct: comissaoPctEfetiva,
+      baseValor: baseCalculoItens,
+    })
+    if (calcRes && calcRes.valorCalculado > 0) {
+      valorComissaoCalculada = calcRes.valorCalculado
+      comissaoAplicavel = true
+    }
+  }
+
+  const fmtMShared = (n: number) =>
+    n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+  // Linha verbatim da comissão para a tabela em modo unitário e modo pacote
+  const comissaoTableRowHtml =
+    comissaoAplicavel && valorComissaoCalculada > 0
+      ? `
+      <tr>
+        <td style="padding:8px 10px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">—</td>
+        <td style="padding:8px 10px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;line-height:1.4;">${escapeHtml(TEXTO_COMISSAO_BENER_VERBATIM)}</td>
+        <td style="padding:8px 10px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">—</td>
+        <td style="padding:8px 10px;text-align:right;border-bottom:1px solid #e2e8f0;color:#64748b;">—</td>
+        <td style="padding:8px 10px;text-align:right;color:#64748b;border-bottom:1px solid #e2e8f0;">—</td>
+        <td style="padding:8px 10px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#0f172a;font-size:12px;white-space:nowrap;">
+          ${moedaProp} ${fmtMShared(valorComissaoCalculada)}
+        </td>
+      </tr>
+    `
+      : ''
+
+  // Card para pacote (quando não couber dentro de table)
+  const comissaoPacoteCardHtml =
+    comissaoAplicavel && valorComissaoCalculada > 0
+      ? `
+      <div class="equipment-item" style="border:1px solid #cbd5e1;border-radius:6px;padding:12px;margin-bottom:12px;background:#f8fafc;page-break-inside:avoid;break-inside:avoid;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:bold;color:#0f172a;font-size:11px;max-width:75%;line-height:1.4;">
+            ${escapeHtml(TEXTO_COMISSAO_BENER_VERBATIM)}
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:9px;text-transform:uppercase;color:#64748b;font-weight:600;letter-spacing:0.5px;">Subtotal</div>
+            <div style="font-weight:900;color:#0b3c26;font-size:13px;white-space:nowrap;">${moedaProp} ${fmtMShared(valorComissaoCalculada)}</div>
+          </div>
+        </div>
+      </div>
+    `
+      : ''
+
   const equipmentSection =
     equipmentItems && equipmentItems.length > 0
-      ? buildEquipmentSection(equipmentItems, proposta)
+      ? buildEquipmentSection(equipmentItems, proposta, comissaoPacoteCardHtml)
       : ''
 
   const footerCreator = creatorInfo
@@ -1066,40 +1243,55 @@ export function buildProposalPdfHtml(
                   }
                 </td>
               </tr>
+              ${comissaoTableRowHtml}
             </tbody>
           </table>
           `
         })()
   }
 
-  <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin:12px 0 20px 0;page-break-inside:avoid;break-inside:avoid;">
-    <div>
-      <div style="font-size:10px;text-transform:uppercase;font-weight:bold;letter-spacing:0.8px;color:#334155;">Valor Total do Fornecimento</div>
-      <div style="font-size:10px;color:#64748b;">${equipmentItems && equipmentItems.length > 0 ? `Soma de ${equipmentItems.length} equipamento(s)` : 'Condição comercial integral'}</div>
-    </div>
-    <div style="text-align:right;">
-      ${
-        proposta.preco_especial != null && Number(proposta.preco_especial) > 0
-          ? (() => {
-              const valorOrig = proposta.valor_final || proposta.valor_atual || 0
-              const badge = formatPrecoEspecialDiscountBadge(valorOrig, proposta.preco_especial)
-              return `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <span style="font-size:11px;color:#94a3b8;text-decoration:line-through;font-weight:600;">${moedaProp} ${Number(valorOrig).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  <span style="font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:#0f172a;background:#e2e8f0;font-weight:bold;padding:1px 5px;border-radius:2px;">Preço Especial</span>
-                  ${
-                    badge
-                      ? `<span style="font-size:9px;font-weight:bold;color:#0f172a;background:rgba(15,23,42,0.06);border:1px solid rgba(15,23,42,0.2);padding:1px 5px;border-radius:4px;">${badge}</span>`
-                      : ''
-                  }
-                </div>
-                <span style="font-size:16px;font-weight:900;color:#0f172a;">${moedaProp} ${Number(proposta.preco_especial).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-              </div>`
-            })()
-          : `<span style="font-size:16px;font-weight:900;color:#0f172a;">${moedaProp} ${(proposta.valor_final || proposta.valor_atual || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>`
+  ${(() => {
+    // Total do fornecimento com comissão quando aplicável
+    const rawFinal = Number(proposta.valor_final ?? proposta.valor_atual ?? 0)
+    let totalEfetivoFinal = rawFinal
+    if (comissaoAplicavel && valorComissaoCalculada > 0) {
+      if (Math.abs(rawFinal - baseCalculoItens) < 0.05) {
+        totalEfetivoFinal = rawFinal + valorComissaoCalculada
+      } else {
+        totalEfetivoFinal = rawFinal
       }
-    </div>
-  </div>
+    }
+
+    return `
+    <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin:12px 0 20px 0;page-break-inside:avoid;break-inside:avoid;">
+      <div>
+        <div style="font-size:10px;text-transform:uppercase;font-weight:bold;letter-spacing:0.8px;color:#334155;">Valor Total do Fornecimento</div>
+        <div style="font-size:10px;color:#64748b;">${equipmentItems && equipmentItems.length > 0 ? `Soma de ${equipmentItems.length} equipamento(s)` : 'Condição comercial integral'}</div>
+      </div>
+      <div style="text-align:right;">
+        ${
+          proposta.preco_especial != null && Number(proposta.preco_especial) > 0
+            ? (() => {
+                const valorOrig = totalEfetivoFinal
+                const badge = formatPrecoEspecialDiscountBadge(valorOrig, proposta.preco_especial)
+                return `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:11px;color:#94a3b8;text-decoration:line-through;font-weight:600;">${moedaProp} ${Number(valorOrig).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    <span style="font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:#0f172a;background:#e2e8f0;font-weight:bold;padding:1px 5px;border-radius:2px;">Preço Especial</span>
+                    ${
+                      badge
+                        ? `<span style="font-size:9px;font-weight:bold;color:#0f172a;background:rgba(15,23,42,0.06);border:1px solid rgba(15,23,42,0.2);padding:1px 5px;border-radius:4px;">${badge}</span>`
+                        : ''
+                    }
+                  </div>
+                  <span style="font-size:16px;font-weight:900;color:#0f172a;">${moedaProp} ${Number(proposta.preco_especial).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>`
+              })()
+            : `<span style="font-size:16px;font-weight:900;color:#0f172a;">${moedaProp} ${totalEfetivoFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>`
+        }
+      </div>
+    </div>`
+  })()}
 
   ${commercialSection}
   ${camposAdicionaisSection}

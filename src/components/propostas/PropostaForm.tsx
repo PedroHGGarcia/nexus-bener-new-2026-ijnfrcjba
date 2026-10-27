@@ -1456,6 +1456,19 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         }),
         secoes_adicionais: (form as any).secoes_adicionais || null,
         campos_adicionais: form.campos_adicionais || [],
+        comissao_servicos: comissaoServicosInfo
+          ? {
+              valor_comissao_servicos: comissaoServicosInfo.valorCalculado,
+              base_comissao_servicos: comissaoServicosInfo.baseCalculo,
+              percentual_comissao_servicos: comissaoServicosInfo.percentual,
+              comissao_servicos_aplicavel: true,
+            }
+          : {
+              valor_comissao_servicos: 0,
+              base_comissao_servicos: baseCalculoComissao,
+              percentual_comissao_servicos: Number(currentTipoObj?.comissao || 0),
+              comissao_servicos_aplicavel: false,
+            },
         knownVersoes: versoes,
       })
 

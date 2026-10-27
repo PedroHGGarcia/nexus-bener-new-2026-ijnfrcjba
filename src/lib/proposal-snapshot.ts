@@ -65,6 +65,11 @@ export interface PropostaSnapshotRoot {
   acessorios_proposta?: unknown[]
   secoes_adicionais?: Record<string, unknown> | null
   campos_adicionais?: unknown[]
+  // Ponto 13: Comissão de Admissão Temporária / Importação Direta
+  valor_comissao_servicos?: number | null
+  base_comissao_servicos?: number | null
+  percentual_comissao_servicos?: number | null
+  comissao_servicos_aplicavel?: boolean | null
 }
 
 /**
@@ -146,6 +151,13 @@ export async function buildPropostaSnapshot(params: {
   acessorios_proposta?: any[]
   secoes_adicionais?: Record<string, unknown> | null
   campos_adicionais?: any[]
+  // Ponto 13: dados de comissão calculados
+  comissao_servicos?: {
+    valor_comissao_servicos?: number | null
+    base_comissao_servicos?: number | null
+    percentual_comissao_servicos?: number | null
+    comissao_servicos_aplicavel?: boolean | null
+  } | null
   // Cache opcional de versões já carregadas em memória para evitar requests redundantes
   knownVersoes?: VersaoWithModelo[]
 }): Promise<{ itens_snapshot: PropostaItemSnapshot[]; dados_snapshot: PropostaSnapshotRoot }> {
@@ -159,6 +171,7 @@ export async function buildPropostaSnapshot(params: {
     acessorios_proposta = [],
     secoes_adicionais = null,
     campos_adicionais = [],
+    comissao_servicos = null,
     knownVersoes = [],
   } = params
 
@@ -285,6 +298,10 @@ export async function buildPropostaSnapshot(params: {
     acessorios_proposta,
     secoes_adicionais,
     campos_adicionais,
+    valor_comissao_servicos: comissao_servicos?.valor_comissao_servicos ?? null,
+    base_comissao_servicos: comissao_servicos?.base_comissao_servicos ?? null,
+    percentual_comissao_servicos: comissao_servicos?.percentual_comissao_servicos ?? null,
+    comissao_servicos_aplicavel: comissao_servicos?.comissao_servicos_aplicavel ?? null,
   }
 
   return { itens_snapshot: itensSnapshot, dados_snapshot: dadosSnapshot }

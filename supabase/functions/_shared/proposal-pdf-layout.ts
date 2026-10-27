@@ -17,6 +17,8 @@
  * alpha composited on white. Anything unsupported degrades gracefully.
  */
 
+import { calcComissaoServicosBener, TEXTO_COMISSAO_BENER_VERBATIM } from './pdf-builder.ts'
+
 const PAGE_W = 595.28
 const PAGE_H = 841.89
 const M_LEFT = 42
@@ -1073,6 +1075,89 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     })
   }
 
+  // Ponto 13: Comissão de Admissão Temporária / Importação Direta no PDF binário
+  const tpOverrideLayout =
+    (p.tipo_proposta_override as Record<string, any> | null) ||
+    (dadosSnapshot?.tipo_proposta_override as Record<string, any> | null) ||
+    null
+  const tipoNomeLayout =
+    tpOverrideLayout?.nome ||
+    p.tipo_proposta ||
+    (dadosSnapshot?.tipo_proposta as string) ||
+    (tpSnapshot?.nome as string) ||
+    (equipmentItems && equipmentItems[0]?.tipo_proposta) ||
+    null
+
+  const comissaoPctLayout =
+    tpOverrideLayout?.comissao != null
+      ? Number(tpOverrideLayout.comissao)
+      : tpSnapshot?.comissao != null
+        ? Number(tpSnapshot.comissao)
+        : p.percentual_comissao_servicos != null
+          ? Number(p.percentual_comissao_servicos)
+          : (dadosSnapshot?.percentual_comissao_servicos as number) || 0
+
+  let baseCalculoLayout = 0
+  if (p.base_comissao_servicos != null && Number(p.base_comissao_servicos) > 0) {
+    baseCalculoLayout = Number(p.base_comissao_servicos)
+  } else if (
+    dadosSnapshot?.base_comissao_servicos != null &&
+    Number(dadosSnapshot.base_comissao_servicos) > 0
+  ) {
+    baseCalculoLayout = Number(dadosSnapshot.base_comissao_servicos)
+  } else if (rows.length > 0) {
+    baseCalculoLayout = rows.reduce((acc, r) => acc + r.total, 0)
+    inclusos.forEach((a: any) => {
+      const q = Number(a.quantidade || 1)
+      const v = Number(a.valor || 0)
+      const d = Number(a.desconto_valor || 0)
+      const pct = Number(a.desconto_percentual || 0)
+      const sub = q * v
+      const tot = d > 0 ? Math.max(0, sub - d) : sub * (1 - pct / 100)
+      baseCalculoLayout += tot
+    })
+  } else {
+    baseCalculoLayout = Number(p.valor_sem_desconto || p.valor_final || 0)
+  }
+
+  let valorComissaoLayout = 0
+  let comissaoAplicavelLayout = false
+
+  if (p.valor_comissao_servicos != null && Number(p.valor_comissao_servicos) > 0) {
+    valorComissaoLayout = Number(p.valor_comissao_servicos)
+    comissaoAplicavelLayout = true
+  } else if (
+    dadosSnapshot?.valor_comissao_servicos != null &&
+    Number(dadosSnapshot.valor_comissao_servicos) > 0
+  ) {
+    valorComissaoLayout = Number(dadosSnapshot.valor_comissao_servicos)
+    comissaoAplicavelLayout = true
+  } else {
+    const calcRes = calcComissaoServicosBener({
+      tipoNome: tipoNomeLayout,
+      comissaoPct: comissaoPctLayout,
+      baseValor: baseCalculoLayout,
+    })
+    if (calcRes && calcRes.valorCalculado > 0) {
+      valorComissaoLayout = calcRes.valorCalculado
+      comissaoAplicavelLayout = true
+    }
+  }
+
+  if (comissaoAplicavelLayout && valorComissaoLayout > 0) {
+    rows.push({
+      nome: TEXTO_COMISSAO_BENER_VERBATIM,
+      tipo: null,
+      qtd: 0, // exibido como "—"
+      moeda,
+      valOrig: 0,
+      valUnitEfetivo: 0,
+      descTxt: '—',
+      total: valorComissaoLayout,
+      hasDisc: false,
+    })
+  }
+
   for (const row of rows) {
     const descLines = doc.wrap(row.nome, colW[1] - 8, 8.5, true)
     const rowH = Math.max(16, descLines.length * 10 + 6)
@@ -1086,8 +1171,9 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     for (let i = 0; i < heads.length; i++) {
       if (i > 0) doc.vline(x, yTop, yTop + rowH)
       const cw = colW[i]
+      const isComissaoRow = row.nome === TEXTO_COMISSAO_BENER_VERBATIM
       if (i === 0)
-        doc.txt(x, midY, String(rows.indexOf(row) + 1), {
+        doc.txt(x, midY, isComissaoRow ? '—' : String(rows.indexOf(row) + 1), {
           font: 'F1',
           size: 8.5,
           align: 'center',
@@ -1098,9 +1184,16 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
           doc.txt(x + 4, yTop + 4 + li * 10, l, { font: 'F2', size: 8.5 }),
         )
       else if (i === 2)
-        doc.txt(x, midY, String(row.qtd), { font: 'F1', size: 8.5, align: 'center', w: cw })
+        doc.txt(x, midY, isComissaoRow ? '—' : String(row.qtd), {
+          font: 'F1',
+          size: 8.5,
+          align: 'center',
+          w: cw,
+        })
       else if (i === 3) {
-        if (row.hasDisc) {
+        if (isComissaoRow) {
+          doc.txt(x, midY, '—', { font: 'F1', size: 8.5, align: 'right', w: cw })
+        } else if (row.hasDisc) {
           doc.txt(x, midY - 6, fmtMoney(row.valOrig, row.moeda), {
             font: 'F1',
             size: 7.5,
@@ -1124,9 +1217,14 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
           })
         }
       } else if (i === 4)
-        doc.txt(x, midY, row.descTxt, { font: 'F1', size: 8.5, align: 'right', w: cw })
+        doc.txt(x, midY, isComissaoRow ? '—' : row.descTxt, {
+          font: 'F1',
+          size: 8.5,
+          align: 'right',
+          w: cw,
+        })
       else {
-        if (row.hasDisc) {
+        if (!isComissaoRow && row.hasDisc) {
           doc.txt(x, midY - 6, fmtMoney(row.qtd * row.valOrig, row.moeda), {
             font: 'F1',
             size: 7.5,
@@ -1155,17 +1253,28 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.y += rowH
   }
 
-  // Totals row
+  // Totals row (soma comissão quando aplicável)
+  const rawFinalLayout = Number(p.valor_final || 0)
+  let totalComComissao = rawFinalLayout
+  if (comissaoAplicavelLayout && valorComissaoLayout > 0) {
+    if (Math.abs(rawFinalLayout - baseCalculoLayout) < 0.05) {
+      totalComComissao = rawFinalLayout + valorComissaoLayout
+    } else {
+      totalComComissao = rawFinalLayout
+    }
+  }
+
   const totalValor =
     p.preco_especial != null && Number(p.preco_especial) > 0
       ? Number(p.preco_especial)
-      : Number(p.valor_final || 0)
+      : totalComComissao
   const totalOrig =
-    p.preco_especial != null && Number(p.preco_especial) > 0 ? Number(p.valor_final || 0) : null
+    p.preco_especial != null && Number(p.preco_especial) > 0 ? totalComComissao : null
   const totalH = 20
   ensureSpace(totalH)
   doc.rect(tblX, doc.y, totalW, totalH, { fill: LIGHT, stroke: [0.55, 0.57, 0.6], lw: 0.8 })
-  const totalLabel = `Valor Total do Fornecimento${p.is_pacote && rows.length > 1 ? ` (${rows.length} máquinas)` : ''}`
+  const machineRowsCount = rows.filter((r) => r.nome !== TEXTO_COMISSAO_BENER_VERBATIM).length
+  const totalLabel = `Valor Total do Fornecimento${p.is_pacote && machineRowsCount > 1 ? ` (${machineRowsCount} máquinas)` : ''}`
   doc.txt(tblX + 6, doc.y + 6, totalLabel.toUpperCase(), {
     font: 'F2',
     size: 8,

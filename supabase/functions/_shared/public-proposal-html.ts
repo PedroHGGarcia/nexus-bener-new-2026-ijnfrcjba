@@ -4,6 +4,7 @@
  */
 
 import { escapeHtml } from './escape-html.ts'
+import { calcComissaoServicosBener, TEXTO_COMISSAO_BENER_VERBATIM } from './pdf-builder.ts'
 const esc = escapeHtml
 
 export function normalizeMoedaCode(raw?: string | null): string {
@@ -1009,120 +1010,238 @@ export function buildPublicProposalHtml(
             : ''
         }
 
-        <!-- Regra 3: Tabela de Condições Comerciais SEM coluna Tipo Fornecimento -->
-        <table style="width:100%;border-collapse:collapse;margin-bottom:10px;border:1px solid #cbd5e1;font-size:10.5px;background:#ffffff;page-break-inside:avoid;break-inside:avoid;">
-          <thead>
-            <tr style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;color:#475569;font-size:9.5px;text-transform:uppercase;letter-spacing:0.5px;">
-              <th style="padding:6px 8px;text-align:center;width:35px;">Item</th>
-              <th style="padding:6px 8px;text-align:left;">Descrição do Equipamento</th>
-              <th style="padding:6px 8px;text-align:center;width:40px;">Qtd</th>
-              <th style="padding:6px 8px;text-align:right;">Valor Unitário</th>
-              <th style="padding:6px 8px;text-align:right;">Desconto</th>
-              <th style="padding:6px 8px;text-align:right;">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${
-              proposta.is_pacote && equipmentItems && equipmentItems.length > 0
-                ? equipmentItems
-                    .map((item: any, idx: number) => {
-                      const itemNome =
-                        item.versoes?.nome || item.versoes?.nome_abreviado || `Item ${idx + 1}`
-                      const itemMoeda = normalizeMoedaCode(item.versoes?.moeda || moedaProp)
-                      const qtd = item.quantidade || 1
-                      const valUnit = Number(item.valor_unitario || 0)
-                      const descPct = Number(item.desconto_percentual || 0)
-                      const descVal = Number(item.desconto_valor || 0)
-                      const subtotal = qtd * valUnit
-                      const totalItem =
-                        descVal > 0
-                          ? Math.max(0, subtotal - descVal)
-                          : subtotal * (1 - descPct / 100)
-                      const itemHasDiscount = descPct > 0 || descVal > 0
-                      const valorUnitEfetivo = qtd > 0 ? totalItem / qtd : totalItem
+        ${(() => {
+          // Ponto 13: Cálculo e resolução de comissão de Admissão Temporária / Importação Direta
+          const tipoNomeEfetivo =
+            tpOverride?.nome ||
+            proposta.tipo_proposta ||
+            (dadosSnapshot?.tipo_proposta as string) ||
+            (tpSnapshot?.nome as string) ||
+            (equipmentItems && equipmentItems[0]?.tipo_proposta) ||
+            null
 
-                      return `<tr>
-                        <td style="padding:6px 8px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">${idx + 1}</td>
-                        <td style="padding:6px 8px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;">${esc(itemNome)}</td>
-                        <td style="padding:6px 8px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">${qtd}</td>
-                        <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;">
-                          ${
-                            itemHasDiscount
-                              ? `<div>
-                                  <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valUnit, itemMoeda)}</span>
-                                  <span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valorUnitEfetivo, itemMoeda)}</span>
-                                 </div>`
-                              : `<span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valUnit, itemMoeda)}</span>`
-                          }
-                        </td>
-                        <td style="padding:6px 8px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${descPct > 0 ? `${descPct}%` : descVal > 0 ? formatCurrencyByMoeda(descVal, itemMoeda) : '—'}</td>
-                        <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:bold;">
-                          ${
-                            itemHasDiscount
-                              ? `<div>
-                                  <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(subtotal, itemMoeda)}</span>
-                                  <span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(totalItem, itemMoeda)}</span>
-                                 </div>`
-                              : `<span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(totalItem, itemMoeda)}</span>`
-                          }
-                        </td>
-                      </tr>`
-                    })
-                    .join('')
-                : `<tr>
-                    <td style="padding:6px 8px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">1</td>
-                    <td style="padding:6px 8px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;">${esc(machineTitle)}</td>
-                    <td style="padding:6px 8px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">1</td>
-                    <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;">
-                      ${
-                        hasItemDiscount
-                          ? `<div>
-                              <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>
-                              <span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valorUnitarioEfetivo, moedaProp)}</span>
-                            </div>`
-                          : `<span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>`
-                      }
-                    </td>
-                    <td style="padding:6px 8px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${effectiveDiscountPercent > 0 ? `${effectiveDiscountPercent}%` : '—'}</td>
-                    <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:bold;">
-                      ${
-                        hasItemDiscount
-                          ? `<div>
-                              <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>
-                              <span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(valorEfetivoFinal, moedaProp)}</span>
-                            </div>`
-                          : `<span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(valorEfetivoFinal, moedaProp)}</span>`
-                      }
-                    </td>
-                  </tr>`
-            }
-          </tbody>
-        </table>
+          const comissaoPctEfetiva =
+            tpOverride?.comissao != null
+              ? Number(tpOverride.comissao)
+              : tpSnapshot?.comissao != null
+                ? Number(tpSnapshot.comissao)
+                : proposta.percentual_comissao_servicos != null
+                  ? Number(proposta.percentual_comissao_servicos)
+                  : (dadosSnapshot?.percentual_comissao_servicos as number) || 0
 
-        <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;">
-          <div>
-            <div style="font-size:9.5px;text-transform:uppercase;font-weight:bold;letter-spacing:0.8px;color:#334155;">Valor Total do Fornecimento</div>
-            <div style="font-size:9.5px;color:#64748b;">${proposta.is_pacote && equipmentItems && equipmentItems.length > 0 ? `Soma de ${equipmentItems.length} equipamento(s)` : 'Condição comercial integral'}</div>
-          </div>
-          <div style="text-align:right;">
-            ${
-              precoEspecial != null
-                ? `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
-                    <div style="display:flex;align-items:center;gap:6px;">
-                      <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;font-weight:600;">${formatCurrencyByMoeda(valorFinal, moedaProp)}</span>
-                      <span style="font-size:8.5px;text-transform:uppercase;letter-spacing:0.5px;color:#0f172a;background:#e2e8f0;font-weight:bold;padding:1px 4px;border-radius:2px;">Preço Especial</span>
-                      ${
-                        discountBadge
-                          ? `<span style="font-size:8.5px;font-weight:bold;color:#0f172a;background:rgba(15,23,42,0.06);border:1px solid rgba(15,23,42,0.2);padding:1px 4px;border-radius:3px;">${discountBadge}</span>`
-                          : ''
-                      }
-                    </div>
-                    <span style="font-weight:900;color:#0f172a;font-size:14px;">${formatCurrencyByMoeda(precoEspecial, moedaProp)}</span>
-                  </div>`
-                : `<span style="font-weight:900;color:#0f172a;font-size:14px;">${formatCurrencyByMoeda(valorFinal, moedaProp)}</span>`
+          let baseCalculoItens = 0
+          if (
+            proposta.base_comissao_servicos != null &&
+            Number(proposta.base_comissao_servicos) > 0
+          ) {
+            baseCalculoItens = Number(proposta.base_comissao_servicos)
+          } else if (
+            dadosSnapshot?.base_comissao_servicos != null &&
+            Number(dadosSnapshot.base_comissao_servicos) > 0
+          ) {
+            baseCalculoItens = Number(dadosSnapshot.base_comissao_servicos)
+          } else if (equipmentItems && equipmentItems.length > 0) {
+            equipmentItems.forEach((it: any) => {
+              const qtd = it.quantidade || 1
+              const valUnit = Number(it.valor_unitario || 0)
+              const descVal = Number(it.desconto_valor || 0)
+              const descPct = Number(it.desconto_percentual || 0)
+              const subtotal = qtd * valUnit
+              const tot =
+                descVal > 0 ? Math.max(0, subtotal - descVal) : subtotal * (1 - descPct / 100)
+              baseCalculoItens += tot
+            })
+            const rawAcc = Array.isArray(proposta.acessorios_proposta)
+              ? (proposta.acessorios_proposta as any[])
+              : []
+            rawAcc.forEach((a: any) => {
+              if (
+                a &&
+                a.inclusao !== 'nao_exibir' &&
+                (a.inclusao === 'incluir' || a.inclusao === 'preco' || a.inclusao == null)
+              ) {
+                const qtd = Number(a.quantidade || 1)
+                const val = Number(a.valor || 0)
+                const desc = Number(a.desconto_valor || 0)
+                const pct = Number(a.desconto_percentual || 0)
+                const sub = qtd * val
+                const tot = desc > 0 ? Math.max(0, sub - desc) : sub * (1 - pct / 100)
+                baseCalculoItens += tot
+              }
+            })
+          } else {
+            baseCalculoItens = valorEfetivoFinal
+          }
+
+          let valorComissaoCalculada = 0
+          let comissaoAplicavel = false
+
+          if (
+            proposta.valor_comissao_servicos != null &&
+            Number(proposta.valor_comissao_servicos) > 0
+          ) {
+            valorComissaoCalculada = Number(proposta.valor_comissao_servicos)
+            comissaoAplicavel = true
+          } else if (
+            dadosSnapshot?.valor_comissao_servicos != null &&
+            Number(dadosSnapshot.valor_comissao_servicos) > 0
+          ) {
+            valorComissaoCalculada = Number(dadosSnapshot.valor_comissao_servicos)
+            comissaoAplicavel = true
+          } else {
+            const calcRes = calcComissaoServicosBener({
+              tipoNome: tipoNomeEfetivo,
+              comissaoPct: comissaoPctEfetiva,
+              baseValor: baseCalculoItens,
+            })
+            if (calcRes && calcRes.valorCalculado > 0) {
+              valorComissaoCalculada = calcRes.valorCalculado
+              comissaoAplicavel = true
             }
+          }
+
+          const comissaoRowHtml =
+            comissaoAplicavel && valorComissaoCalculada > 0
+              ? `<tr>
+                <td style="padding:6px 8px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">—</td>
+                <td style="padding:6px 8px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;line-height:1.4;">${esc(TEXTO_COMISSAO_BENER_VERBATIM)}</td>
+                <td style="padding:6px 8px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">—</td>
+                <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;color:#64748b;">—</td>
+                <td style="padding:6px 8px;text-align:right;color:#64748b;border-bottom:1px solid #e2e8f0;">—</td>
+                <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:bold;color:#0f172a;white-space:nowrap;">
+                  ${formatCurrencyByMoeda(valorComissaoCalculada, moedaProp)}
+                </td>
+              </tr>`
+              : ''
+
+          const rawFinalTotal = Number(valorFinal || 0)
+          let totalFornecimento = rawFinalTotal
+          if (comissaoAplicavel && valorComissaoCalculada > 0) {
+            if (Math.abs(rawFinalTotal - baseCalculoItens) < 0.05) {
+              totalFornecimento = rawFinalTotal + valorComissaoCalculada
+            } else {
+              totalFornecimento = rawFinalTotal
+            }
+          }
+
+          return `
+          <!-- Regra 3: Tabela de Condições Comerciais SEM coluna Tipo Fornecimento -->
+          <table style="width:100%;border-collapse:collapse;margin-bottom:10px;border:1px solid #cbd5e1;font-size:10.5px;background:#ffffff;page-break-inside:avoid;break-inside:avoid;">
+            <thead>
+              <tr style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;color:#475569;font-size:9.5px;text-transform:uppercase;letter-spacing:0.5px;">
+                <th style="padding:6px 8px;text-align:center;width:35px;">Item</th>
+                <th style="padding:6px 8px;text-align:left;">Descrição do Equipamento</th>
+                <th style="padding:6px 8px;text-align:center;width:40px;">Qtd</th>
+                <th style="padding:6px 8px;text-align:right;">Valor Unitário</th>
+                <th style="padding:6px 8px;text-align:right;">Desconto</th>
+                <th style="padding:6px 8px;text-align:right;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${
+                proposta.is_pacote && equipmentItems && equipmentItems.length > 0
+                  ? equipmentItems
+                      .map((item: any, idx: number) => {
+                        const itemNome =
+                          item.versoes?.nome || item.versoes?.nome_abreviado || `Item ${idx + 1}`
+                        const itemMoeda = normalizeMoedaCode(item.versoes?.moeda || moedaProp)
+                        const qtd = item.quantidade || 1
+                        const valUnit = Number(item.valor_unitario || 0)
+                        const descPct = Number(item.desconto_percentual || 0)
+                        const descVal = Number(item.desconto_valor || 0)
+                        const subtotal = qtd * valUnit
+                        const totalItem =
+                          descVal > 0
+                            ? Math.max(0, subtotal - descVal)
+                            : subtotal * (1 - descPct / 100)
+                        const itemHasDiscount = descPct > 0 || descVal > 0
+                        const valorUnitEfetivo = qtd > 0 ? totalItem / qtd : totalItem
+
+                        return `<tr>
+                          <td style="padding:6px 8px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">${idx + 1}</td>
+                          <td style="padding:6px 8px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;">${esc(itemNome)}</td>
+                          <td style="padding:6px 8px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">${qtd}</td>
+                          <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;">
+                            ${
+                              itemHasDiscount
+                                ? `<div>
+                                    <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valUnit, itemMoeda)}</span>
+                                    <span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valorUnitEfetivo, itemMoeda)}</span>
+                                   </div>`
+                                : `<span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valUnit, itemMoeda)}</span>`
+                            }
+                          </td>
+                          <td style="padding:6px 8px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${descPct > 0 ? `${descPct}%` : descVal > 0 ? formatCurrencyByMoeda(descVal, itemMoeda) : '—'}</td>
+                          <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:bold;">
+                            ${
+                              itemHasDiscount
+                                ? `<div>
+                                    <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(subtotal, itemMoeda)}</span>
+                                    <span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(totalItem, itemMoeda)}</span>
+                                   </div>`
+                                : `<span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(totalItem, itemMoeda)}</span>`
+                            }
+                          </td>
+                        </tr>`
+                      })
+                      .join('')
+                  : `<tr>
+                      <td style="padding:6px 8px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">1</td>
+                      <td style="padding:6px 8px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;">${esc(machineTitle)}</td>
+                      <td style="padding:6px 8px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">1</td>
+                      <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;">
+                        ${
+                          hasItemDiscount
+                            ? `<div>
+                                <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>
+                                <span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valorUnitarioEfetivo, moedaProp)}</span>
+                              </div>`
+                            : `<span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>`
+                        }
+                      </td>
+                      <td style="padding:6px 8px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${effectiveDiscountPercent > 0 ? `${effectiveDiscountPercent}%` : '—'}</td>
+                      <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:bold;">
+                        ${
+                          hasItemDiscount
+                            ? `<div>
+                                <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>
+                                <span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(valorEfetivoFinal, moedaProp)}</span>
+                              </div>`
+                            : `<span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(valorEfetivoFinal, moedaProp)}</span>`
+                        }
+                      </td>
+                    </tr>`
+              }
+              ${comissaoRowHtml}
+            </tbody>
+          </table>
+
+          <div style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;">
+            <div>
+              <div style="font-size:9.5px;text-transform:uppercase;font-weight:bold;letter-spacing:0.8px;color:#334155;">Valor Total do Fornecimento</div>
+              <div style="font-size:9.5px;color:#64748b;">${proposta.is_pacote && equipmentItems && equipmentItems.length > 0 ? `Soma de ${equipmentItems.length} equipamento(s)` : 'Condição comercial integral'}</div>
+            </div>
+            <div style="text-align:right;">
+              ${
+                precoEspecial != null
+                  ? `<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;">
+                      <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;font-weight:600;">${formatCurrencyByMoeda(totalFornecimento, moedaProp)}</span>
+                        <span style="font-size:8.5px;text-transform:uppercase;letter-spacing:0.5px;color:#0f172a;background:#e2e8f0;font-weight:bold;padding:1px 4px;border-radius:2px;">Preço Especial</span>
+                        ${
+                          discountBadge
+                            ? `<span style="font-size:8.5px;font-weight:bold;color:#0f172a;background:rgba(15,23,42,0.06);border:1px solid rgba(15,23,42,0.2);padding:1px 4px;border-radius:3px;">${discountBadge}</span>`
+                            : ''
+                        }
+                      </div>
+                      <span style="font-weight:900;color:#0f172a;font-size:14px;">${formatCurrencyByMoeda(precoEspecial, moedaProp)}</span>
+                    </div>`
+                  : `<span style="font-weight:900;color:#0f172a;font-size:14px;">${formatCurrencyByMoeda(totalFornecimento, moedaProp)}</span>`
+              }
+            </div>
           </div>
-        </div>
+          `
+        })()}
 
         ${
           filteredTerms.length > 0

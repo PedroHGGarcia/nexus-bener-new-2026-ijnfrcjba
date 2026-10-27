@@ -43,7 +43,16 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json().catch(() => ({}))
-    const { proposta_id, appUrl, logoUrl, logoData, saveToStorage = true } = body
+    const {
+      proposta_id,
+      appUrl,
+      logoUrl,
+      logoData,
+      saveToStorage = true,
+      valor_comissao_servicos,
+      base_comissao_servicos,
+      percentual_comissao_servicos,
+    } = body
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -114,6 +123,17 @@ Deno.serve(async (req: Request) => {
     // Prioriza dados do snapshot congelado (se houver) para garantir imutabilidade da proposta
     const dadosSnapshot = proposalData.dados_snapshot as Record<string, any> | null
     const itensSnapshot = proposalData.itens_snapshot as any[] | null
+
+    // Incorpora valores de comissão recebidos no body caso não estejam gravados no registro
+    if (valor_comissao_servicos != null) {
+      proposalData.valor_comissao_servicos = valor_comissao_servicos
+    }
+    if (base_comissao_servicos != null) {
+      proposalData.base_comissao_servicos = base_comissao_servicos
+    }
+    if (percentual_comissao_servicos != null) {
+      proposalData.percentual_comissao_servicos = percentual_comissao_servicos
+    }
 
     // Tipo de proposta
     let tipoPropostaData: Record<string, unknown> | null =

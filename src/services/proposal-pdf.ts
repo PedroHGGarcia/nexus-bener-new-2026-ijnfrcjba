@@ -30,6 +30,11 @@ async function fetchAsDataUrl(url: string): Promise<string | null> {
  */
 export async function generateProposalPdf(
   propostaId: string,
+  extraParams?: {
+    valor_comissao_servicos?: number | null
+    base_comissao_servicos?: number | null
+    percentual_comissao_servicos?: number | null
+  },
 ): Promise<ServiceResult<{ html: string; pdfUrl: string | null }>> {
   const appUrl =
     import.meta.env.VITE_APP_PUBLIC_URL ||
@@ -38,7 +43,14 @@ export async function generateProposalPdf(
   const logoData = await fetchAsDataUrl(logoAsset)
 
   const { data, error } = await supabase.functions.invoke('generate-proposal-pdf', {
-    body: { proposta_id: propostaId, appUrl, logoData },
+    body: {
+      proposta_id: propostaId,
+      appUrl,
+      logoData,
+      valor_comissao_servicos: extraParams?.valor_comissao_servicos,
+      base_comissao_servicos: extraParams?.base_comissao_servicos,
+      percentual_comissao_servicos: extraParams?.percentual_comissao_servicos,
+    },
   })
 
   if (error) {
