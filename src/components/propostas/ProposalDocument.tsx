@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { PropostaWithRelations } from '@/types/proposta'
 import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
 import { TipoProposta } from '@/types/tipo-proposta'
@@ -7,10 +7,7 @@ import { snapshotToPropostaVersoes } from '@/lib/proposal-snapshot'
 import type { CustomField } from '@/components/propostas/CustomFieldsEditor'
 import { supabase } from '@/lib/supabase/client'
 import { formatCurrencyByMoeda, formatBulletList, normalizeMoedaCode } from '@/lib/format'
-import {
-  calcComissaoServicosBener,
-  TEXTO_COMISSAO_BENER_VERBATIM,
-} from '@/lib/proposta-calculations'
+import { calcComissaoServicosBener } from '@/lib/proposta-calculations'
 import {
   splitIntoParagraphs,
   parseParagraphs,
