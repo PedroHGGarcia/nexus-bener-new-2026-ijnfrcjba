@@ -1348,20 +1348,26 @@ export function ProposalDocument({ proposal }: Props) {
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan={5} className="text-right font-bold">
-                        VALOR TOTAL DO FORNECIMENTO
+                      <td className="text-center font-semibold text-slate-700">—</td>
+                      <td className="text-left">
+                        <span className="font-bold text-slate-900">
+                          VALOR TOTAL DO FORNECIMENTO
+                        </span>
+                        {frasePreco && (
+                          <span className="block mt-0.5 text-[9.5px] font-normal text-slate-800 uppercase leading-tight">
+                            {frasePreco}
+                          </span>
+                        )}
                       </td>
-                      <td className="text-right font-bold whitespace-nowrap">
+                      <td className="text-center font-medium text-slate-700">—</td>
+                      <td className="text-right font-medium text-slate-700">—</td>
+                      <td className="text-right font-medium text-slate-700">—</td>
+                      <td className="text-right font-bold text-slate-950 whitespace-nowrap">
                         {fmtCurrency(proposal.valor_final, proposal.moeda)}
                       </td>
                     </tr>
                   </tfoot>
                 </table>
-                {frasePreco && (
-                  <div className="mt-2 text-[10px] font-semibold text-slate-900 uppercase tracking-wide">
-                    {frasePreco}
-                  </div>
-                )}
               </div>
             </section>
 

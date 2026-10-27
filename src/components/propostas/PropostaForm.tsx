@@ -43,6 +43,8 @@ import {
   Eye,
   ChevronDown,
   RotateCcw,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -94,6 +96,7 @@ import {
   formatPrecoEspecialDiscountBadge,
 } from '@/lib/proposta-calculations'
 import { useAuth } from '@/hooks/use-auth'
+import { cn } from '@/lib/utils'
 import { formatDateTime, normalizeMoedaCode, formatCurrencyByMoeda } from '@/lib/format'
 import { isRepresentanteRole, isAdminRole, isGerenteRole } from '@/components/RoleGuard'
 import { findRepresentanteByProfile } from '@/services/representantes'
@@ -204,6 +207,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
   const [tipos, setTipos] = useState<TipoProposta[]>([])
   const [loadingTipos, setLoadingTipos] = useState(false)
   const [tipoSheetOpen, setTipoSheetOpen] = useState(false)
+  const [tipoSheetFullscreen, setTipoSheetFullscreen] = useState(false)
   const [clienteDialogOpen, setClienteDialogOpen] = useState(false)
   const [tipoEditing, setTipoEditing] = useState<TipoProposta | null>(null)
   const [tipoForm, setTipoForm] = useState<TipoFormData | null>(null)
@@ -2909,14 +2913,47 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
           }
         }}
       >
-        <SheetContent side="right" className="sm:max-w-3xl flex flex-col p-0 gap-0">
-          <SheetHeader className="px-6 pt-6 pb-4 border-b shrink-0 text-left bg-[#0b3c26] text-white">
-            <SheetTitle className="text-lg font-bold flex items-center gap-2 text-white">
-              <FileText className="w-5 h-5" />
-              Editar Tipo de Proposta
-            </SheetTitle>
-            <SheetDescription className="text-white/80">
-              Atualize os dados comerciais do tipo selecionado.
+        <SheetContent
+          side="right"
+          className={cn(
+            'flex flex-col p-0 gap-0 transition-all duration-200',
+            tipoSheetFullscreen
+              ? 'w-full sm:max-w-none max-w-none'
+              : 'w-full sm:max-w-4xl lg:max-w-5xl xl:max-w-6xl',
+          )}
+        >
+          <SheetHeader className="px-6 pt-5 pb-4 border-b shrink-0 text-left bg-[#0b3c26] text-white">
+            <div className="flex items-center justify-between pr-8">
+              <SheetTitle className="text-lg font-bold flex items-center gap-2 text-white">
+                <FileText className="w-5 h-5 shrink-0" />
+                <span>Editar Tipo de Proposta</span>
+              </SheetTitle>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setTipoSheetFullscreen((prev) => !prev)}
+                className="text-white/80 hover:text-white hover:bg-white/10 h-8 px-2.5 gap-1.5 text-xs font-medium"
+                title={
+                  tipoSheetFullscreen ? 'Restaurar largura padrão' : 'Expandir para tela cheia'
+                }
+              >
+                {tipoSheetFullscreen ? (
+                  <>
+                    <Minimize2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Restaurar</span>
+                  </>
+                ) : (
+                  <>
+                    <Maximize2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Tela Cheia</span>
+                  </>
+                )}
+              </Button>
+            </div>
+            <SheetDescription className="text-white/80 text-xs">
+              Personalize os dados comerciais e condições deste tipo para esta proposta (as
+              alterações são locais).
             </SheetDescription>
           </SheetHeader>
           {tipoEditing && tipoForm && (
@@ -2928,19 +2965,25 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                       Informações Básicas
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Nome *</Label>
-                        <Input
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-2">
+                        <Label className="text-xs font-semibold">Nome do Tipo *</Label>
+                        <Textarea
+                          rows={2}
                           value={tipoForm.nome}
                           onChange={(e) => updT('nome', e.target.value)}
                           placeholder="Nome do tipo de proposta"
+                          className="min-h-[56px] resize-y font-medium text-sm leading-snug"
                         />
+                        <p className="text-[11px] text-muted-foreground mt-1">
+                          Exibição completa sem truncamento. Redimensione a altura conforme
+                          necessário.
+                        </p>
                       </div>
                       <div>
-                        <Label>Status</Label>
+                        <Label className="text-xs font-semibold">Status</Label>
                         <Select value={tipoForm.status} onValueChange={(v) => updT('status', v)}>
-                          <SelectTrigger>
+                          <SelectTrigger className="mt-1">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -2956,7 +2999,10 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                         checked={tipoForm.aplicar_fator_nac}
                         onCheckedChange={(v) => updT('aplicar_fator_nac', v === true)}
                       />
-                      <Label htmlFor="tipo-aplicar-fator-nac" className="cursor-pointer">
+                      <Label
+                        htmlFor="tipo-aplicar-fator-nac"
+                        className="cursor-pointer text-xs sm:text-sm"
+                      >
                         Aplicar fator de Nacionalização
                       </Label>
                     </div>
@@ -2971,7 +3017,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <Label>Comissão (%)</Label>
+                        <Label className="text-xs font-semibold">Comissão (%)</Label>
                         <Input
                           type="number"
                           step="0.01"
@@ -2979,44 +3025,49 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                           max="100"
                           value={tipoForm.comissao}
                           onChange={(e) => updT('comissao', parseFloat(e.target.value) || 0)}
+                          className="mt-1"
                         />
                       </div>
                       <div>
-                        <Label>Frase do Preço</Label>
-                        <Input
+                        <Label className="text-xs font-semibold">Frase do Preço</Label>
+                        <Textarea
+                          rows={2}
                           value={tipoForm.frase_preco}
                           onChange={(e) => updT('frase_preco', e.target.value)}
-                          placeholder="Ex: Preços sujeitos a confirmação"
+                          placeholder="Ex: MÁQUINA COLOCADA FOB NO PORTO DE ORIGEM"
+                          className="mt-1 min-h-[56px] resize-y text-xs"
                         />
                       </div>
                       <div>
-                        <Label>Frase Comissão</Label>
-                        <Input
+                        <Label className="text-xs font-semibold">Frase Comissão</Label>
+                        <Textarea
+                          rows={2}
                           value={tipoForm.frase_comissao}
                           onChange={(e) => updT('frase_comissao', e.target.value)}
                           placeholder="Ex: Comissão inclusa no valor"
+                          className="mt-1 min-h-[56px] resize-y text-xs"
                         />
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
                       <div>
-                        <Label>Imposto IPI</Label>
+                        <Label className="text-xs font-semibold">Imposto IPI</Label>
                         <Textarea
-                          rows={3}
+                          rows={4}
                           value={tipoForm.imposto_ipi}
                           onChange={(e) => updT('imposto_ipi', e.target.value)}
                           placeholder="Alíquota ou texto explicativo de IPI com decretos..."
-                          className="whitespace-pre-wrap font-sans text-xs"
+                          className="mt-1 min-h-[96px] resize-y whitespace-pre-wrap font-sans text-xs leading-relaxed"
                         />
                       </div>
                       <div>
-                        <Label>Imposto ICMS</Label>
+                        <Label className="text-xs font-semibold">Imposto ICMS</Label>
                         <Textarea
-                          rows={3}
+                          rows={4}
                           value={tipoForm.imposto_icms}
                           onChange={(e) => updT('imposto_icms', e.target.value)}
                           placeholder="Alíquota ou texto explicativo de ICMS com convênios..."
-                          className="whitespace-pre-wrap font-sans text-xs"
+                          className="mt-1 min-h-[96px] resize-y whitespace-pre-wrap font-sans text-xs leading-relaxed"
                         />
                       </div>
                     </div>
@@ -3031,35 +3082,43 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label>Prazo de Entrega</Label>
-                        <Input
+                        <Label className="text-xs font-semibold">Prazo de Entrega</Label>
+                        <Textarea
+                          rows={3}
                           value={tipoForm.prazo_entrega}
                           onChange={(e) => updT('prazo_entrega', e.target.value)}
-                          placeholder="Ex: 60 dias após confirmação"
+                          placeholder="Ex: 60 dias após confirmação e aprovação técnica"
+                          className="mt-1 min-h-[72px] resize-y text-xs leading-relaxed"
                         />
                       </div>
                       <div>
-                        <Label>Condições de Pagamento</Label>
-                        <Input
+                        <Label className="text-xs font-semibold">Condições de Pagamento</Label>
+                        <Textarea
+                          rows={3}
                           value={tipoForm.condicoes_pagamento}
                           onChange={(e) => updT('condicoes_pagamento', e.target.value)}
-                          placeholder="Ex: 30/60/90 dias"
+                          placeholder="Ex: Sinal de 20%, 30 dias após embarque e restante financiado"
+                          className="mt-1 min-h-[72px] resize-y text-xs leading-relaxed"
                         />
                       </div>
                       <div>
-                        <Label>Validade desta Oferta</Label>
-                        <Input
+                        <Label className="text-xs font-semibold">Validade desta Oferta</Label>
+                        <Textarea
+                          rows={2}
                           value={tipoForm.validade_oferta}
                           onChange={(e) => updT('validade_oferta', e.target.value)}
-                          placeholder="Ex: 30 dias"
+                          placeholder="Ex: 30 dias contados a partir da data de emissão"
+                          className="mt-1 min-h-[56px] resize-y text-xs leading-relaxed"
                         />
                       </div>
                       <div>
-                        <Label>Transporte/Seguro</Label>
-                        <Input
+                        <Label className="text-xs font-semibold">Transporte/Seguro</Label>
+                        <Textarea
+                          rows={2}
                           value={tipoForm.transporte_seguro}
                           onChange={(e) => updT('transporte_seguro', e.target.value)}
-                          placeholder="Ex: Incluso no valor"
+                          placeholder="Ex: Incluso até o local de entrega indicado pelo cliente"
+                          className="mt-1 min-h-[56px] resize-y text-xs leading-relaxed"
                         />
                       </div>
                     </div>
@@ -3072,29 +3131,35 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                       Pós-Venda
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <Label>Garantia</Label>
-                        <Input
+                        <Label className="text-xs font-semibold">Garantia</Label>
+                        <Textarea
+                          rows={3}
                           value={tipoForm.garantia}
                           onChange={(e) => updT('garantia', e.target.value)}
-                          placeholder="Ex: 12 meses"
+                          placeholder="Ex: 12 meses contra defeitos de fabricação"
+                          className="mt-1 min-h-[72px] resize-y text-xs leading-relaxed"
                         />
                       </div>
                       <div>
-                        <Label>Assistência Técnica</Label>
-                        <Input
+                        <Label className="text-xs font-semibold">Assistência Técnica</Label>
+                        <Textarea
+                          rows={3}
                           value={tipoForm.assistencia_tecnica}
                           onChange={(e) => updT('assistencia_tecnica', e.target.value)}
-                          placeholder="Ex: Assistência técnica nacional"
+                          placeholder="Ex: Prestada diretamente pela Bener com técnicos homologados"
+                          className="mt-1 min-h-[72px] resize-y text-xs leading-relaxed"
                         />
                       </div>
                       <div>
-                        <Label>Treinamento Técnico</Label>
-                        <Input
+                        <Label className="text-xs font-semibold">Treinamento Técnico</Label>
+                        <Textarea
+                          rows={3}
                           value={tipoForm.treinamento_tecnico}
                           onChange={(e) => updT('treinamento_tecnico', e.target.value)}
-                          placeholder="Ex: Treinamento operacional incluso"
+                          placeholder="Ex: Treinamento operacional e de programação incluso"
+                          className="mt-1 min-h-[72px] resize-y text-xs leading-relaxed"
                         />
                       </div>
                     </div>
@@ -3121,7 +3186,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                 </Card>
               </div>
 
-              <div className="border-t px-6 py-4 flex gap-2 justify-end shrink-0">
+              <div className="border-t px-6 py-4 flex gap-2 justify-end shrink-0 bg-slate-50/50">
                 <Button
                   type="button"
                   variant="outline"
