@@ -75,7 +75,10 @@ import {
   MachineCascadeSelection,
 } from '@/components/propostas/MachineCascadeSearch'
 import { CustomFieldsEditor, type CustomField } from '@/components/propostas/CustomFieldsEditor'
-import { SearchableCombobox } from '@/components/shared/searchable-combobox'
+import {
+  SearchableCombobox,
+  type SearchableComboboxOption,
+} from '@/components/shared/searchable-combobox'
 import { PropostaProjetoLinker } from '@/components/propostas/PropostaProjetoLinker'
 import {
   PropostaMultiVersoes,
@@ -1908,26 +1911,29 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                           .range(from, to)
 
                         const repItems: SearchableComboboxOption[] = (repData ?? []).map(
-  (r: { id: string; fantasia: string; razao_social?: string }) => ({
-    value: r.id,
-    label: r.fantasia || r.razao_social || 'Sem nome',
-    sublabel: r.razao_social && r.razao_social !== r.fantasia ? r.razao_social : undefined,
-  }),
-)
+                          (r: { id: string; fantasia: string; razao_social?: string }) => ({
+                            value: r.id,
+                            label: r.fantasia || r.razao_social || 'Sem nome',
+                            sublabel:
+                              r.razao_social && r.razao_social !== r.fantasia
+                                ? r.razao_social
+                                : undefined,
+                          }),
+                        )
 
-// 2. Gerentes ativos agrupados após representantes na 1ª página ou quando filtrados
-const matchingGerentes: SearchableComboboxOption[] = gerentes
-  .filter((g) => g.status === 'Ativo')
-  .filter((g) => !trimmed || g.nome.toLowerCase().includes(trimmed))
-  .map((g) => ({
-    value: `gerente:${g.id}`,
-    label: `${g.nome} (Gerência)`,
-  }))
+                        // 2. Gerentes ativos agrupados após representantes na 1ª página ou quando filtrados
+                        const matchingGerentes: SearchableComboboxOption[] = gerentes
+                          .filter((g) => g.status === 'Ativo')
+                          .filter((g) => !trimmed || g.nome.toLowerCase().includes(trimmed))
+                          .map((g) => ({
+                            value: `gerente:${g.id}`,
+                            label: `${g.nome} (Gerência)`,
+                          }))
 
-let items: SearchableComboboxOption[] = repItems
-if (page === 1) {
-  items = [...repItems, ...matchingGerentes]
-}
+                        let items: SearchableComboboxOption[] = repItems
+                        if (page === 1) {
+                          items = [...repItems, ...matchingGerentes]
+                        }
 
                         const totalReps = repCount ?? 0
                         const hasMore = to + 1 < totalReps
