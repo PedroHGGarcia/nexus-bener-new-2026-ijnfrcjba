@@ -376,29 +376,18 @@
     page-break-inside: auto !important;
   }
 
-  /* Blindagem direta da capa por atributo/classe: NUNCA quebra antes */
+  /* Sem quebra de página forçada no documento: o fluxo é natural e o navegador pagina sozinho */
   .proposal-cover,
-  [data-page='1'],
-  [data-sheet-index='0'] {
-    break-before: avoid !important;
-    page-break-before: avoid !important;
+  .proposal-sheet,
+  .proposal-page,
+  [data-page],
+  [data-sheet-index] {
     margin-top: 0 !important;
     padding-top: 0 !important;
   }
 
-  /* Quebra de página SÓ entre folhas subsequentes, via combinador de irmãos — nada de break-before genérico */
-  .proposal-sheet ~ .proposal-sheet,
-  .proposal-page ~ .proposal-page,
-  [data-sheet-index] ~ [data-sheet-index],
-  .proposal-page-break {
-    break-before: page !important;
-    page-break-before: always !important;
-  }
-
   .proposal-page:last-child,
   .proposal-sheet:last-child {
-    page-break-after: auto !important;
-    break-after: auto !important;
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
   }

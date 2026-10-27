@@ -331,7 +331,7 @@ export function generatePropostaHtml(
   const page1PageNumber = hasAnyPage2Content ? 'Página 1/2' : 'Página 1/1'
 
   return `
-    <div class="proposal-page proposal-cover" data-page="1" style="break-before: avoid !important; page-break-before: avoid !important; margin-top: 0 !important; padding-top: 0 !important;">
+    <div class="proposal-page proposal-cover" data-page="1" style="margin-top: 0 !important; padding-top: 0 !important;">
       <div>
         <div style="page-break-inside:avoid;break-inside:avoid;">
           <div class="proposal-top-header">
@@ -384,7 +384,7 @@ export function generatePropostaHtml(
 
     ${
       hasAnyPage2Content
-        ? `<div class="proposal-page proposal-page-break" data-page="2" style="break-before: page !important; page-break-before: always !important;">
+        ? `<div class="proposal-page" data-page="2" style="margin-top: 0 !important; padding-top: 0 !important;">
       <div>
 
         ${

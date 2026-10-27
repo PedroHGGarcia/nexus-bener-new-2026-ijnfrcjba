@@ -29,13 +29,7 @@ export const A4_PRINT_STYLES = `
     page-break-inside: avoid;
     break-inside: avoid;
   }
-  .proposal-page ~ .proposal-page {
-    break-before: page;
-    page-break-before: always;
-  }
   .proposal-page:last-child {
-    page-break-after: auto !important;
-    break-after: auto !important;
     margin-bottom: 0 !important;
     padding-bottom: 0 !important;
   }
@@ -212,19 +206,12 @@ export const A4_PRINT_STYLES = `
       height: auto !important;
     }
     .proposal-cover,
-    [data-page="1"],
-    [data-sheet-index="0"] {
-      break-before: avoid !important;
-      page-break-before: avoid !important;
+    .proposal-sheet,
+    .proposal-page,
+    [data-page],
+    [data-sheet-index] {
       margin-top: 0 !important;
       padding-top: 0 !important;
-    }
-    .proposal-sheet ~ .proposal-sheet,
-    .proposal-page ~ .proposal-page,
-    [data-sheet-index] ~ [data-sheet-index],
-    .proposal-page-break {
-      break-before: page !important;
-      page-break-before: always !important;
     }
     .proposal-page {
       padding: 0 !important;
@@ -232,8 +219,6 @@ export const A4_PRINT_STYLES = `
       box-shadow: none !important;
     }
     .proposal-page:last-child {
-      page-break-after: auto !important;
-      break-after: auto !important;
       margin-bottom: 0 !important;
       padding-bottom: 0 !important;
     }
@@ -256,7 +241,7 @@ export function openPrintWindow(html: string): Window | null {
 }
 
 export function addPageBreak(): string {
-  return '<div style="page-break-after: always; break-after: page;"></div>'
+  return ''
 }
 
 export function wrapForPrint(content: string): string {
