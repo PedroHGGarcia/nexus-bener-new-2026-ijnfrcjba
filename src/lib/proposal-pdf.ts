@@ -173,6 +173,9 @@ export function generatePropostaHtml(
         ? String(tipoProposta.imposto_icms)
         : null
 
+  const proposalFrasePreco =
+    (proposal as { frase_preco?: string | null }).frase_preco || tipoProposta?.frase_preco
+
   const terms: Array<[string, string | null | undefined]> = [
     ['Condições de Pagamento', proposal.condicoes_pagamento],
     ['Prazo de Entrega', proposal.prazo_entrega],
@@ -193,10 +196,7 @@ export function generatePropostaHtml(
       (proposal as { treinamento_tecnico?: string | null }).treinamento_tecnico ||
         tipoProposta?.treinamento_tecnico,
     ],
-    [
-      'Frase de Preço',
-      (proposal as { frase_preco?: string | null }).frase_preco || tipoProposta?.frase_preco,
-    ],
+    ['Frase de Preço', proposalFrasePreco],
   ]
 
   if (tipoProposta?.campos_adicionais) {
@@ -388,13 +388,13 @@ export function generatePropostaHtml(
       <div>
 
         ${
-          technicalSpecsHtml
+          acessoriosStandardsHtml
             ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
                    <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
+                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Configuração Standard</span>
                  </div>
-                 ${technicalSpecsHtml}
+                 ${acessoriosStandardsHtml}
                </div>`
             : ''
         }
@@ -412,13 +412,13 @@ export function generatePropostaHtml(
         }
 
         ${
-          acessoriosStandardsHtml
+          technicalSpecsHtml
             ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
                    <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Configuração Standard</span>
+                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
                  </div>
-                 ${acessoriosStandardsHtml}
+                 ${technicalSpecsHtml}
                </div>`
             : ''
         }
@@ -510,13 +510,13 @@ export function generatePropostaHtml(
                          Qtd: ${item.quantidade} | Unitário: ${formatCurrencyByMoeda(item.valor_unitario, item.versoes?.moeda || moeda)}${item.desconto_percentual ? ` | Desc: ${item.desconto_percentual}%` : ''}
                        </div>
                        ${
-                         itemSpecs
+                         itemAcess
                            ? `<div style="margin-top:6px;padding-top:4px;border-top:1px solid #e2e8f0;">
                          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
                            <span style="display:inline-block;width:3px;height:11px;background:#0b3c26;border-radius:1px;"></span>
-                           <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;">Especificações Técnicas</span>
+                           <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;">Configuração Standard</span>
                          </div>
-                         ${renderTechnicalHtml(itemSpecs)}
+                         ${renderTechnicalHtml(itemAcess)}
                        </div>`
                            : ''
                        }
@@ -532,13 +532,13 @@ export function generatePropostaHtml(
                            : ''
                        }
                        ${
-                         itemAcess
+                         itemSpecs
                            ? `<div style="margin-top:6px;padding-top:4px;border-top:1px solid #e2e8f0;">
                          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
                            <span style="display:inline-block;width:3px;height:11px;background:#0b3c26;border-radius:1px;"></span>
-                           <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;">Configuração Standard</span>
+                           <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;">Especificações Técnicas</span>
                          </div>
-                         ${renderTechnicalHtml(itemAcess)}
+                         ${renderTechnicalHtml(itemSpecs)}
                        </div>`
                            : ''
                        }
@@ -800,7 +800,7 @@ export function generatePropostaHtml(
           }
         </div>
 
-        <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
           <div>
             <div style="font-size:10px;text-transform:uppercase;font-weight:bold;letter-spacing:0.8px;color:#475569;">Valor Total do Fornecimento</div>
             <div style="font-size:10px;color:#64748b;">${proposal.is_pacote && equipmentItems && equipmentItems.length > 0 ? `Soma de ${equipmentItems.length} equipamento(s)` : 'Condição comercial integral'}</div>
@@ -824,6 +824,11 @@ export function generatePropostaHtml(
             }
           </div>
         </div>
+        ${
+          proposalFrasePreco && String(proposalFrasePreco).trim() !== ''
+            ? `<div style="margin-top:4px;margin-bottom:12px;font-size:10px;font-weight:600;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;">${esc(String(proposalFrasePreco).trim())}</div>`
+            : ''
+        }
 
         ${
           filteredTerms.length > 0

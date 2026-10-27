@@ -246,6 +246,11 @@ export function ProposalDocument({ proposal }: Props) {
         ? String(tipoProposta.imposto_icms)
         : null
 
+  const rawFrasePreco =
+    (proposal as { frase_preco?: string | null }).frase_preco || tipoProposta?.frase_preco
+  const frasePreco =
+    rawFrasePreco && String(rawFrasePreco).trim() !== '' ? String(rawFrasePreco).trim() : null
+
   const terms: Array<[string, string | null | undefined]> = [
     ['Condições de Pagamento', proposal.condicoes_pagamento || tipoProposta?.condicoes_pagamento],
     ['Prazo de Entrega', proposal.prazo_entrega || tipoProposta?.prazo_entrega],
@@ -270,10 +275,7 @@ export function ProposalDocument({ proposal }: Props) {
     ['Materiais Utilizados', proposal.materiais_utilizados],
     ['Imposto IPI', isTaxValueEmpty(rawIpiVal, 'Imposto IPI') ? null : rawIpiVal],
     ['Imposto ICMS', isTaxValueEmpty(rawIcmsVal, 'Imposto ICMS') ? null : rawIcmsVal],
-    [
-      'Frase de Preço',
-      (proposal as { frase_preco?: string | null }).frase_preco || tipoProposta?.frase_preco,
-    ],
+    ['Frase de Preço', rawFrasePreco],
   ]
 
   if (tipoProposta?.campos_adicionais) {
@@ -773,16 +775,16 @@ export function ProposalDocument({ proposal }: Props) {
                         </div>
 
                         {/* Detalhes Técnicos / Construtivos / Standard da Máquina (se preenchidos) */}
-                        {itemSpecs && (
+                        {itemAcessStandards && (
                           <div className="mt-2.5 pt-2 border-t border-slate-100">
                             <div className="flex items-center gap-1.5 mb-1 pb-0.5 border-b border-emerald-900/20">
                               <span className="w-0.5 h-3 bg-[#0b3c26] rounded-xs" />
                               <span className="font-bold text-[#0b3c26] uppercase tracking-wide text-[10px]">
-                                Especificações Técnicas
+                                Configuração Standard
                               </span>
                             </div>
                             <div className="text-[10px] text-slate-700 pl-2.5">
-                              <TechnicalDataDisplay content={itemSpecs} compact />
+                              <TechnicalDataDisplay content={itemAcessStandards} compact />
                             </div>
                           </div>
                         )}
@@ -801,16 +803,16 @@ export function ProposalDocument({ proposal }: Props) {
                           </div>
                         )}
 
-                        {itemAcessStandards && (
+                        {itemSpecs && (
                           <div className="mt-2.5 pt-2 border-t border-slate-100">
                             <div className="flex items-center gap-1.5 mb-1 pb-0.5 border-b border-emerald-900/20">
                               <span className="w-0.5 h-3 bg-[#0b3c26] rounded-xs" />
                               <span className="font-bold text-[#0b3c26] uppercase tracking-wide text-[10px]">
-                                Configuração Standard
+                                Especificações Técnicas
                               </span>
                             </div>
                             <div className="text-[10px] text-slate-700 pl-2.5">
-                              <TechnicalDataDisplay content={itemAcessStandards} compact />
+                              <TechnicalDataDisplay content={itemSpecs} compact />
                             </div>
                           </div>
                         )}
@@ -1047,8 +1049,39 @@ export function ProposalDocument({ proposal }: Props) {
                 </div>
               </section>
             ) : (
-              /* Modo Padrão (máquina única): Especificações + Características + Standard + Acessórios Globais */
+              /* Modo Padrão (máquina única): Standard + Características + Especificações + Acessórios Globais */
               <section className="proposal-section mb-4 text-xs break-inside-avoid print:break-inside-auto">
+                {primaryVersao?.acessorios_standards && (
+                  <div className="mb-3.5 break-inside-avoid">
+                    <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
+                      <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
+                      <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
+                        Configuração Standard
+                      </h3>
+                    </div>
+                    <div className="pl-3">
+                      <TechnicalDataDisplay content={primaryVersao.acessorios_standards} compact />
+                    </div>
+                  </div>
+                )}
+
+                {primaryVersao?.caracteristicas_construtivas && (
+                  <div className="mb-3.5 break-inside-avoid">
+                    <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
+                      <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
+                      <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
+                        Características Construtivas
+                      </h3>
+                    </div>
+                    <div className="pl-3">
+                      <TechnicalDataDisplay
+                        content={primaryVersao.caracteristicas_construtivas}
+                        compact
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {(() => {
                   const desc =
                     primaryVersao?.especificacoes_tecnicas ||
@@ -1069,37 +1102,6 @@ export function ProposalDocument({ proposal }: Props) {
                     </div>
                   )
                 })()}
-
-                {primaryVersao?.caracteristicas_construtivas && (
-                  <div className="mb-3.5 break-inside-avoid">
-                    <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
-                      <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
-                      <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
-                        Características Construtivas
-                      </h3>
-                    </div>
-                    <div className="pl-3">
-                      <TechnicalDataDisplay
-                        content={primaryVersao.caracteristicas_construtivas}
-                        compact
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {primaryVersao?.acessorios_standards && (
-                  <div className="mb-3.5 break-inside-avoid">
-                    <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
-                      <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
-                      <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
-                        Configuração Standard
-                      </h3>
-                    </div>
-                    <div className="pl-3">
-                      <TechnicalDataDisplay content={primaryVersao.acessorios_standards} compact />
-                    </div>
-                  </div>
-                )}
 
                 {/* Accessories sections: Inclusos no Preço & Não Inclusos no Preço (modo máquina única) */}
                 {(() => {
@@ -1355,6 +1357,11 @@ export function ProposalDocument({ proposal }: Props) {
                     </tr>
                   </tfoot>
                 </table>
+                {frasePreco && (
+                  <div className="mt-2 text-[10px] font-semibold text-slate-900 uppercase tracking-wide">
+                    {frasePreco}
+                  </div>
+                )}
               </div>
             </section>
 
