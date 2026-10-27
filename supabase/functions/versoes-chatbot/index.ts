@@ -3,7 +3,7 @@ import { getCorsHeaders } from '../_shared/cors.ts'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const BACKOFF_DELAYS = [1500, 3000]
-const OPENAI_MODEL = 'gpt-4o-mini'
+const OPENAI_MODEL = 'gpt-6-luna'
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions'
 
 interface VersaoRow {
