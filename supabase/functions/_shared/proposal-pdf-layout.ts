@@ -1173,7 +1173,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       const cw = colW[i]
       const isComissaoRow = row.nome === TEXTO_COMISSAO_BENER_VERBATIM
       if (i === 0)
-        doc.txt(x, midY, isComissaoRow ? '—' : String(rows.indexOf(row) + 1), {
+        doc.txt(x, midY, String(rows.indexOf(row) + 1), {
           font: 'F1',
           size: 8.5,
           align: 'center',

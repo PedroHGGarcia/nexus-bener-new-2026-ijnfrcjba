@@ -690,12 +690,16 @@ export function buildProposalPdfHtml(
   const fmtMShared = (n: number) =>
     n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+  // Número de item da comissão na tabela de Condições Comerciais (continua a sequência dos equipamentos anteriores)
+  const comissaoItemIndex =
+    equipmentItems && equipmentItems.length > 0 ? equipmentItems.length + 1 : 2
+
   // Linha verbatim da comissão para a tabela em modo unitário e modo pacote
   const comissaoTableRowHtml =
     comissaoAplicavel && valorComissaoCalculada > 0
       ? `
       <tr>
-        <td style="padding:8px 10px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">—</td>
+        <td style="padding:8px 10px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">${comissaoItemIndex}</td>
         <td style="padding:8px 10px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;line-height:1.4;">${escapeHtml(TEXTO_COMISSAO_BENER_VERBATIM)}</td>
         <td style="padding:8px 10px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">—</td>
         <td style="padding:8px 10px;text-align:right;border-bottom:1px solid #e2e8f0;color:#64748b;">—</td>

@@ -1433,7 +1433,11 @@ export function ProposalDocument({ proposal }: Props) {
                     )}
                     {comissaoServicosInfo && (
                       <tr>
-                        <td className="text-center font-semibold text-slate-700">—</td>
+                        <td className="text-center font-semibold text-slate-700">
+                          {proposal.is_pacote && equipmentItems.length > 0
+                            ? equipmentItems.length + 1
+                            : 2}
+                        </td>
                         <td className="text-left font-semibold text-slate-900 break-words leading-tight">
                           {comissaoServicosInfo.textoDescritivo}
                         </td>

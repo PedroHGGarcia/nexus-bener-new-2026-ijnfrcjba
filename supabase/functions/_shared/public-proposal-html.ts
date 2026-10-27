@@ -1100,10 +1100,15 @@ export function buildPublicProposalHtml(
             }
           }
 
+          const comissaoItemIndex =
+            proposta.is_pacote && equipmentItems && equipmentItems.length > 0
+              ? equipmentItems.length + 1
+              : 2
+
           const comissaoRowHtml =
             comissaoAplicavel && valorComissaoCalculada > 0
               ? `<tr>
-                <td style="padding:6px 8px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">—</td>
+                <td style="padding:6px 8px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">${comissaoItemIndex}</td>
                 <td style="padding:6px 8px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;line-height:1.4;">${esc(TEXTO_COMISSAO_BENER_VERBATIM)}</td>
                 <td style="padding:6px 8px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">—</td>
                 <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;color:#64748b;">—</td>
