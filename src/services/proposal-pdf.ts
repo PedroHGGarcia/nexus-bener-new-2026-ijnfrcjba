@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase/client'
 import type { ServiceResult } from '@/lib/utils'
-import { sanitizeHtml } from '@/lib/escape-html'
 import logoAsset from '@/assets/bener-thumb-accaf.png'
 
 async function fetchAsDataUrl(url: string): Promise<string | null> {
@@ -57,20 +56,13 @@ export async function generateProposalPdf(
 }
 
 export async function printProposalPdf(propostaId: string): Promise<void> {
-  const result = await generateProposalPdf(propostaId)
-  if (!result.ok || !result.data?.html) {
-    const errorMsg = !result.ok
-      ? (result as { ok: false; error: string }).error
-      : 'Falha ao gerar PDF da proposta'
-    throw new Error(errorMsg || 'Falha ao gerar PDF da proposta')
-  }
-  const printWindow = window.open('', '_blank')
+  // Rather than document.write on an empty window (which has an empty origin or about:blank route),
+  // navigate directly to the dedicated printable route which mounts only the ProposalDocument.
+  const printUrl = `/proposta/${propostaId}/imprimir`
+  const printWindow = window.open(printUrl, '_blank')
   if (!printWindow) {
     throw new Error(
       'Não foi possível abrir a janela de impressão. Verifique o bloqueador de pop-ups.',
     )
   }
-  printWindow.document.write(sanitizeHtml(result.data.html))
-  printWindow.document.close()
-  setTimeout(() => printWindow.print(), 800)
 }

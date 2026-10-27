@@ -206,6 +206,20 @@ export const A4_PRINT_STYLES = `
       height: auto !important;
     }
     .proposal-cover,
+    [data-page="1"],
+    [data-sheet-index="0"] {
+      break-before: avoid !important;
+      page-break-before: avoid !important;
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
+    [data-page="2"],
+    [data-sheet-index="1"] {
+      break-before: page !important;
+      page-break-before: always !important;
+      margin-top: 0 !important;
+      padding-top: 0 !important;
+    }
     .proposal-sheet,
     .proposal-page,
     [data-page],

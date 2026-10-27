@@ -329,6 +329,47 @@
     display: none !important;
   }
 
+  /* ISOLAMENTO TOTAL DO DOCUMENTO DE PROPOSTA:
+     Quando a impressão é disparada pelo goskip ou pelo sistema:
+     1. Se o container de impressão estiver montado fora do #root diretamente no <body>
+        (caso comum em que a rota ativa é "/" / Index), oculta o #root e qualquer outro
+        filho do body que não contenha a proposta. Isso impede que o shell/Index gere
+        a folha 1 em branco antes da capa.
+     2. Se o documento estiver dentro do #root (ex: /proposta/:id/imprimir ou /visualizar-proposta/:id),
+        oculta qualquer elemento irmão dentro do #root que não contenha o documento. */
+  body:has(.proposal-document) > *:not(:has(.proposal-document)):not(.proposal-document) {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+  }
+
+  body:has(.proposal-document) #root > *:not(:has(.proposal-document)):not(.proposal-document),
+  body:has(.proposal-document) main > *:not(:has(.proposal-document)):not(.proposal-document) {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: hidden !important;
+  }
+
+  /* Ocultar elementos de layout e navegação do sistema quando imprimindo proposta */
+  body:has(.proposal-document) aside,
+  body:has(.proposal-document) header,
+  body:has(.proposal-document) nav,
+  body:has(.proposal-document) [data-sonner-toaster],
+  body:has(.proposal-document) [data-skip],
+  body:has(.proposal-document) .versoes-chatbot-container {
+    display: none !important;
+  }
+
   /* Zerar margens/padding/altura dos ancestrais na impressão */
   html,
   body,
@@ -376,8 +417,26 @@
     page-break-inside: auto !important;
   }
 
-  /* Sem quebra de página forçada no documento: o fluxo é natural e o navegador pagina sozinho */
+  /* REGRA DEFINITIVA DE QUEBRA DE PÁGINA (sem depender de seletores frágeis como :first-child):
+     - A Capa (data-page="1") NUNCA tem quebra antes (break-before: avoid). Ela é sempre a 1ª folha física.
+     - A Folha 2 (data-page="2") quebra explicitamente (break-before: page) para garantir 2ª folha limpa. */
   .proposal-cover,
+  [data-page='1'],
+  [data-sheet-index='0'] {
+    break-before: avoid !important;
+    page-break-before: avoid !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  [data-page='2'],
+  [data-sheet-index='1'] {
+    break-before: page !important;
+    page-break-before: always !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+  }
+
   .proposal-sheet,
   .proposal-page,
   [data-page],

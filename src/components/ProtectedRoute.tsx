@@ -8,7 +8,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex bg-background">
+      <div className="min-h-screen flex bg-background print:hidden">
         <div className="hidden md:block w-64 border-r border-border bg-sidebar animate-pulse" />
         <div className="flex-1 p-8 space-y-6">
           <Skeleton className="h-8 w-48 rounded-md" />

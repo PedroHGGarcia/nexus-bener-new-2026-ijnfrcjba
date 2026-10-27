@@ -472,7 +472,7 @@ export function ProposalDocument({ proposal }: Props) {
         data-sheet-index="0"
         data-page="1"
         className="proposal-page proposal-sheet proposal-cover relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:h-auto print:border-none"
-        style={{ boxSizing: 'border-box' }}
+        style={{ boxSizing: 'border-box', breakBefore: 'avoid', pageBreakBefore: 'avoid' }}
       >
         {/* Top & Main Body */}
         <div>
@@ -636,7 +636,7 @@ export function ProposalDocument({ proposal }: Props) {
           data-sheet-index="1"
           data-page="2"
           className="proposal-page proposal-sheet relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:h-auto border-t-2 border-dashed border-slate-300 print:border-none"
-          style={{ boxSizing: 'border-box' }}
+          style={{ boxSizing: 'border-box', breakBefore: 'page', pageBreakBefore: 'always' }}
         >
           <div>
             {/* Modo Pacote: Bloco estruturado por Máquina com Foto, Título e Acessórios vinculados */}
