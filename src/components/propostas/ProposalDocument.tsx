@@ -151,12 +151,23 @@ export function ProposalDocument({ proposal }: Props) {
   const [tiposPropostaMap, setTiposPropostaMap] = useState<Record<string, TipoProposta>>({})
 
   useEffect(() => {
-    // Se o snapshot já congelou o tipo_proposta_detalhes, usa ele e popula tiposPropostaMap
-    const snapshotTp = snapshotRoot?.tipo_proposta_detalhes as TipoProposta | undefined
+    // Se a proposta possui override local explícito (tipo_proposta_override), prioriza-o
+    const overrideTp = (proposal.tipo_proposta_override || snapshotRoot?.tipo_proposta_override) as
+      | TipoProposta
+      | undefined
+
+    // Se o snapshot congelou tipo_proposta_detalhes, usa ele
+    const snapshotTp = (overrideTp || snapshotRoot?.tipo_proposta_detalhes) as
+      | TipoProposta
+      | undefined
+
     if (snapshotTp) {
       setTipoProposta(snapshotTp)
       if (snapshotTp.nome) {
         setTiposPropostaMap((prev) => ({ ...prev, [snapshotTp.nome!]: snapshotTp }))
+      }
+      if (proposal.tipo_proposta && proposal.tipo_proposta !== snapshotTp.nome) {
+        setTiposPropostaMap((prev) => ({ ...prev, [proposal.tipo_proposta!]: snapshotTp }))
       }
     }
 
@@ -176,7 +187,7 @@ export function ProposalDocument({ proposal }: Props) {
 
     if (!proposal.tipo_proposta) return
 
-    // Se não veio do snapshot, faz a busca viva (fallback de compatibilidade)
+    // Se não veio do snapshot nem do override, faz a busca viva (fallback de compatibilidade)
     if (!snapshotTp) {
       void supabase
         .from('tipos_proposta')
@@ -191,7 +202,7 @@ export function ProposalDocument({ proposal }: Props) {
           }
         })
     }
-  }, [proposal.tipo_proposta, snapshotRoot])
+  }, [proposal.tipo_proposta, proposal.tipo_proposta_override, snapshotRoot])
 
   // No modo pacote (ou quando há itens de equipamento), busca os detalhes dos tipos faltantes
   useEffect(() => {

@@ -93,6 +93,10 @@ export interface Proposta {
   is_pacote: boolean
   link_publico?: string | null
   public_token?: string | null
+  tipo_proposta_override?:
+    | import('@/types/tipo-proposta').TipoProposta
+    | Record<string, unknown>
+    | null
   itens_snapshot?: import('@/lib/proposal-snapshot').PropostaItemSnapshot[] | null
   dados_snapshot?:
     | import('@/lib/proposal-snapshot').PropostaSnapshotRoot

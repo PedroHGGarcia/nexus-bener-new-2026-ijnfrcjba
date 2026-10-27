@@ -59,6 +59,7 @@ export interface PropostaSnapshotRoot {
   is_pacote: boolean
   tipo_proposta?: string | null
   tipo_proposta_detalhes?: TipoProposta | Record<string, unknown> | null
+  tipo_proposta_override?: TipoProposta | Record<string, unknown> | null
   primary_versao?: VersaoSnapshotData | null
   itens: PropostaItemSnapshot[]
   acessorios_proposta?: unknown[]
@@ -129,6 +130,7 @@ export async function buildPropostaSnapshot(params: {
   is_pacote: boolean
   versaoId?: string | null
   tipo_proposta?: string | null
+  tipo_proposta_override?: TipoProposta | Record<string, unknown> | null
   userName?: string
   // Itens selecionados no modo pacote ou item único
   itens: Array<{
@@ -151,6 +153,7 @@ export async function buildPropostaSnapshot(params: {
     is_pacote,
     versaoId,
     tipo_proposta,
+    tipo_proposta_override = null,
     userName,
     itens,
     acessorios_proposta = [],
@@ -211,7 +214,17 @@ export async function buildPropostaSnapshot(params: {
     const rawV = versoesMap.get(it.versao_id) || it.versoes
     const versaoSnapshot = normalizeVersaoToSnapshot(rawV)
     const effectiveTipo = it.tipo_proposta || (idx === 0 ? tipo_proposta : null)
-    const tipoDetalhes = effectiveTipo ? tiposMap.get(effectiveTipo) || null : null
+    // Se há override local para este tipo de proposta, usa com prioridade
+    const isOverrideMatch =
+      tipo_proposta_override &&
+      (!effectiveTipo ||
+        effectiveTipo === tipo_proposta ||
+        (tipo_proposta_override as any).nome === effectiveTipo)
+    const tipoDetalhes = isOverrideMatch
+      ? tipo_proposta_override
+      : effectiveTipo
+        ? tiposMap.get(effectiveTipo) || null
+        : null
 
     const itemAcessorios = Array.isArray(acessorios_proposta)
       ? acessorios_proposta.filter((a) => !a.versao_id || a.versao_id === it.versao_id)
@@ -236,7 +249,8 @@ export async function buildPropostaSnapshot(params: {
   if (itensSnapshot.length === 0 && versaoId) {
     const rawV = versoesMap.get(versaoId)
     const versaoSnapshot = normalizeVersaoToSnapshot(rawV)
-    const tipoDetalhes = tipo_proposta ? tiposMap.get(tipo_proposta) || null : null
+    const tipoDetalhes =
+      tipo_proposta_override || (tipo_proposta ? tiposMap.get(tipo_proposta) || null : null)
     itensSnapshot.push({
       versao_id: versaoId,
       quantidade: 1,
@@ -257,12 +271,15 @@ export async function buildPropostaSnapshot(params: {
   const primaryVersao = primaryVersaoRaw ? normalizeVersaoToSnapshot(primaryVersaoRaw) : null
 
   // 5. Root consolidado
+  const rootTipoDetalhes =
+    tipo_proposta_override || (tipo_proposta ? tiposMap.get(tipo_proposta) || null : null)
   const dadosSnapshot: PropostaSnapshotRoot = {
     captured_at: new Date().toISOString(),
     captured_by: userName,
     is_pacote,
     tipo_proposta: tipo_proposta || null,
-    tipo_proposta_detalhes: tipo_proposta ? tiposMap.get(tipo_proposta) || null : null,
+    tipo_proposta_detalhes: rootTipoDetalhes,
+    tipo_proposta_override: tipo_proposta_override || null,
     primary_versao: primaryVersao,
     itens: itensSnapshot,
     acessorios_proposta,

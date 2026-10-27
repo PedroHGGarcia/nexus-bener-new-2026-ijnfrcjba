@@ -256,6 +256,10 @@ export async function createPropostaVersion(
       (original as unknown as Record<string, unknown>).treinamento_tecnico ??
       null,
     campos_adicionais: payload.campos_adicionais ?? original.campos_adicionais,
+    tipo_proposta_override:
+      payload.tipo_proposta_override !== undefined
+        ? payload.tipo_proposta_override
+        : (original.tipo_proposta_override ?? null),
     itens_snapshot:
       payload.itens_snapshot !== undefined
         ? payload.itens_snapshot

@@ -388,9 +388,14 @@ export function buildProposalPdfHtml(
   `
       : ''
 
-  // Snapshot congelado do tipo de proposta (Regra 9)
+  // Snapshot congelado do tipo de proposta (Regra 9) com suporte a override local per-proposal
   const dadosSnapshot = proposta.dados_snapshot as Record<string, any> | null
+  const tpOverride =
+    (proposta.tipo_proposta_override as Record<string, any> | null) ||
+    (dadosSnapshot?.tipo_proposta_override as Record<string, any> | null) ||
+    null
   const tpSnapshot =
+    tpOverride ||
     (dadosSnapshot?.tipo_proposta_detalhes as Record<string, any>) ||
     (tipoProposta as Record<string, any>) ||
     null
