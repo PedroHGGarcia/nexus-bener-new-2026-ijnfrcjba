@@ -8,6 +8,10 @@ import type { CustomField } from '@/components/propostas/CustomFieldsEditor'
 import { supabase } from '@/lib/supabase/client'
 import { formatCurrencyByMoeda, formatBulletList, normalizeMoedaCode } from '@/lib/format'
 import {
+  calcComissaoServicosBener,
+  TEXTO_COMISSAO_BENER_VERBATIM,
+} from '@/lib/proposta-calculations'
+import {
   splitIntoParagraphs,
   parseParagraphs,
   stripBoldMarkers,
@@ -448,10 +452,87 @@ export function ProposalDocument({ proposal }: Props) {
           10
         : 0
 
+  // Ponto 13: Cálculo de Serviços e Comissão Bener (Admissão Temporária / Importação Direta)
+  const currentTipoNome = proposal.tipo_proposta || tipoProposta?.nome || null
+  const currentTipoComissao = tipoProposta?.comissao != null ? Number(tipoProposta.comissao) : 0
+
+  // Base de cálculo dos itens (máquina + opcionais inclusos)
+  const baseCalculoItens = useMemo(() => {
+    let total = 0
+    if (proposal.is_pacote && equipmentItems.length > 0) {
+      equipmentItems.forEach((item) => {
+        const qtd = item.quantidade || 1
+        const valUnit = Number(item.valor_unitario || 0)
+        const descPct = Number(item.desconto_percentual || 0)
+        const descVal = Number(item.desconto_valor || 0)
+        const subtotal = qtd * valUnit
+        const totalItem =
+          descVal > 0 ? Math.max(0, subtotal - descVal) : subtotal * (1 - descPct / 100)
+        total += totalItem
+      })
+    } else {
+      total = valorEfetivoFinal
+    }
+
+    // Soma opcionais inclusos (se houver acessórios adicionais na proposta marcados como inclusos/preco)
+    if (Array.isArray(proposal.acessorios_proposta)) {
+      type AccItem = {
+        valor?: number
+        inclusao?: string
+        quantidade?: number
+        desconto_percentual?: number
+        desconto_valor?: number
+      }
+      const rawAcc = proposal.acessorios_proposta as AccItem[]
+      rawAcc.forEach((a) => {
+        const isInc = a.inclusao === 'incluir' || a.inclusao === 'preco' || a.inclusao === undefined
+        if (isInc && a.valor != null && Number(a.valor) > 0) {
+          const q = a.quantidade || 1
+          const sub = q * Number(a.valor)
+          const dPct = Number(a.desconto_percentual || 0)
+          const dVal = Number(a.desconto_valor || 0)
+          const tot = dVal > 0 ? Math.max(0, sub - dVal) : sub * (1 - dPct / 100)
+          total += tot
+        }
+      })
+    }
+
+    return Math.round(total * 100) / 100
+  }, [proposal.is_pacote, equipmentItems, valorEfetivoFinal, proposal.acessorios_proposta])
+
+  const comissaoServicosInfo = useMemo(() => {
+    return calcComissaoServicosBener({
+      tipoNome: currentTipoNome,
+      comissaoPct: currentTipoComissao,
+      baseValor: baseCalculoItens,
+    })
+  }, [currentTipoNome, currentTipoComissao, baseCalculoItens])
+
+  const valorComissaoCalculada = comissaoServicosInfo?.valorCalculado || 0
+
+  // Se a proposta já persistiu o valor_final com a comissão (criada via form novo),
+  // ou se é uma proposta antiga onde precisamos somar, garantimos que o total
+  // exibido contenha a comissão caso o valor_final armazenado não reflita isso.
+  // Regra do Ponto 13: O VALOR TOTAL DO FORNECIMENTO reflete a soma (valor anterior + comissão calculada).
+  const valorTotalFornecimentoExibido = useMemo(() => {
+    const rawFinal = Number(proposal.valor_final || 0)
+    // Se a proposta não tem comissão aplicável, usa o valor_final gravado
+    if (!comissaoServicosInfo || valorComissaoCalculada <= 0) {
+      return rawFinal
+    }
+    // Se o valor_final armazenado for igual ou muito próximo da base antes da comissão,
+    // soma a comissão; se já incluir (ex: valor_final >= base + comissao - 0.05), mantém rawFinal.
+    if (Math.abs(rawFinal - baseCalculoItens) < 0.05) {
+      return rawFinal + valorComissaoCalculada
+    }
+    return rawFinal
+  }, [proposal.valor_final, comissaoServicosInfo, valorComissaoCalculada, baseCalculoItens])
+
   const hasTiposPropostaDetails =
     proposal.tipo_proposta ||
     equipmentItems.some((it) => it.tipo_proposta) ||
-    Object.keys(tiposPropostaMap).length > 0
+    Object.keys(tiposPropostaMap).length > 0 ||
+    Boolean(comissaoServicosInfo)
 
   const showAdditionalPages =
     primaryVersao?.especificacoes_tecnicas ||

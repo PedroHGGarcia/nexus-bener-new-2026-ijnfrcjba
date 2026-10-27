@@ -94,6 +94,7 @@ import {
   calculateSubtotal,
   convertCurrency,
   formatPrecoEspecialDiscountBadge,
+  calcComissaoServicosBener,
 } from '@/lib/proposta-calculations'
 import { useAuth } from '@/hooks/use-auth'
 import { cn } from '@/lib/utils'
@@ -1135,8 +1136,33 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       )
     }, 0)
 
-  const valorSemDesconto = equipamentosSubtotal + acessoriosSubtotal
-  const valorAtual = equipamentosComDesconto + acessoriosComDesconto
+  // Ponto 13: Cálculo de Serviços e Comissão Bener para Admissão Temporária / Importação Direta
+  // O tipo de proposta selecionado (ou override) fornece a % de comissão
+  const currentTipoObj = useMemo(() => {
+    return tipoPropostaOverride || tipos.find((t) => t.nome === form.tipo_proposta) || null
+  }, [tipoPropostaOverride, tipos, form.tipo_proposta])
+
+  // Base de cálculo da comissão: Máquina + Opcionais Inclusos
+  const baseCalculoComissao = equipamentosComDesconto + acessoriosComDesconto
+
+  const comissaoServicosInfo = useMemo(() => {
+    if (!currentTipoObj) return null
+    return calcComissaoServicosBener({
+      tipoNome: currentTipoObj.nome,
+      comissaoPct: currentTipoObj.comissao,
+      baseValor: baseCalculoComissao,
+    })
+  }, [currentTipoObj, baseCalculoComissao])
+
+  const valorComissaoCalculada = comissaoServicosInfo?.valorCalculado || 0
+
+  // Subtotal sem desconto e valor base dos itens
+  const valorSemDescontoBase = equipamentosSubtotal + acessoriosSubtotal
+  const valorSemDesconto = valorSemDescontoBase + valorComissaoCalculada
+
+  const valorAtualBase = equipamentosComDesconto + acessoriosComDesconto
+  const valorAtual = valorAtualBase + valorComissaoCalculada
+
   // Ponto 1: Desconto Geral (%) removido do cálculo; descontos ocorrem apenas por item ou Preço Especial
   const valorFinal = form.tem_preco_especial
     ? form.preco_especial != null && Number(form.preco_especial) > 0
@@ -2511,6 +2537,18 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                 <span className="font-semibold tabular-nums">{fmtCurrency(valorAtual)}</span>
               </div>
             )}
+
+            {/* Ponto 13: Linha informativa de Serviços e Comissão Bener (Admissão Temporária / Importação Direta) */}
+            {comissaoServicosInfo && (
+              <div className="flex items-start justify-between text-xs py-1 border-t border-slate-200/70 dark:border-slate-800 text-[#0b3c26] dark:text-emerald-400 gap-2">
+                <span className="font-medium leading-snug">
+                  Serviços e Comissão Bener ({comissaoServicosInfo.percentual}%):
+                </span>
+                <span className="font-semibold tabular-nums text-right whitespace-nowrap">
+                  + {fmtCurrency(comissaoServicosInfo.valorCalculado)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* 4. FORA DO CARD, ABAIXO DELE: Valor Final da Proposta (destaque aprovado pela Bianca) */}
@@ -2818,6 +2856,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                 proposta_versoes: tempProposalVersoes,
                 tipo_proposta: form.tipo_proposta,
                 tipo_proposta_override: tipoPropostaOverride || null,
+                tipo_proposta_detalhes: tipoPropostaOverride || selectedTipo || null,
                 moeda: converterMoeda ? form.moeda || 'BRL' : form.moeda_original || 'BRL',
                 moeda_original: form.moeda_original || 'BRL',
                 cotacao_moeda:

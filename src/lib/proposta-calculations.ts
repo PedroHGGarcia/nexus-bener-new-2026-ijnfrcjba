@@ -131,3 +131,65 @@ export function convertCurrency(
   const valorInBrl = valor * rateFrom
   return rateTo > 0 ? valorInBrl / rateTo : valorInBrl
 }
+
+/**
+ * Ponto 13 — Comissão de Admissão Temporária / Importação Direta.
+ * Identifica se o tipo de proposta pertence às modalidades de Admissão Temporária
+ * ou Importação Direta (incluindo siglas comerciais como "AT" ou nomes compostos).
+ */
+export function isTipoAdmissaoOrImportacao(tipoNome?: string | null): boolean {
+  if (!tipoNome || typeof tipoNome !== 'string') return false
+  const clean = tipoNome
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
+  if (clean.includes('admissao temporaria') || clean.includes('importacao direta')) {
+    return true
+  }
+
+  // Sigla "AT" (Admissão Temporária) como palavra isolada (ex: "AT - Importação Direta", "PRIMINER - AT - ")
+  if (/\b(at)\b/i.test(tipoNome)) {
+    return true
+  }
+
+  return false
+}
+
+export const TEXTO_COMISSAO_BENER_VERBATIM =
+  'Pagamento Brasil: Serviços e Comissão Bener. Itens considerados p/ base de cálculo: Máquina; Opcionais Inclusos e Impostos sobre serviços Bener'
+
+export interface ComissaoServicosResult {
+  isApplicable: boolean
+  percentual: number
+  baseCalculo: number
+  valorCalculado: number
+  textoDescritivo: string
+}
+
+/**
+ * Calcula a comissão/serviços Bener para tipos Admissão Temporária e Importação Direta.
+ * Base de cálculo: Máquina + Opcionais Inclusos (+ impostos sobre serviços se houver).
+ */
+export function calcComissaoServicosBener(params: {
+  tipoNome?: string | null
+  comissaoPct?: number | null
+  baseValor: number
+}): ComissaoServicosResult | null {
+  const { tipoNome, comissaoPct, baseValor } = params
+  if (!isTipoAdmissaoOrImportacao(tipoNome)) return null
+  const pct = Number(comissaoPct || 0)
+  if (pct <= 0) return null
+  const base = Math.max(0, Number(baseValor || 0))
+  if (base <= 0) return null
+
+  const valorCalculado = Math.round(((base * pct) / 100) * 100) / 100
+  return {
+    isApplicable: true,
+    percentual: pct,
+    baseCalculo: base,
+    valorCalculado,
+    textoDescritivo: TEXTO_COMISSAO_BENER_VERBATIM,
+  }
+}
