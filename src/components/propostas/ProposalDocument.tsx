@@ -14,7 +14,6 @@ import {
   isTaxValueEmpty,
   isCommercialFieldEmpty,
 } from '@/lib/paragraphs'
-import { formatPrecoEspecialDiscountBadge } from '@/lib/proposta-calculations'
 import { TechnicalDataDisplay } from '@/components/produtos/TechnicalDataDisplay'
 import benerLogo from '@/assets/image-f448b.png'
 
@@ -1249,22 +1248,20 @@ export function ProposalDocument({ proposal }: Props) {
                 )
               })()}
 
-              {/* R2: Tabela Profissional Limpa de Itens e Valores - Ponto 2: sem coluna Tipo Fornecimento, larguras redistribuídas para 100% */}
-              <div className="w-full border border-slate-300 rounded-sm mb-3 bg-white overflow-hidden print:overflow-visible break-inside-avoid print:break-inside-auto">
-                <table className="w-full table-fixed text-[10px] border-collapse">
+              {/* Tabela de Condições Comerciais */}
+              <div className="w-full mb-3 bg-white break-inside-avoid print:break-inside-auto">
+                <table className="w-full border-collapse text-[10px] [&_th]:border [&_td]:border [&_th]:border-slate-300 [&_td]:border-slate-300 [&_th]:px-1.5 [&_th]:py-1 [&_td]:px-1.5 [&_td]:py-1">
                   <thead>
-                    <tr className="bg-slate-100 border-b border-slate-300 text-slate-700 font-semibold text-[9px] uppercase tracking-wider">
-                      <th className="py-1.5 px-2 text-center w-[6%]">Item</th>
-                      <th className="py-1.5 px-2 text-left w-[48%] break-words">
-                        Descrição do Equipamento
-                      </th>
-                      <th className="py-1.5 px-1 text-center w-[6%]">Qtd</th>
-                      <th className="py-1.5 px-2 text-right w-[18%]">Valor Unitário</th>
-                      <th className="py-1.5 px-1 text-right w-[8%]">Desconto</th>
-                      <th className="py-1.5 px-2 text-right w-[14%]">Subtotal</th>
+                    <tr className="bg-slate-100">
+                      <th className="w-[6%] text-center">ITEM</th>
+                      <th className="text-left">DESCRIÇÃO DO EQUIPAMENTO</th>
+                      <th className="w-[8%] text-center">QTD</th>
+                      <th className="w-[16%] text-right">VALOR UNITÁRIO</th>
+                      <th className="w-[12%] text-right">DESCONTO</th>
+                      <th className="w-[18%] text-right">SUBTOTAL</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200">
+                  <tbody>
                     {proposal.is_pacote && equipmentItems.length > 0 ? (
                       equipmentItems.map((item, idx) => {
                         const itemNome =
@@ -1285,30 +1282,22 @@ export function ProposalDocument({ proposal }: Props) {
 
                         return (
                           <tr key={item.id || idx} className="hover:bg-slate-50/70 align-middle">
-                            <td className="py-1.5 px-2 font-semibold text-slate-600 text-center">
-                              {idx + 1}
-                            </td>
-                            <td className="py-1.5 px-2 font-bold text-slate-900 break-words leading-tight">
+                            <td className="text-center font-semibold text-slate-700">{idx + 1}</td>
+                            <td className="text-left font-bold text-slate-900 break-words leading-tight">
                               {itemNome}
                             </td>
-                            <td className="py-1.5 px-1 text-center font-medium text-slate-800">
-                              {qtd}
+                            <td className="text-center font-medium text-slate-800">{qtd}</td>
+                            <td className="text-right font-semibold text-slate-900 whitespace-nowrap">
+                              {fmtCurrency(valUnit, itemMoeda)}
                             </td>
-                            <td className="py-1.5 px-2 text-right font-semibold text-slate-900 leading-tight">
-                              <span className="block whitespace-nowrap">
-                                {fmtCurrency(valUnit, itemMoeda)}
-                              </span>
+                            <td className="text-right font-medium text-slate-700 whitespace-nowrap">
+                              {descPct > 0
+                                ? `${descPct}%`
+                                : descVal > 0
+                                  ? fmtCurrency(descVal, itemMoeda)
+                                  : '—'}
                             </td>
-                            <td className="py-1.5 px-1 text-right font-medium text-slate-700 leading-tight">
-                              <span className="block whitespace-nowrap">
-                                {descPct > 0
-                                  ? `${descPct}%`
-                                  : descVal > 0
-                                    ? fmtCurrency(descVal, itemMoeda)
-                                    : '—'}
-                              </span>
-                            </td>
-                            <td className="py-1.5 px-2 text-right font-bold text-slate-950 leading-tight">
+                            <td className="text-right font-bold text-slate-950 whitespace-nowrap">
                               {itemHasDiscount ? (
                                 <div className="space-y-0.5">
                                   <span className="line-through text-slate-400 text-[9px] block whitespace-nowrap">
@@ -1319,9 +1308,7 @@ export function ProposalDocument({ proposal }: Props) {
                                   </span>
                                 </div>
                               ) : (
-                                <span className="block whitespace-nowrap">
-                                  {fmtCurrency(totalItem, itemMoeda)}
-                                </span>
+                                <span>{fmtCurrency(totalItem, itemMoeda)}</span>
                               )}
                             </td>
                           </tr>
@@ -1329,22 +1316,18 @@ export function ProposalDocument({ proposal }: Props) {
                       })
                     ) : (
                       <tr className="hover:bg-slate-50/70 align-middle">
-                        <td className="py-1.5 px-2 font-semibold text-slate-600 text-center">1</td>
-                        <td className="py-1.5 px-2 font-bold text-slate-900 break-words leading-tight">
+                        <td className="text-center font-semibold text-slate-700">1</td>
+                        <td className="text-left font-bold text-slate-900 break-words leading-tight">
                           {machineTitle}
                         </td>
-                        <td className="py-1.5 px-1 text-center font-medium text-slate-800">1</td>
-                        <td className="py-1.5 px-2 text-right font-semibold text-slate-900 leading-tight">
-                          <span className="block whitespace-nowrap">
-                            {fmtCurrency(valorOriginalTabela, proposal.moeda)}
-                          </span>
+                        <td className="text-center font-medium text-slate-800">1</td>
+                        <td className="text-right font-semibold text-slate-900 whitespace-nowrap">
+                          {fmtCurrency(valorOriginalTabela, proposal.moeda)}
                         </td>
-                        <td className="py-1.5 px-1 text-right font-medium text-slate-700 leading-tight">
-                          <span className="block whitespace-nowrap">
-                            {effectiveDiscountPercent > 0 ? `${effectiveDiscountPercent}%` : '—'}
-                          </span>
+                        <td className="text-right font-medium text-slate-700 whitespace-nowrap">
+                          {effectiveDiscountPercent > 0 ? `${effectiveDiscountPercent}%` : '—'}
                         </td>
-                        <td className="py-1.5 px-2 text-right font-bold text-slate-950 leading-tight">
+                        <td className="text-right font-bold text-slate-950 whitespace-nowrap">
                           {hasItemDiscount ? (
                             <div className="space-y-0.5">
                               <span className="line-through text-slate-400 text-[9px] block whitespace-nowrap">
@@ -1355,48 +1338,19 @@ export function ProposalDocument({ proposal }: Props) {
                               </span>
                             </div>
                           ) : (
-                            <span className="block whitespace-nowrap">
-                              {fmtCurrency(valorEfetivoFinal, proposal.moeda)}
-                            </span>
+                            <span>{fmtCurrency(valorEfetivoFinal, proposal.moeda)}</span>
                           )}
                         </td>
                       </tr>
                     )}
                   </tbody>
-                  {/* Totals Table Footer */}
                   <tfoot>
-                    <tr className="bg-slate-100/90 border-t-2 border-slate-300 font-bold">
-                      <td
-                        colSpan={3}
-                        className="py-1.5 px-2 text-left uppercase text-[9.5px] tracking-wider text-slate-700"
-                      >
-                        Valor Total do Fornecimento
-                        {proposal.is_pacote && equipmentItems.length > 0 && (
-                          <span className="normal-case font-normal text-slate-500 ml-1.5 text-[9px]">
-                            ({equipmentItems.length} máquinas)
-                          </span>
-                        )}
+                    <tr>
+                      <td colSpan={5} className="text-right font-bold">
+                        VALOR TOTAL DO FORNECIMENTO
                       </td>
-                      <td colSpan={3} className="py-1.5 px-2 text-right">
-                        {proposal.preco_especial != null && Number(proposal.preco_especial) > 0 ? (
-                          <div className="flex flex-col items-end">
-                            <div className="flex items-center gap-1.5">
-                              <span className="line-through text-slate-400 font-semibold text-[10px] whitespace-nowrap">
-                                {fmtCurrency(proposal.valor_final, proposal.moeda)}
-                              </span>
-                              <span className="text-[8.5px] font-bold text-slate-700 uppercase bg-slate-200 px-1 py-0.2 rounded">
-                                Especial
-                              </span>
-                            </div>
-                            <span className="font-black text-slate-900 text-xs sm:text-sm whitespace-nowrap">
-                              {fmtCurrency(proposal.preco_especial, proposal.moeda)}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="font-black text-slate-900 text-xs sm:text-sm whitespace-nowrap">
-                            {fmtCurrency(proposal.valor_final, proposal.moeda)}
-                          </span>
-                        )}
+                      <td className="text-right font-bold whitespace-nowrap">
+                        {fmtCurrency(proposal.valor_final, proposal.moeda)}
                       </td>
                     </tr>
                   </tfoot>
