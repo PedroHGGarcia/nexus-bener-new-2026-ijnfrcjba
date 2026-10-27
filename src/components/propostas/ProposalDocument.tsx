@@ -641,7 +641,7 @@ export function ProposalDocument({ proposal }: Props) {
           <div>
             {/* Modo Pacote: Bloco estruturado por Máquina com Foto, Título e Acessórios vinculados */}
             {proposal.is_pacote && equipmentItems.length > 0 ? (
-              <section className="mb-5 text-xs">
+              <section className="proposal-section mb-5 text-xs">
                 <div className="flex items-center gap-2 mb-3 pb-1.5 border-b-2 border-slate-800 break-after-avoid">
                   <span className="w-1.5 h-4 bg-[#0b3c26] rounded-xs" />
                   <h2 className="font-bold uppercase tracking-wider text-slate-900 text-[12px] sm:text-xs">
@@ -1038,7 +1038,7 @@ export function ProposalDocument({ proposal }: Props) {
               </section>
             ) : (
               /* Modo Padrão (máquina única): Especificações + Características + Standard + Acessórios Globais */
-              <section className="mb-4 text-xs break-inside-avoid">
+              <section className="proposal-section mb-4 text-xs break-inside-avoid print:break-inside-auto">
                 {(() => {
                   const desc =
                     primaryVersao?.especificacoes_tecnicas ||
@@ -1191,7 +1191,7 @@ export function ProposalDocument({ proposal }: Props) {
             )}
 
             {/* Commercial Conditions Section (R2: Tabela limpa e alinhada em tom profissional + R4: Cotação detalhada) */}
-            <section className="mb-5 text-xs break-inside-avoid">
+            <section className="proposal-section mb-5 text-xs break-inside-avoid print:break-inside-auto">
               <div className="border-b-2 border-slate-800 pb-1.5 mb-2.5 flex items-center justify-between break-after-avoid">
                 <span className="font-bold tracking-wider uppercase text-slate-900 text-[11px] sm:text-xs">
                   Condições Comerciais
@@ -1239,7 +1239,7 @@ export function ProposalDocument({ proposal }: Props) {
               })()}
 
               {/* R2: Tabela Profissional Limpa de Itens e Valores - Ponto 2: sem coluna Tipo Fornecimento, larguras redistribuídas para 100% */}
-              <div className="w-full border border-slate-300 rounded-sm mb-3 bg-white overflow-hidden print:overflow-visible break-inside-avoid">
+              <div className="w-full border border-slate-300 rounded-sm mb-3 bg-white overflow-hidden print:overflow-visible break-inside-avoid print:break-inside-auto">
                 <table className="w-full table-fixed text-[10px] border-collapse">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-300 text-slate-700 font-semibold text-[9px] uppercase tracking-wider">
@@ -1395,7 +1395,7 @@ export function ProposalDocument({ proposal }: Props) {
 
             {/* Terms and conditions - Ficha Técnica layout */}
             {filteredTerms.length > 0 && (
-              <section className="mb-5 text-xs break-inside-avoid">
+              <section className="proposal-section mb-5 print:mt-4 text-xs break-inside-avoid print:break-inside-auto">
                 <div className="bg-[#0b3c26] text-white px-3 py-1.5 rounded-sm flex items-center justify-between mb-3 shadow-sm break-after-avoid">
                   <span className="font-bold tracking-wider uppercase text-[11px] sm:text-xs">
                     Termos de Fornecimento
@@ -1438,7 +1438,7 @@ export function ProposalDocument({ proposal }: Props) {
                   ((f.titulo && f.titulo.trim() !== '') || (f.chave && f.chave.trim() !== '')) &&
                   !isCommercialFieldEmpty(f.conteudo != null ? f.conteudo : f.valor),
               ).length > 0 && (
-                <section className="mb-4 text-xs break-inside-avoid">
+                <section className="proposal-section mb-4 text-xs break-inside-avoid print:break-inside-auto">
                   <h2 className="font-bold uppercase tracking-wider text-black border-b border-black/40 pb-1 mb-2 break-after-avoid">
                     Informações Adicionais
                   </h2>
@@ -1482,7 +1482,7 @@ export function ProposalDocument({ proposal }: Props) {
 
             {/* Comparisons table */}
             {hasComparison && (
-              <section className="mb-4 text-xs break-inside-avoid">
+              <section className="proposal-section mb-4 text-xs break-inside-avoid print:break-inside-auto">
                 <h2 className="font-bold uppercase tracking-wider text-black border-b border-black/40 pb-1 mb-2 break-after-avoid">
                   Comparação de Versões
                 </h2>

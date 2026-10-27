@@ -487,4 +487,33 @@
     height: auto !important;
     min-height: 0 !important;
   }
+
+  /* Permite que a seção seguinte comece na mesma página,
+     preenchendo o espaço livre após tabelas curtas */
+  .proposal-document section,
+  .proposal-document .proposal-section,
+  .proposal-document .proposal-block {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    break-before: auto !important;
+    page-break-before: auto !important;
+  }
+
+  /* Tabelas podem quebrar entre linhas; o tfoot nunca se separa */
+  .proposal-document table {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  .proposal-document tfoot,
+  .proposal-document tfoot tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* A linha de total acompanha a última linha de itens */
+  .proposal-document tbody tr:last-child {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
 }
