@@ -56,11 +56,6 @@ export const MENU_ITEMS: MenuItemDef[] = [
         label: 'Tipos de Propostas',
         path: '/controle-propostas/tipos-propostas',
       },
-      {
-        key: 'controle-propostas.importar-tipos',
-        label: 'Importar Tipos de Proposta',
-        path: '/importar-tipos-proposta',
-      },
     ],
   },
   {

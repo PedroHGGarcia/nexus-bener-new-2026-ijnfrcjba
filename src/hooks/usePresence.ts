@@ -40,7 +40,6 @@ export function routeToLabel(path: string): string {
     '/notificacoes': 'Notificações',
     '/historico-importacoes': 'Histórico de Importações',
     '/importar-acessorios': 'Importar Acessórios',
-    '/importar-tipos-proposta': 'Importar Tipos de Proposta',
     '/importar-marcas': 'Importar Marcas',
     '/importar-produtos': 'Importar Produtos',
     '/importar-versoes': 'Importar Versões',

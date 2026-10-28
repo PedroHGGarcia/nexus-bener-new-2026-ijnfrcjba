@@ -25,7 +25,6 @@ import {
   Files,
   Search,
   Layers,
-  Upload,
 } from 'lucide-react'
 // Diagnostic test edit
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -134,14 +133,6 @@ const SECTIONS: NavSection[] = [
         path: '/controle-propostas/tipos-propostas',
         hideForVendedores: true,
         icon: Layers,
-      },
-      {
-        key: 'controle-propostas.importar-tipos',
-        label: 'Importar Tipos de Proposta',
-        path: '/importar-tipos-proposta',
-        hideForVendedores: true,
-        adminOnly: true,
-        icon: Upload,
       },
     ],
   },

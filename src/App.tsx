@@ -52,7 +52,6 @@ const GestaoMaquinasPage = lazy(() => import('./pages/produtos/GestaoMaquinasPag
 const ProdutosListPage = lazy(() => import('./pages/produtos/ProdutosListPage'))
 const AcessoriosPage = lazy(() => import('./pages/produtos/AcessoriosPage'))
 const ImportarAcessoriosPage = lazy(() => import('./pages/ImportarAcessoriosPage'))
-const ImportarTiposPropostasPage = lazy(() => import('./pages/ImportarTiposPropostasPage'))
 const ImportarMarcasPage = lazy(() => import('./pages/ImportarMarcasPage'))
 const ImportarProdutosPage = lazy(() => import('./pages/ImportarProdutosPage'))
 const ImportarModelosPage = lazy(() => import('./pages/ImportarModelosPage'))
@@ -248,14 +247,6 @@ const App = () => (
                   element={
                     <RoleGuard requiredRole={['Admin Completo', 'admin']}>
                       <ImportarAcessoriosPage />
-                    </RoleGuard>
-                  }
-                />
-                <Route
-                  path="/importar-tipos-proposta"
-                  element={
-                    <RoleGuard requiredRole={['Admin Completo', 'admin', 'Gerente', 'gerente']}>
-                      <ImportarTiposPropostasPage />
                     </RoleGuard>
                   }
                 />
