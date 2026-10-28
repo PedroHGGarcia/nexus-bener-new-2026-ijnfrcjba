@@ -790,6 +790,8 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
   const onVersaoChange = async (id: string) => {
     // Reset selected tipo de proposta when version changes or is cleared
     upd('tipo_proposta', '')
+    upd('tem_preco_especial', false)
+    upd('preco_especial', null)
     upd('versao', id)
 
     // BUG 2: Limpar imediatamente os acessórios da máquina anterior ao trocar ou desmarcar a máquina
@@ -2107,6 +2109,18 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
             const newVersaoId = items[0]?.versao_id
             if (previousVersaoId !== newVersaoId) {
               upd('tipo_proposta', '')
+            }
+
+            // Detectar mudança na composição de máquinas do pacote (adição/remoção/troca)
+            const previousVersaoIds = itensVersoes.map((it) => it.versao_id)
+            const nextVersaoIds = items.map((it) => it.versao_id)
+            const composicaoMudou =
+              previousVersaoIds.length !== nextVersaoIds.length ||
+              previousVersaoIds.some((vId, idx) => vId !== nextVersaoIds[idx])
+
+            if (composicaoMudou) {
+              upd('tem_preco_especial', false)
+              upd('preco_especial', null)
             }
 
             // BUG 2: Limpar imediatamente os acessórios de quaisquer máquinas removidas do pacote
