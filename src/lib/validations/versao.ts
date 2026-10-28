@@ -3,9 +3,19 @@ import { z } from 'zod'
 export const versaoSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
   modelo: z.string().min(1, 'Modelo é obrigatório'),
-  reg: z.string().optional().default(''),
-  cod_erp: z.string().optional().default(''),
-  moeda: z.enum(['BRL', 'USD', 'EUR']).default('BRL'),
+  reg: z
+    .any()
+    .optional()
+    .transform((v) => (v != null ? String(v) : '')),
+  cod_erp: z
+    .any()
+    .optional()
+    .transform((v) => (v != null ? String(v) : '')),
+  moeda: z
+    .string()
+    .optional()
+    .default('BRL')
+    .transform((m) => (m === 'USD' || m === 'EUR' ? m : 'BRL')),
   valor: z.coerce.number().min(0).default(0),
   tem_fator: z.boolean().default(false),
   fator_nac: z.coerce.number().min(0).default(1),
@@ -19,10 +29,18 @@ export const versaoSchema = z.object({
   acessorios_standards: z.string().optional().default(''),
   caracteristicas_construtivas: z.string().optional().default(''),
   especificacoes_tecnicas: z.string().optional().default(''),
-  tipos_proposta: z.array(z.string()).default([]),
+  tipos_proposta: z.array(z.string()).optional().default([]),
   nome_abreviado: z.string().optional().default(''),
-  status: z.enum(['Ativo', 'Inativo']).default('Ativo'),
-  categoria_id: z.string().uuid().nullable().optional().default(null),
+  status: z
+    .string()
+    .optional()
+    .default('Ativo')
+    .transform((s) => (s === 'Inativo' || s === 'I' ? 'Inativo' : 'Ativo')),
+  categoria_id: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => (!v || v === 'none' || v.trim() === '' ? null : v)),
   galeria: z.any().nullable().optional(),
 })
 
