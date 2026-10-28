@@ -82,6 +82,10 @@ import {
   Pencil,
   ShieldAlert,
   Search,
+  LayoutList,
+  Layers,
+  UserCheck,
+  UserX,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -186,6 +190,8 @@ export default function UsuariosPage() {
   const [roleOptions, setRoleOptions] = useState<string[]>(ROLE_OPTIONS)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('Todos')
+  const [gerenteFilter, setGerenteFilter] = useState<string>('Todos')
+  const [viewMode, setViewMode] = useState<'lista' | 'agrupado'>('lista')
   const [gerentes, setGerentes] = useState<{ id: string; nome: string }[]>([])
   const [categoriasList, setCategoriasList] = useState<CategoriaProduto[]>([])
   const [createCategoriaIds, setCreateCategoriaIds] = useState<string[]>([])
@@ -446,7 +452,16 @@ export default function UsuariosPage() {
     return Array.from(set)
   }, [roleOptions, users])
 
-  // Filtro combinado de busca (nome / email / setor) e papel (role)
+  // Mapa de id do gerente -> nome do gerente (para fallback e exibição rápida)
+  const gerenteMap = useMemo(() => {
+    const map = new Map<string, string>()
+    gerentes.forEach((g) => {
+      map.set(g.id, g.nome)
+    })
+    return map
+  }, [gerentes])
+
+  // Filtro combinado de busca (nome / email / setor), papel (role) e gerente
   const filteredUsers = useMemo(() => {
     const q = search.trim().toLowerCase()
     return users.filter((u) => {
@@ -456,9 +471,77 @@ export default function UsuariosPage() {
         (u.name || '').toLowerCase().includes(q) ||
         (u.email || '').toLowerCase().includes(q) ||
         (u.setor || '').toLowerCase().includes(q)
-      return matchesRole && matchesSearch
+
+      let matchesGerente = true
+      if (gerenteFilter === 'Todos') {
+        matchesGerente = true
+      } else if (gerenteFilter === 'sem_gerente') {
+        matchesGerente = !u.gerente_id
+      } else {
+        matchesGerente = u.gerente_id === gerenteFilter
+      }
+
+      return matchesRole && matchesSearch && matchesGerente
     })
-  }, [users, roleFilter, search])
+  }, [users, roleFilter, search, gerenteFilter])
+
+  // Agrupamento de usuários por gerente para a visualização "agrupado"
+  const groupedUsers = useMemo(() => {
+    const groups: {
+      key: string
+      gerenteId: string | null
+      gerenteNome: string
+      isSemGerente: boolean
+      users: AdminUser[]
+    }[] = []
+
+    const map = new Map<string, AdminUser[]>()
+    const semGerenteList: AdminUser[] = []
+
+    filteredUsers.forEach((u) => {
+      if (!u.gerente_id) {
+        semGerenteList.push(u)
+      } else {
+        const list = map.get(u.gerente_id) || []
+        list.push(u)
+        map.set(u.gerente_id, list)
+      }
+    })
+
+    // Adiciona grupos de gerentes cadastrados que possuem usuários (ou gerentes que combinam)
+    // Ordena gerentes por nome
+    const sortedGerenteIds = Array.from(map.keys()).sort((a, b) => {
+      const nameA = gerenteMap.get(a) || ''
+      const nameB = gerenteMap.get(b) || ''
+      return nameA.localeCompare(nameB, 'pt-BR')
+    })
+
+    sortedGerenteIds.forEach((gId) => {
+      const uList = map.get(gId) || []
+      const resolvedNome =
+        gerenteMap.get(gId) || uList.find((u) => u.gerente_nome)?.gerente_nome || 'Gerente'
+      groups.push({
+        key: gId,
+        gerenteId: gId,
+        gerenteNome: resolvedNome,
+        isSemGerente: false,
+        users: uList,
+      })
+    })
+
+    // Adiciona grupo "Sem gerente" se houver usuários sem gerente vinculado
+    if (semGerenteList.length > 0) {
+      groups.push({
+        key: 'sem_gerente',
+        gerenteId: null,
+        gerenteNome: 'Sem gerente',
+        isSemGerente: true,
+        users: semGerenteList,
+      })
+    }
+
+    return groups
+  }, [filteredUsers, gerenteMap])
 
   const handleDelete = async () => {
     if (!deleteTarget) return
@@ -820,44 +903,93 @@ export default function UsuariosPage() {
 
         {/* ------------------------ Aba Usuários ------------------------ */}
         <TabsContent value="usuarios" className="mt-4 space-y-4">
-          {/* Barra de filtros: busca por nome/email e filtro por papel (role) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-              <Input
-                placeholder="Buscar por nome ou e-mail..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
-                aria-label="Buscar usuários por nome ou e-mail"
-              />
+          {/* Barra de filtros: busca por nome/email, papel (role), filtro por gerente e toggle de visualização */}
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 flex-wrap">
+              <div className="relative flex-1 min-w-[220px] max-w-sm">
+                <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                <Input
+                  placeholder="Buscar por nome ou e-mail..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                  aria-label="Buscar usuários por nome ou e-mail"
+                />
+              </div>
+
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-full sm:w-48" aria-label="Filtrar por papel">
+                  <SelectValue placeholder="Papel: Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todos">Todos os papéis</SelectItem>
+                  {availableRoles.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {r}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Filtro por gerente */}
+              <Select value={gerenteFilter} onValueChange={setGerenteFilter}>
+                <SelectTrigger className="w-full sm:w-56" aria-label="Filtrar por gerente">
+                  <SelectValue placeholder="Gerente: Todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todos">Todos os gerentes</SelectItem>
+                  <SelectItem value="sem_gerente">Sem gerente definido</SelectItem>
+                  {gerentes.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {g.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {(search || roleFilter !== 'Todos' || gerenteFilter !== 'Todos') && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearch('')
+                    setRoleFilter('Todos')
+                    setGerenteFilter('Todos')
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground h-9 px-2"
+                >
+                  Limpar filtros
+                </Button>
+              )}
             </div>
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-full sm:w-52" aria-label="Filtrar por papel">
-                <SelectValue placeholder="Papel: Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Todos">Todos os papéis</SelectItem>
-                {availableRoles.map((r) => (
-                  <SelectItem key={r} value={r}>
-                    {r}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {(search || roleFilter !== 'Todos') && (
+
+            {/* Alternância de Modo de Visualização: Lista única ou Agrupado por Gerente */}
+            <div className="inline-flex items-center rounded-lg border bg-muted/40 p-1 self-start sm:self-auto">
               <Button
-                variant="ghost"
+                type="button"
+                variant={viewMode === 'lista' ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => {
-                  setSearch('')
-                  setRoleFilter('Todos')
-                }}
-                className="text-xs text-muted-foreground hover:text-foreground h-9 px-2"
+                onClick={() => setViewMode('lista')}
+                className="h-8 px-3 text-xs gap-1.5 font-medium shadow-none"
+                aria-pressed={viewMode === 'lista'}
+                title="Exibir como lista única"
               >
-                Limpar filtros
+                <LayoutList className="w-3.5 h-3.5" />
+                Lista
               </Button>
-            )}
+              <Button
+                type="button"
+                variant={viewMode === 'agrupado' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('agrupado')}
+                className="h-8 px-3 text-xs gap-1.5 font-medium shadow-none"
+                aria-pressed={viewMode === 'agrupado'}
+                title="Agrupar usuários por gerente"
+              >
+                <Layers className="w-3.5 h-3.5" />
+                Agrupar por Gerente
+              </Button>
+            </div>
           </div>
 
           {loading ? (
@@ -876,7 +1008,7 @@ export default function UsuariosPage() {
                 Nenhum usuário corresponde aos filtros selecionados.
               </p>
               <p className="text-xs text-muted-foreground">
-                Tente ajustar a busca ou o papel selecionado.
+                Tente ajustar a busca, o papel ou o gerente selecionado.
               </p>
               <Button
                 variant="outline"
@@ -884,13 +1016,127 @@ export default function UsuariosPage() {
                 onClick={() => {
                   setSearch('')
                   setRoleFilter('Todos')
+                  setGerenteFilter('Todos')
                 }}
                 className="mt-2 text-xs"
               >
                 Limpar filtros
               </Button>
             </div>
+          ) : viewMode === 'agrupado' ? (
+            /* Visualização agrupada por Gerente */
+            <div className="space-y-6">
+              {groupedUsers.map((group) => (
+                <div
+                  key={group.key}
+                  className="border rounded-lg bg-card overflow-hidden shadow-xs"
+                >
+                  <div className="px-4 py-3 bg-muted/40 border-b flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      {group.isSemGerente ? (
+                        <div className="w-7 h-7 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                          <UserX className="w-4 h-4" />
+                        </div>
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                          <UserCheck className="w-4 h-4" />
+                        </div>
+                      )}
+                      <div>
+                        <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                          {group.gerenteNome}
+                          {group.isSemGerente && (
+                            <span className="text-[11px] font-normal text-muted-foreground">
+                              (sem vínculo com gerente)
+                            </span>
+                          )}
+                        </h3>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-xs font-normal">
+                      {group.users.length} {group.users.length === 1 ? 'usuário' : 'usuários'}
+                    </Badge>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nome</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Setor</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Data Criação</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {group.users.map((u) => (
+                        <TableRow key={u.id}>
+                          <TableCell className="font-semibold">
+                            {u.name || '—'}
+                            {u.id === currentUser?.id && (
+                              <span className="text-xs text-muted-foreground ml-2">(Você)</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">{u.email}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant={u.role === 'Admin Completo' ? 'default' : 'secondary'}
+                              className={u.status === 'Inativo' ? 'opacity-50' : ''}
+                            >
+                              {u.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm">{u.setor || '—'}</TableCell>
+                          <TableCell className="text-sm">
+                            {u.estado_atuacao ? (
+                              <Badge variant="outline" className="font-mono">
+                                {u.estado_atuacao}
+                              </Badge>
+                            ) : (
+                              '—'
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs font-mono">
+                            {new Date(u.created_at).toLocaleDateString('pt-BR')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEdit(u)}>
+                                  Editar Perfil
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleToggleStatus(u)}>
+                                  {u.status === 'Ativo' ? 'Desativar' : 'Ativar'}
+                                </DropdownMenuItem>
+                                {u.id !== currentUser?.id && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => setDeleteTarget(u)}
+                                      className="text-destructive focus:text-destructive"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ))}
+            </div>
           ) : (
+            /* Visualização Lista Única */
             <div className="border rounded-lg bg-card overflow-hidden">
               <Table>
                 <TableHeader>
@@ -924,7 +1170,10 @@ export default function UsuariosPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">{u.setor || '—'}</TableCell>
-                      <TableCell className="text-sm">{u.gerente_nome || '—'}</TableCell>
+                      <TableCell className="text-sm">
+                        {u.gerente_nome ||
+                          (u.gerente_id ? (gerenteMap.get(u.gerente_id) ?? '—') : '—')}
+                      </TableCell>
                       <TableCell className="text-sm">
                         {u.estado_atuacao ? (
                           <Badge variant="outline" className="font-mono">
