@@ -11,7 +11,9 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
+import { useNavigate } from 'react-router-dom'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Select,
   SelectContent,
@@ -110,9 +112,15 @@ function VendedorPropostasSheet({
   vendedor: VendedorResumo | null
   onOpenChange: (open: boolean) => void
 }) {
+  const navigate = useNavigate()
   const [propostas, setPropostas] = useState<PropostaSimples[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(false)
+
+  const handleVisualizarProposta = (propostaId: string) => {
+    onOpenChange(false)
+    navigate(`/controle-propostas/proposta-pdf/${propostaId}`)
+  }
 
   const load = useCallback(async () => {
     if (!vendedor) return
@@ -191,6 +199,7 @@ function VendedorPropostasSheet({
                     <TableHead className="text-xs">Status</TableHead>
                     <TableHead className="text-xs text-right">Valor Final</TableHead>
                     <TableHead className="text-xs">Data</TableHead>
+                    <TableHead className="text-xs text-right w-16">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -212,6 +221,26 @@ function VendedorPropostasSheet({
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {formatDate(p.created_at)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-primary hover:bg-primary/10"
+                                onClick={() => handleVisualizarProposta(p.id)}
+                                aria-label="Visualizar proposta"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="left">
+                              <p>Visualizar proposta</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </TableCell>
                     </TableRow>
                   ))}

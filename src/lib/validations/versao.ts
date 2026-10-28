@@ -29,7 +29,11 @@ export const versaoSchema = z.object({
   acessorios_standards: z.string().optional().default(''),
   caracteristicas_construtivas: z.string().optional().default(''),
   especificacoes_tecnicas: z.string().optional().default(''),
-  tipos_proposta: z.array(z.string()).optional().default([]),
+  tipos_proposta: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .transform((tp) => (Array.isArray(tp) ? tp : [])),
   nome_abreviado: z.string().optional().default(''),
   status: z
     .string()
@@ -40,7 +44,9 @@ export const versaoSchema = z.object({
     .string()
     .nullable()
     .optional()
-    .transform((v) => (!v || v === 'none' || v.trim() === '' ? null : v)),
+    .transform((v) =>
+      !v || v === 'none' || (typeof v === 'string' && v.trim() === '') ? null : v,
+    ),
   galeria: z.any().nullable().optional(),
 })
 

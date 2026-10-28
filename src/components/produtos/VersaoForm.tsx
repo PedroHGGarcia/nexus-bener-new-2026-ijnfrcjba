@@ -47,7 +47,7 @@ import {
 import { fetchModelos } from '@/services/modelos'
 import { fetchCategoriasProdutos } from '@/services/categorias-produtos'
 import { fetchProdutos } from '@/services/produtos'
-import { fetchTiposProposta, normalizeTipoPropostaNome } from '@/services/tipos-proposta'
+import { fetchTiposProposta } from '@/services/tipos-proposta'
 import { MultiSelectRelation } from '@/components/shared/searchable-multi-select'
 import { Link2 } from 'lucide-react'
 import { RichTextEditor } from '@/components/shared/rich-text-editor'
@@ -306,13 +306,15 @@ export function VersaoForm({
   const upd = (key: keyof FormState, value: unknown) =>
     setForm((prev) => ({ ...prev, [key]: value }))
 
-  const toggleTipo = (nome: string) =>
+  const handleTipoIdsChange = (ids: string[]) => {
+    setLinkedTipoIds(ids)
+    // Mantém form.tipos_proposta (nomes) sincronizado com os IDs selecionados
+    const nomes = tipos.filter((t) => ids.includes(t.id)).map((t) => t.nome)
     setForm((prev) => ({
       ...prev,
-      tipos_proposta: prev.tipos_proposta.includes(nome)
-        ? prev.tipos_proposta.filter((t) => t !== nome)
-        : [...prev.tipos_proposta, nome],
+      tipos_proposta: nomes,
     }))
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -389,9 +391,16 @@ export function VersaoForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Deriva nomes de tipos_proposta dos IDs selecionados caso tipos já estejam carregados
+    const selectedTipoNomes =
+      linkedTipoIds.length > 0 && tipos.length > 0
+        ? tipos.filter((t) => linkedTipoIds.includes(t.id)).map((t) => t.nome)
+        : form.tipos_proposta
+
     // Salva o conteúdo formatado rico gerado pelo editor WYSIWYG
     const formToValidate = {
       ...form,
+      tipos_proposta: selectedTipoNomes,
       acessorios_standards: acessoriosHtml,
       caracteristicas_construtivas: caracteristicasHtml,
       especificacoes_tecnicas: especificacoesHtml,
@@ -406,6 +415,12 @@ export function VersaoForm({
         if (!fieldErrors[key]) fieldErrors[key] = issue.message
       })
       setErrors(fieldErrors)
+      const firstError = Object.values(fieldErrors)[0]
+      toast({
+        title: 'Verifique os campos obrigatórios',
+        description: firstError || 'Existem campos com preenchimento inválido no formulário.',
+        variant: 'destructive',
+      })
       return
     }
     setErrors({})
@@ -428,6 +443,7 @@ export function VersaoForm({
 
       const payload = {
         ...result.data,
+        tipos_proposta: selectedTipoNomes,
         acessorios_standards: acessoriosHtml,
         caracteristicas_construtivas: caracteristicasHtml,
         especificacoes_tecnicas: especificacoesHtml,
@@ -444,20 +460,8 @@ export function VersaoForm({
       }
       // Persist the tipos de proposta linked to this versão in the
       // versao_tipos_proposta join table.
-      // Unifica os IDs vindos do MultiSelectRelation (linkedTipoIds) com os IDs
-      // derivados dos nomes marcados nos checkboxes (form.tipos_proposta), usando
-      // comparação tolerante por normalizeTipoPropostaNome contra a lista `tipos`.
-      const checkboxNormalizedNames = new Set(
-        (form.tipos_proposta || []).map((nome) => normalizeTipoPropostaNome(nome)),
-      )
-      const checkboxDerivedIds = tipos
-        .filter((t) => checkboxNormalizedNames.has(normalizeTipoPropostaNome(t.nome)))
-        .map((t) => t.id)
-
-      const unifiedTipoIds = Array.from(new Set([...linkedTipoIds, ...checkboxDerivedIds]))
-
       try {
-        await replaceVersaoTiposProposta(savedItem.id, unifiedTipoIds)
+        await replaceVersaoTiposProposta(savedItem.id, linkedTipoIds)
       } catch (err) {
         // Non-fatal: the versão was saved, only the links failed. Surface
         // the error so the user knows the links were not persisted.
@@ -469,6 +473,7 @@ export function VersaoForm({
       }
       onSaved(savedItem)
     } catch (err) {
+      console.error('Erro ao salvar versão:', err)
       toast({
         title: 'Erro ao salvar',
         description: err instanceof Error ? err.message : 'Erro desconhecido',
@@ -939,34 +944,12 @@ export function VersaoForm({
             />
           </div>
         </div>
-
-        {/* Tipos de Proposta Compatíveis */}
-        <div className="space-y-2 pt-2 border-t">
-          <Label className="text-sm font-medium">Tipos de Proposta Compatíveis</Label>
-          <div className="flex flex-wrap gap-4">
-            {tipos.map((t) => (
-              <div key={t.id} className="flex items-center gap-2">
-                <Checkbox
-                  id={`tipo-${t.id}`}
-                  checked={form.tipos_proposta.includes(t.nome)}
-                  onCheckedChange={() => toggleTipo(t.nome)}
-                />
-                <Label htmlFor={`tipo-${t.id}`} className="text-sm font-normal cursor-pointer">
-                  {t.nome}
-                </Label>
-              </div>
-            ))}
-            {tipos.length === 0 && (
-              <p className="text-xs text-muted-foreground">Nenhum tipo de proposta cadastrado.</p>
-            )}
-          </div>
-        </div>
       </div>
 
-      {/* Seção Tipos de Proposta Vinculados (join table) */}
+      {/* Seção Única de Tipos de Proposta Vinculados (join table e filtro de emissão) */}
       <div className="border rounded-lg bg-card p-4 space-y-4">
         <h3 className="text-sm font-semibold flex items-center gap-1.5">
-          <Link2 className="w-3.5 h-3.5 text-muted-foreground" /> Tipos de Proposta Vinculados
+          <Link2 className="w-3.5 h-3.5 text-[#0b3c26]" /> Tipos de Proposta Vinculados
         </h3>
         <p className="text-xs text-muted-foreground">
           Selecione os tipos de proposta que poderão ser emitidos com esta versão. No formulário de
@@ -974,13 +957,13 @@ export function VersaoForm({
           vinculados à versão selecionada.
         </p>
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Tipos vinculados</Label>
+          <Label className="text-sm font-medium">Tipos de proposta permitidos</Label>
           {editing && !linkedTiposLoaded ? (
             <div className="h-10 w-full animate-pulse rounded-md bg-muted" />
           ) : (
             <MultiSelectRelation
               values={linkedTipoIds}
-              onChange={setLinkedTipoIds}
+              onChange={handleTipoIdsChange}
               tableName="tipos_proposta"
               labelColumn="nome"
               filter={{ status: ['A', 'Ativo'] }}
