@@ -175,9 +175,9 @@ export default function PropostaPdfPage() {
           <Button
             onClick={() => setNotifyDialogOpen(true)}
             className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold shadow-sm cursor-pointer"
-            title="Enviar proposta por E-mail ou WhatsApp"
+            title="Enviar proposta por E-mail"
           >
-            <Send className="w-4 h-4" /> Enviar ao Cliente (E-mail / WhatsApp)
+            <Send className="w-4 h-4" /> Enviar ao Cliente (E-mail)
           </Button>
           <Button
             onClick={() => window.open(`/proposta/${proposal.id}/imprimir`, '_blank')}
@@ -229,9 +229,9 @@ export default function PropostaPdfPage() {
           <Button
             onClick={() => setNotifyDialogOpen(true)}
             className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold shadow-sm cursor-pointer"
-            title="Enviar proposta por E-mail ou WhatsApp"
+            title="Enviar proposta por E-mail"
           >
-            <Send className="w-4 h-4" /> Enviar ao Cliente (E-mail / WhatsApp)
+            <Send className="w-4 h-4" /> Enviar ao Cliente (E-mail)
           </Button>
           <Button
             onClick={() => window.open(`/proposta/${proposal.id}/imprimir`, '_blank')}

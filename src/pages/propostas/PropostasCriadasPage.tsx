@@ -320,7 +320,7 @@ export default function PropostasCriadasPage() {
                             size="icon"
                             onClick={() => setSelectedProposalForNotify(p)}
                             aria-label={`Reenviar notificação da proposta ${p.numero_proposta || ''}`}
-                            title="Enviar ao Cliente (E-mail / WhatsApp)"
+                            title="Enviar ao Cliente (E-mail)"
                             className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
                           >
                             <Send className="w-4 h-4" />
