@@ -25,6 +25,7 @@ import {
   Files,
   Search,
   Layers,
+  Bot,
 } from 'lucide-react'
 // Diagnostic test edit
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -179,6 +180,13 @@ const SECTIONS: NavSection[] = [
     label: 'Logs de Auditoria',
     path: '/auditoria',
     icon: Activity,
+    adminOnly: true,
+  },
+  {
+    key: 'admin.chatbot',
+    label: 'Conversas Chatbot IA',
+    path: '/admin/chatbot-conversas',
+    icon: Bot,
     adminOnly: true,
   },
 ]

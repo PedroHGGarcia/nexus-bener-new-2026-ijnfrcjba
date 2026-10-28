@@ -28,7 +28,14 @@ import {
   recordChatFeedback,
   recordUserQuestion,
   getDynamicSuggestions,
+  getOrCreateUserConversation,
+  createNewUserConversation,
+  fetchConversationMessages,
+  sendChatFeedbackToBackend,
+  saveActiveConversationId,
+  getActiveConversationId,
 } from '@/services/versoes-chatbot'
+import { useAuth } from '@/hooks/use-auth'
 import { useGerenteCategoryRestriction } from '@/hooks/use-gerente-restriction'
 import {
   extractTextFromFile,
@@ -234,10 +241,15 @@ function AssistantMessageBody({
 }
 
 export function VersoesChatbot() {
+  const { user } = useAuth()
+  const userId = user?.id || null
   const [open, setOpen] = useState(false)
   const [rendered, setRendered] = useState(false)
   const [animating, setAnimating] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>(() => loadChatHistoryFromStorage())
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(() =>
+    getActiveConversationId(userId),
+  )
+  const [messages, setMessages] = useState<ChatMessage[]>(() => loadChatHistoryFromStorage(userId))
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [processingFile, setProcessingFile] = useState(false)
@@ -253,19 +265,62 @@ export function VersoesChatbot() {
   const inputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Salva histórico de mensagens no localStorage sempre que mudar
+  // Quando o usuário autenticado mudar, recarrega o histórico isolado dele
   useEffect(() => {
-    saveChatHistoryToStorage(messages)
-  }, [messages])
+    const cached = loadChatHistoryFromStorage(userId)
+    setMessages(cached)
+    const activeConv = getActiveConversationId(userId)
+    setCurrentConversationId(activeConv)
 
-  // Limpa conversa atual e recomeça histórico
-  const handleNewConversation = () => {
+    if (userId) {
+      // Sincroniza conversa ativa com o backend
+      getOrCreateUserConversation(activeConv).then(async (conv) => {
+        if (conv) {
+          setCurrentConversationId(conv.id)
+          saveActiveConversationId(conv.id, userId)
+          // Tenta carregar mensagens salvas no Supabase para esta conversa
+          try {
+            const remoteMsgs = await fetchConversationMessages(conv.id)
+            if (remoteMsgs && remoteMsgs.length > 0) {
+              setMessages(remoteMsgs)
+              saveChatHistoryToStorage(remoteMsgs, userId)
+            }
+          } catch {
+            // mantém cache local se falhar
+          }
+        }
+      })
+    }
+  }, [userId])
+
+  // Salva histórico de mensagens no localStorage sempre isolado pelo userId
+  useEffect(() => {
+    saveChatHistoryToStorage(messages, userId)
+  }, [messages, userId])
+
+  // Limpa conversa atual e recomeça nova conversa no backend isolada para este usuário
+  const handleNewConversation = async () => {
     if (loading) return
-    clearChatHistoryFromStorage()
+    clearChatHistoryFromStorage(userId)
     setMessages([])
     setAttachedFile(null)
     setFileError(null)
     setInput('')
+
+    try {
+      const newConv = await createNewUserConversation()
+      if (newConv) {
+        setCurrentConversationId(newConv.id)
+        saveActiveConversationId(newConv.id, userId)
+      } else {
+        setCurrentConversationId(null)
+        saveActiveConversationId(null, userId)
+      }
+    } catch {
+      setCurrentConversationId(null)
+      saveActiveConversationId(null, userId)
+    }
+
     setTimeout(() => {
       inputRef.current?.focus()
     }, 50)
@@ -277,7 +332,6 @@ export function VersoesChatbot() {
       const next = [...prev]
       const msg = next[index]
       if (!msg || msg.role !== 'assistant') return prev
-      // Se já clicou no mesmo, não refaz
       if (msg.feedback === rating) return prev
 
       const updatedMsg: ChatMessage = {
@@ -286,9 +340,13 @@ export function VersoesChatbot() {
       }
       next[index] = updatedMsg
 
-      // Grava no storage
       const msgId = msg.id || `msg-${index}-${Date.now()}`
       recordChatFeedback(msgId, rating, msg.content)
+
+      // Se temos o id do backend, persiste também no Supabase
+      if (msg.id && !msg.id.startsWith('asst-')) {
+        sendChatFeedbackToBackend(msg.id, rating).catch(() => {})
+      }
 
       return next
     })
@@ -550,11 +608,23 @@ export function VersoesChatbot() {
             ? [restriction.categoriaId]
             : undefined
 
-      const res = await askVersoesChatbot(effectiveText, history, attachmentPayload, allowedCats)
+      const res = await askVersoesChatbot(
+        effectiveText,
+        history,
+        attachmentPayload,
+        allowedCats,
+        currentConversationId,
+      )
+
+      if (res.conversationId && res.conversationId !== currentConversationId) {
+        setCurrentConversationId(res.conversationId)
+        saveActiveConversationId(res.conversationId, userId)
+      }
+
       setMessages((prev) => [
         ...prev,
         {
-          id: `asst-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          id: res.messageId || `asst-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
           role: 'assistant',
           content: res.answer,
           isError: false,

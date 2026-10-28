@@ -84,6 +84,7 @@ export const MENU_ITEMS: MenuItemDef[] = [
   { key: 'perfil', label: 'Perfil', path: '/perfil' },
   { key: 'usuarios', label: 'Usuários', path: '/usuarios' },
   { key: 'auditoria', label: 'Auditoria', path: '/auditoria' },
+  { key: 'admin.chatbot', label: 'Conversas Chatbot IA', path: '/admin/chatbot-conversas' },
   { key: 'configuracoes', label: 'Configurações', path: '/configuracoes' },
 ]
 

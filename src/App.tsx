@@ -75,6 +75,7 @@ const PerfilPage = lazy(() => import('./pages/PerfilPage'))
 const MeusVendedoresPage = lazy(() => import('./pages/MeusVendedoresPage'))
 const UsuariosPage = lazy(() => import('./pages/UsuariosPage'))
 const AuditoriaPage = lazy(() => import('./pages/AuditoriaPage'))
+const AdminChatbotConversasPage = lazy(() => import('./pages/admin/AdminChatbotConversasPage'))
 const ConfiguracoesPage = lazy(() => import('./pages/ConfiguracoesPage'))
 
 function LoadingFallback() {
@@ -385,6 +386,14 @@ const App = () => (
                     element={
                       <RoleGuard requiredRole={['Admin Completo', 'admin']}>
                         <AuditoriaPage />
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/chatbot-conversas"
+                    element={
+                      <RoleGuard requiredRole={['Admin Completo', 'admin']}>
+                        <AdminChatbotConversasPage />
                       </RoleGuard>
                     }
                   />

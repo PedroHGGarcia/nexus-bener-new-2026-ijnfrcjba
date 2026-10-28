@@ -577,6 +577,434 @@ Deno.serve(async (req: Request) => {
       )
     }
 
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
+
+    // Helper: verifica se o usuário autenticado é admin
+    const checkUserIsAdmin = async (userId: string): Promise<boolean> => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, status')
+        .eq('id', userId)
+        .maybeSingle()
+      if (!profile) return false
+      const role = String(profile.role || '')
+        .toLowerCase()
+        .trim()
+      const status = String(profile.status || '')
+        .toLowerCase()
+        .trim()
+      if (status && status !== 'ativo') return false
+      return (
+        role === 'admin' ||
+        role === 'admin completo' ||
+        role === 'administrador' ||
+        role.startsWith('admin')
+      )
+    }
+
+    // =========================================================================
+    // ROTAS DE AÇÕES AUXILIARES / VISÃO DE ADMIN (sem chamar OpenAI)
+    // =========================================================================
+    const action = typeof body?.action === 'string' ? body.action : null
+
+    // Ação: Obter ou criar conversa ativa do próprio usuário
+    if (action === 'get_or_create_conversation') {
+      const requestedId = body?.conversationId
+      if (requestedId) {
+        const { data: conv, error: convErr } = await supabase
+          .from('chatbot_conversas')
+          .select('*')
+          .eq('id', requestedId)
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (convErr) {
+          return new Response(JSON.stringify({ error: convErr.message }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', ...cors },
+          })
+        }
+        if (!conv) {
+          return new Response(
+            JSON.stringify({ error: 'Conversa não encontrada ou não pertence ao seu usuário.' }),
+            { status: 404, headers: { 'Content-Type': 'application/json', ...cors } },
+          )
+        }
+        return new Response(JSON.stringify({ conversation: conv }), {
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      // Procura conversa ativa mais recente do usuário
+      const { data: existingActive } = await supabase
+        .from('chatbot_conversas')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('ativa', true)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (existingActive) {
+        return new Response(JSON.stringify({ conversation: existingActive }), {
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      // Cria nova conversa para o usuário
+      const { data: newConv, error: createErr } = await supabase
+        .from('chatbot_conversas')
+        .insert({
+          user_id: user.id,
+          titulo: 'Nova conversa',
+          ativa: true,
+        })
+        .select()
+        .single()
+
+      if (createErr) {
+        return new Response(JSON.stringify({ error: createErr.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      return new Response(JSON.stringify({ conversation: newConv }), {
+        headers: { 'Content-Type': 'application/json', ...cors },
+      })
+    }
+
+    // Ação: Iniciar nova conversa (fecha as anteriores ativas do usuário e cria nova)
+    if (action === 'new_conversation') {
+      await supabase
+        .from('chatbot_conversas')
+        .update({ ativa: false })
+        .eq('user_id', user.id)
+        .eq('ativa', true)
+
+      const { data: created, error: cErr } = await supabase
+        .from('chatbot_conversas')
+        .insert({
+          user_id: user.id,
+          titulo: 'Nova conversa',
+          ativa: true,
+        })
+        .select()
+        .single()
+
+      if (cErr) {
+        return new Response(JSON.stringify({ error: cErr.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      return new Response(JSON.stringify({ conversation: created }), {
+        headers: { 'Content-Type': 'application/json', ...cors },
+      })
+    }
+
+    // Ação: Carregar histórico de mensagens da conversa (validação estrita de posse pelo user_id)
+    if (action === 'get_conversation_messages') {
+      const convId = body?.conversationId
+      if (!convId) {
+        return new Response(JSON.stringify({ error: 'conversationId não informado.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      // Valida posse da conversa pelo usuário autenticado
+      const { data: conv, error: convErr } = await supabase
+        .from('chatbot_conversas')
+        .select('id, user_id, titulo, ativa, created_at, updated_at')
+        .eq('id', convId)
+        .maybeSingle()
+
+      if (convErr) {
+        return new Response(JSON.stringify({ error: convErr.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      if (!conv) {
+        return new Response(JSON.stringify({ error: 'Conversa não encontrada.' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      // Se não for o próprio dono, rejeita com 404/403 no backend
+      if (conv.user_id !== user.id) {
+        return new Response(
+          JSON.stringify({ error: 'Conversa não encontrada ou acesso não autorizado.' }),
+          { status: 404, headers: { 'Content-Type': 'application/json', ...cors } },
+        )
+      }
+
+      const { data: msgs, error: msgsErr } = await supabase
+        .from('chatbot_mensagens')
+        .select('*')
+        .eq('conversa_id', convId)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true })
+
+      if (msgsErr) {
+        return new Response(JSON.stringify({ error: msgsErr.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      return new Response(JSON.stringify({ conversation: conv, messages: msgs ?? [] }), {
+        headers: { 'Content-Type': 'application/json', ...cors },
+      })
+    }
+
+    // Ação: Registrar feedback 👍 / 👎 em mensagem
+    if (action === 'record_feedback') {
+      const msgId = body?.messageId
+      const rating = body?.rating === 'like' || body?.rating === 'dislike' ? body.rating : null
+      if (!msgId || !rating) {
+        return new Response(
+          JSON.stringify({ error: 'messageId e rating válidos são obrigatórios.' }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...cors },
+          },
+        )
+      }
+
+      const { error: updErr } = await supabase
+        .from('chatbot_mensagens')
+        .update({ feedback: rating })
+        .eq('id', msgId)
+        .eq('user_id', user.id)
+
+      if (updErr) {
+        return new Response(JSON.stringify({ error: updErr.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { 'Content-Type': 'application/json', ...cors },
+      })
+    }
+
+    // =========================================================================
+    // VISÃO DE ADMIN: Ações administrativas restritas (validada no backend)
+    // =========================================================================
+
+    // Admin: Listar usuários com contagem de conversas e última atividade
+    if (action === 'admin_list_users') {
+      const isAdmin = await checkUserIsAdmin(user.id)
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: 'Acesso restrito a administradores do sistema.' }),
+          { status: 403, headers: { 'Content-Type': 'application/json', ...cors } },
+        )
+      }
+
+      // Busca todos os perfis ativos
+      const { data: profiles, error: pErr } = await supabase
+        .from('profiles')
+        .select('id, name, email, role, status, avatar_url, last_seen_at')
+        .order('name', { ascending: true })
+
+      if (pErr) {
+        return new Response(JSON.stringify({ error: pErr.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      // Contagem de conversas e mensagens por usuário
+      const { data: convStats } = await supabase
+        .from('chatbot_conversas')
+        .select('user_id, id, updated_at')
+
+      const statsByUser: Record<string, { totalConversas: number; lastUpdate: string | null }> = {}
+      for (const c of convStats ?? []) {
+        if (!statsByUser[c.user_id]) {
+          statsByUser[c.user_id] = { totalConversas: 0, lastUpdate: null }
+        }
+        statsByUser[c.user_id].totalConversas += 1
+        if (
+          !statsByUser[c.user_id].lastUpdate ||
+          new Date(c.updated_at) > new Date(statsByUser[c.user_id].lastUpdate!)
+        ) {
+          statsByUser[c.user_id].lastUpdate = c.updated_at
+        }
+      }
+
+      const enriched = (profiles ?? []).map((p) => ({
+        ...p,
+        totalConversas: statsByUser[p.id]?.totalConversas ?? 0,
+        ultimaConversaEm: statsByUser[p.id]?.lastUpdate ?? null,
+      }))
+
+      return new Response(JSON.stringify({ users: enriched }), {
+        headers: { 'Content-Type': 'application/json', ...cors },
+      })
+    }
+
+    // Admin: Listar conversas de um usuário específico
+    if (action === 'admin_list_user_conversations') {
+      const isAdmin = await checkUserIsAdmin(user.id)
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: 'Acesso restrito a administradores do sistema.' }),
+          { status: 403, headers: { 'Content-Type': 'application/json', ...cors } },
+        )
+      }
+
+      const targetUserId = body?.targetUserId
+      if (!targetUserId) {
+        return new Response(JSON.stringify({ error: 'targetUserId é obrigatório.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      const { data: conversas, error: cErr } = await supabase
+        .from('chatbot_conversas')
+        .select('id, user_id, titulo, ativa, created_at, updated_at')
+        .eq('user_id', targetUserId)
+        .order('updated_at', { ascending: false })
+
+      if (cErr) {
+        return new Response(JSON.stringify({ error: cErr.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      // Busca dados do usuário alvo para contexto
+      const { data: targetProfile } = await supabase
+        .from('profiles')
+        .select('id, name, email, role')
+        .eq('id', targetUserId)
+        .maybeSingle()
+
+      return new Response(
+        JSON.stringify({ targetUser: targetProfile, conversations: conversas ?? [] }),
+        {
+          headers: { 'Content-Type': 'application/json', ...cors },
+        },
+      )
+    }
+
+    // Admin: Abrir histórico da conversa de um usuário (apenas leitura + AUDITORIA OBRIGATÓRIA)
+    if (action === 'admin_get_conversation_messages') {
+      const isAdmin = await checkUserIsAdmin(user.id)
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: 'Acesso restrito a administradores do sistema.' }),
+          { status: 403, headers: { 'Content-Type': 'application/json', ...cors } },
+        )
+      }
+
+      const convId = body?.conversationId
+      const targetUserId = body?.targetUserId
+      if (!convId || !targetUserId) {
+        return new Response(
+          JSON.stringify({ error: 'conversationId e targetUserId são obrigatórios.' }),
+          { status: 400, headers: { 'Content-Type': 'application/json', ...cors } },
+        )
+      }
+
+      // Valida existência da conversa
+      const { data: conv, error: convErr } = await supabase
+        .from('chatbot_conversas')
+        .select('*')
+        .eq('id', convId)
+        .eq('user_id', targetUserId)
+        .maybeSingle()
+
+      if (convErr || !conv) {
+        return new Response(JSON.stringify({ error: 'Conversa não encontrada.' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      const { data: msgs, error: msgsErr } = await supabase
+        .from('chatbot_mensagens')
+        .select('*')
+        .eq('conversa_id', convId)
+        .eq('user_id', targetUserId)
+        .order('created_at', { ascending: true })
+
+      if (msgsErr) {
+        return new Response(JSON.stringify({ error: msgsErr.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      // Busca e-mails para auditoria
+      const { data: targetProfile } = await supabase
+        .from('profiles')
+        .select('email, name')
+        .eq('id', targetUserId)
+        .maybeSingle()
+
+      // REGISTRO EM LOG DE AUDITORIA: quem acessou a conversa de qual usuário
+      const motivo =
+        typeof body?.motivo === 'string'
+          ? body.motivo.trim().slice(0, 300)
+          : 'Consulta visual de suporte/auditoria'
+      await supabase.from('chatbot_admin_audit').insert({
+        admin_id: user.id,
+        admin_email: user.email ?? 'admin',
+        target_user_id: targetUserId,
+        target_user_email: targetProfile?.email ?? null,
+        conversa_id: convId,
+        motivo,
+      })
+
+      return new Response(
+        JSON.stringify({
+          conversation: conv,
+          targetUser: targetProfile,
+          messages: msgs ?? [],
+          auditLogged: true,
+        }),
+        { headers: { 'Content-Type': 'application/json', ...cors } },
+      )
+    }
+
+    // Admin: Listar logs recentes de auditoria do chatbot
+    if (action === 'admin_list_audit_logs') {
+      const isAdmin = await checkUserIsAdmin(user.id)
+      if (!isAdmin) {
+        return new Response(
+          JSON.stringify({ error: 'Acesso restrito a administradores do sistema.' }),
+          { status: 403, headers: { 'Content-Type': 'application/json', ...cors } },
+        )
+      }
+
+      const { data: logs, error: lErr } = await supabase
+        .from('chatbot_admin_audit')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100)
+
+      if (lErr) {
+        return new Response(JSON.stringify({ error: lErr.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...cors },
+        })
+      }
+
+      return new Response(JSON.stringify({ logs: logs ?? [] }), {
+        headers: { 'Content-Type': 'application/json', ...cors },
+      })
+    }
+
     // 5. Rate limit por usuário autenticado: máximo 30 perguntas por minuto
     const isAllowed = checkRateLimit(user.id)
     if (!isAllowed) {
@@ -682,7 +1110,51 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey)
+    // Identifica ou vincula a conversa ativa do usuário (ISOLAMENTO POR USUÁRIO)
+    let conversationId: string | null =
+      typeof body?.conversationId === 'string' ? body.conversationId : null
+
+    if (conversationId) {
+      const { data: convCheck } = await supabase
+        .from('chatbot_conversas')
+        .select('id, user_id')
+        .eq('id', conversationId)
+        .maybeSingle()
+
+      if (!convCheck || convCheck.user_id !== user.id) {
+        return new Response(
+          JSON.stringify({ error: 'Conversa não encontrada ou não pertence ao seu usuário.' }),
+          { status: 404, headers: { 'Content-Type': 'application/json', ...cors } },
+        )
+      }
+    } else {
+      // Procura conversa ativa mais recente do usuário
+      const { data: activeConv } = await supabase
+        .from('chatbot_conversas')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('ativa', true)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (activeConv) {
+        conversationId = activeConv.id
+      } else {
+        // Cria primeira conversa para este usuário
+        const previewTitle = question.slice(0, 50).trim() || 'Nova conversa'
+        const { data: newConv } = await supabase
+          .from('chatbot_conversas')
+          .insert({
+            user_id: user.id,
+            titulo: previewTitle,
+            ativa: true,
+          })
+          .select('id')
+          .single()
+        conversationId = newConv?.id ?? null
+      }
+    }
 
     // 1. Estatísticas globais do catálogo calculadas de forma ultra-rápida (queries pontuais com count)
     const [
@@ -1483,9 +1955,73 @@ ${catalogData}`
       }
     }
 
-    return new Response(JSON.stringify({ answer: rawAnswer, table: tableData }), {
-      headers: { 'Content-Type': 'application/json', Connection: 'keep-alive', ...cors },
-    })
+    // Persiste a pergunta e a resposta na conversa do usuário (ISOLAMENTO POR USUÁRIO)
+    if (conversationId) {
+      try {
+        const userAttachmentMeta = rawAttachment
+          ? {
+              fileName: rawAttachment.fileName || 'anexo',
+              fileSize: rawAttachment.fileSize || 0,
+              fileType: rawAttachment.fileType || '',
+              isImage: Boolean(rawAttachment.isImage),
+            }
+          : null
+
+        // 1. Mensagem do usuário
+        await supabase.from('chatbot_mensagens').insert({
+          conversa_id: conversationId,
+          user_id: user.id,
+          role: 'user',
+          content: effectiveQuestion,
+          attachment: userAttachmentMeta,
+        })
+
+        // 2. Mensagem do assistente
+        const { data: insertedAssistantMsg } = await supabase
+          .from('chatbot_mensagens')
+          .insert({
+            conversa_id: conversationId,
+            user_id: user.id,
+            role: 'assistant',
+            content: rawAnswer,
+            table_data: tableData,
+          })
+          .select('id')
+          .maybeSingle()
+
+        // 3. Atualiza updated_at e título da conversa se for a primeira pergunta
+        const convTitle = effectiveQuestion.slice(0, 48).trim() || 'Conversa Bener Tech I.A'
+        await supabase
+          .from('chatbot_conversas')
+          .update({
+            updated_at: new Date().toISOString(),
+            titulo: convTitle,
+          })
+          .eq('id', conversationId)
+          .eq('user_id', user.id)
+
+        return new Response(
+          JSON.stringify({
+            answer: rawAnswer,
+            table: tableData,
+            conversationId,
+            messageId: insertedAssistantMsg?.id,
+          }),
+          { headers: { 'Content-Type': 'application/json', Connection: 'keep-alive', ...cors } },
+        )
+      } catch (persistErr) {
+        console.warn('Erro ao persistir mensagens do chatbot:', persistErr)
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        answer: rawAnswer,
+        table: tableData,
+        conversationId,
+      }),
+      { headers: { 'Content-Type': 'application/json', Connection: 'keep-alive', ...cors } },
+    )
   } catch (err) {
     console.error('Chatbot error:', err)
     // 4. Nunca incluir 'details'/stack/detalhe técnico interno — apenas código HTTP e mensagem amigável em português

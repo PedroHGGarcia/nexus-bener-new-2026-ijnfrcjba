@@ -36,23 +36,72 @@ export interface ChatMessage {
   tableData?: ChatTableData
   attachment?: ChatAttachmentMeta
   feedback?: 'like' | 'dislike'
+  timestamp?: string
 }
 
 export interface ChatbotResponse {
   answer: string
   table?: ChatTableData
+  conversationId?: string
+  messageId?: string
 }
 
-export const CHAT_STORAGE_KEY = 'bener_tech_chat_history_v1'
+export interface ChatConversation {
+  id: string
+  user_id: string
+  titulo: string
+  ativa: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ChatAdminUserSummary {
+  id: string
+  name: string
+  email: string
+  role?: string
+  status?: string
+  avatar_url?: string
+  last_seen_at?: string
+  totalConversas: number
+  ultimaConversaEm?: string | null
+}
+
+export interface ChatAdminAuditLog {
+  id: string
+  admin_id: string
+  admin_email: string
+  target_user_id: string
+  target_user_email?: string | null
+  conversa_id?: string | null
+  motivo?: string | null
+  created_at: string
+}
+
+export const CHAT_STORAGE_PREFIX = 'bener_tech_chat_history_user_'
+export const CHAT_CONV_STORAGE_PREFIX = 'bener_tech_chat_active_conv_'
 export const CHAT_FEEDBACK_STORAGE_KEY = 'bener_tech_chat_feedback_v1'
 export const RECENT_QUERIES_STORAGE_KEY = 'bener_tech_chat_recent_queries_v1'
 
 /**
- * Salva histórico da conversa no localStorage
+ * Retorna a chave do localStorage isolada por ID de usuário
  */
-export function saveChatHistoryToStorage(messages: ChatMessage[]): void {
+export function getUserStorageKey(userId?: string | null): string {
+  if (!userId) return 'bener_tech_chat_history_anonymous'
+  return `${CHAT_STORAGE_PREFIX}${userId}`
+}
+
+export function getUserActiveConvKey(userId?: string | null): string {
+  if (!userId) return 'bener_tech_chat_active_conv_anonymous'
+  return `${CHAT_CONV_STORAGE_PREFIX}${userId}`
+}
+
+/**
+ * Salva histórico local da conversa isolado pelo user_id autenticado
+ */
+export function saveChatHistoryToStorage(messages: ChatMessage[], userId?: string | null): void {
   try {
-    // Sanitiza mensagens antes de salvar (mantém apenas metadados necessários e indicador de imagem)
+    const key = getUserStorageKey(userId)
     const toSave = messages.map((m) => ({
       id: m.id || `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       role: m.role,
@@ -66,7 +115,6 @@ export function saveChatHistoryToStorage(messages: ChatMessage[]): void {
             fileSize: m.attachment.fileSize,
             fileType: m.attachment.fileType,
             isImage: m.attachment.isImage,
-            // Não persiste URLs base64 gigantes no localStorage para não estourar a cota de 5MB
             previewUrl:
               m.attachment.previewUrl && m.attachment.previewUrl.length < 500
                 ? m.attachment.previewUrl
@@ -74,18 +122,19 @@ export function saveChatHistoryToStorage(messages: ChatMessage[]): void {
           }
         : undefined,
     }))
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toSave.slice(-40)))
+    localStorage.setItem(key, JSON.stringify(toSave.slice(-40)))
   } catch (e) {
-    console.warn('Falha ao salvar histórico do chat no localStorage:', e)
+    console.warn('Falha ao salvar histórico do chat:', e)
   }
 }
 
 /**
- * Carrega histórico anterior do chat do localStorage
+ * Carrega histórico da conversa isolado pelo user_id autenticado
  */
-export function loadChatHistoryFromStorage(): ChatMessage[] {
+export function loadChatHistoryFromStorage(userId?: string | null): ChatMessage[] {
   try {
-    const raw = localStorage.getItem(CHAT_STORAGE_KEY)
+    const key = getUserStorageKey(userId)
+    const raw = localStorage.getItem(key)
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (Array.isArray(parsed)) {
@@ -95,19 +144,47 @@ export function loadChatHistoryFromStorage(): ChatMessage[] {
     }
     return []
   } catch (e) {
-    console.warn('Falha ao recuperar histórico do chat do localStorage:', e)
+    console.warn('Falha ao recuperar histórico do chat:', e)
     return []
   }
 }
 
 /**
- * Limpa o histórico de chat salvo para reiniciar conversa
+ * Limpa o histórico de chat salvo para o usuário
  */
-export function clearChatHistoryFromStorage(): void {
+export function clearChatHistoryFromStorage(userId?: string | null): void {
   try {
-    localStorage.removeItem(CHAT_STORAGE_KEY)
+    const key = getUserStorageKey(userId)
+    localStorage.removeItem(key)
+    const convKey = getUserActiveConvKey(userId)
+    localStorage.removeItem(convKey)
   } catch {
     // ignore
+  }
+}
+
+export function saveActiveConversationId(
+  conversationId: string | null,
+  userId?: string | null,
+): void {
+  try {
+    const key = getUserActiveConvKey(userId)
+    if (conversationId) {
+      localStorage.setItem(key, conversationId)
+    } else {
+      localStorage.removeItem(key)
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function getActiveConversationId(userId?: string | null): string | null {
+  try {
+    const key = getUserActiveConvKey(userId)
+    return localStorage.getItem(key)
+  } catch {
+    return null
   }
 }
 
@@ -317,6 +394,7 @@ export async function askVersoesChatbot(
   history: ChatMessage[] = [],
   attachment?: ChatAttachmentPayload,
   allowedCategoriaIds?: string[],
+  conversationId?: string | null,
 ): Promise<ChatbotResponse> {
   try {
     // Verifica sessão do usuário antes de chamar a edge function
@@ -350,6 +428,7 @@ export async function askVersoesChatbot(
       history: Array<{ role: 'user' | 'assistant'; content: string }>
       attachment?: ChatAttachmentPayload
       allowedCategoriaIds?: string[]
+      conversationId?: string | null
     } = {
       question: truncatedQuestion,
       history: sanitizedHistory,
@@ -361,6 +440,10 @@ export async function askVersoesChatbot(
 
     if (attachment) {
       requestBody.attachment = attachment
+    }
+
+    if (conversationId) {
+      requestBody.conversationId = conversationId
     }
 
     const { data, error } = await supabase.functions.invoke('versoes-chatbot', {
@@ -452,6 +535,8 @@ export async function askVersoesChatbot(
     return {
       answer: rawAnswer,
       table: tableData,
+      conversationId: typeof data?.conversationId === 'string' ? data.conversationId : undefined,
+      messageId: typeof data?.messageId === 'string' ? data.messageId : undefined,
     }
   } catch (err) {
     const rawMsg = err instanceof Error ? err.message : ''
@@ -483,4 +568,252 @@ export async function askVersoesChatbot(
       'Tivemos uma pequena oscilação momentânea ao consultar a Bener Tech I.A. Por favor, tente novamente.',
     )
   }
+}
+
+/**
+ * Carrega a conversa ativa ou obtém do backend pelo user_id autenticado
+ */
+export async function getOrCreateUserConversation(
+  requestedId?: string | null,
+): Promise<ChatConversation | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return null
+
+  const { data, error } = await supabase.functions.invoke('versoes-chatbot', {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: {
+      action: 'get_or_create_conversation',
+      conversationId: requestedId || undefined,
+    },
+  })
+
+  if (error || !data || data.error) {
+    console.warn('Erro ao obter conversa ativa do chatbot:', error || data?.error)
+    return null
+  }
+
+  return (data.conversation as ChatConversation) ?? null
+}
+
+/**
+ * Cria uma nova conversa no backend (isolada para o usuário autenticado)
+ */
+export async function createNewUserConversation(): Promise<ChatConversation | null> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return null
+
+  const { data, error } = await supabase.functions.invoke('versoes-chatbot', {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: { action: 'new_conversation' },
+  })
+
+  if (error || !data || data.error) {
+    throw new Error(data?.error || error?.message || 'Falha ao criar nova conversa')
+  }
+
+  return (data.conversation as ChatConversation) ?? null
+}
+
+/**
+ * Carrega as mensagens de uma conversa com validação estrita no backend
+ */
+export async function fetchConversationMessages(conversationId: string): Promise<ChatMessage[]> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return []
+
+  const { data, error } = await supabase.functions.invoke('versoes-chatbot', {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: {
+      action: 'get_conversation_messages',
+      conversationId,
+    },
+  })
+
+  if (error || !data || data.error) {
+    throw new Error(data?.error || error?.message || 'Erro ao carregar histórico da conversa')
+  }
+
+  interface RawBackendMsg {
+    id: string
+    role: 'user' | 'assistant'
+    content: string
+    is_error?: boolean
+    table_data?: ChatTableData
+    feedback?: 'like' | 'dislike'
+    attachment?: ChatAttachmentPayload
+  }
+
+  const msgs = (data.messages as RawBackendMsg[]) ?? []
+  return msgs.map((m) => ({
+    id: m.id,
+    role: m.role,
+    content: m.content,
+    isError: Boolean(m.is_error),
+    tableData: m.table_data,
+    feedback: m.feedback,
+    attachment: m.attachment,
+  }))
+}
+
+/**
+ * Registra feedback da mensagem no backend
+ */
+export async function sendChatFeedbackToBackend(
+  messageId: string,
+  rating: 'like' | 'dislike',
+): Promise<void> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) return
+
+  await supabase.functions.invoke('versoes-chatbot', {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: {
+      action: 'record_feedback',
+      messageId,
+      rating,
+    },
+  })
+}
+
+// =============================================================================
+// FUNÇÕES DE ADMINISTRAÇÃO (ACESSO RESTRITO A ADMINS - VALIDADO NO BACKEND)
+// =============================================================================
+
+/**
+ * Admin: Listar todos os usuários com resumo de conversas no chatbot
+ */
+export async function adminListChatbotUsers(): Promise<ChatAdminUserSummary[]> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) throw new Error('Não autenticado.')
+
+  const { data, error } = await supabase.functions.invoke('versoes-chatbot', {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: { action: 'admin_list_users' },
+  })
+
+  if (error || !data || data.error) {
+    throw new Error(data?.error || error?.message || 'Falha ao listar usuários do chatbot.')
+  }
+
+  return (data.users as ChatAdminUserSummary[]) ?? []
+}
+
+/**
+ * Admin: Listar conversas de um usuário específico
+ */
+export async function adminListUserConversations(targetUserId: string): Promise<{
+  targetUser: { id: string; name: string; email: string; role?: string } | null
+  conversations: ChatConversation[]
+}> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) throw new Error('Não autenticado.')
+
+  const { data, error } = await supabase.functions.invoke('versoes-chatbot', {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: {
+      action: 'admin_list_user_conversations',
+      targetUserId,
+    },
+  })
+
+  if (error || !data || data.error) {
+    throw new Error(data?.error || error?.message || 'Falha ao buscar conversas do usuário.')
+  }
+
+  return {
+    targetUser: data.targetUser || null,
+    conversations: (data.conversations as ChatConversation[]) ?? [],
+  }
+}
+
+/**
+ * Admin: Carregar histórico completo de uma conversa de um usuário (registra auditoria no backend)
+ */
+export async function adminGetConversationMessages(
+  targetUserId: string,
+  conversationId: string,
+  motivo?: string,
+): Promise<{
+  conversation: ChatConversation
+  targetUser: { name?: string; email?: string } | null
+  messages: ChatMessage[]
+}> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) throw new Error('Não autenticado.')
+
+  const { data, error } = await supabase.functions.invoke('versoes-chatbot', {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: {
+      action: 'admin_get_conversation_messages',
+      targetUserId,
+      conversationId,
+      motivo: motivo || 'Consulta visual de suporte administrativo',
+    },
+  })
+
+  if (error || !data || data.error) {
+    throw new Error(data?.error || error?.message || 'Falha ao carregar conversa do usuário.')
+  }
+
+  interface RawBackendMsg {
+    id: string
+    role: 'user' | 'assistant'
+    content: string
+    is_error?: boolean
+    table_data?: ChatTableData
+    feedback?: 'like' | 'dislike'
+    attachment?: ChatAttachmentPayload
+    created_at?: string
+  }
+
+  const msgs = (data.messages as RawBackendMsg[]) ?? []
+  return {
+    conversation: data.conversation as ChatConversation,
+    targetUser: data.targetUser || null,
+    messages: msgs.map((m) => ({
+      id: m.id,
+      role: m.role,
+      content: m.content,
+      isError: Boolean(m.is_error),
+      tableData: m.table_data,
+      feedback: m.feedback,
+      attachment: m.attachment,
+      timestamp: m.created_at,
+    })),
+  }
+}
+
+/**
+ * Admin: Listar logs recentes de auditoria do chatbot
+ */
+export async function adminListChatbotAuditLogs(): Promise<ChatAdminAuditLog[]> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+  if (!session) throw new Error('Não autenticado.')
+
+  const { data, error } = await supabase.functions.invoke('versoes-chatbot', {
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: { action: 'admin_list_audit_logs' },
+  })
+
+  if (error || !data || data.error) {
+    throw new Error(data?.error || error?.message || 'Falha ao carregar logs de auditoria.')
+  }
+
+  return (data.logs as ChatAdminAuditLog[]) ?? []
 }
