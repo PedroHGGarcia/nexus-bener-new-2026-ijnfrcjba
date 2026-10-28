@@ -38,7 +38,7 @@ export default function Layout() {
         <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
           <AppHeader onToggleMobileSidebar={() => setMobileSidebarOpen(true)} />
           <main className="flex-1 min-h-0 overflow-y-auto">
-            <div className="p-3 md:p-4 lg:p-5 max-w-7xl mx-auto w-full pb-24 md:pb-20">
+            <div className="p-3 md:p-4 lg:p-5 max-w-[1600px] mx-auto w-full pb-24 md:pb-20">
               <Outlet />
             </div>
           </main>

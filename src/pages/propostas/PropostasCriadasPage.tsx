@@ -30,6 +30,10 @@ import {
   Check,
   FolderKanban,
   Send,
+  Cpu,
+  User as UserIcon,
+  Calendar,
+  Layers,
 } from 'lucide-react'
 import { Proposta } from '@/types/proposta'
 import { ReenviarNotificacaoDialog } from '@/components/propostas/ReenviarNotificacaoDialog'
@@ -67,6 +71,44 @@ export const getCriadoPorName = (p: PropostaWithRelations): string => {
     p.user ||
     '—'
   )
+}
+
+export const getMaquinasInfo = (
+  p: PropostaWithRelations,
+): { primary: string; count: number; secondary?: string } => {
+  // 1. Snapshot multi-itens (propostas com itens_snapshot)
+  const snap = p.itens_snapshot as
+    | Array<{ versoes?: { nome?: string; nome_abreviado?: string } }>
+    | null
+    | undefined
+  if (Array.isArray(snap) && snap.length > 0) {
+    const names = snap
+      .map((it) => it?.versoes?.nome_abreviado || it?.versoes?.nome)
+      .filter((n): n is string => Boolean(n && n.trim()))
+    if (names.length > 0) {
+      return {
+        primary: names[0],
+        count: names.length,
+        secondary: names.length > 1 ? `+${names.length - 1} item(ns)` : undefined,
+      }
+    }
+  }
+
+  // 2. Relação de versão direta (join via select relations)
+  if (p.versoes) {
+    const vNome = p.versoes.nome_abreviado || p.versoes.nome
+    if (vNome) return { primary: vNome, count: 1 }
+  }
+
+  // 3. Fallback para versao_original ou descricao_proposta
+  if (p.versao_original && p.versao_original.length < 100) {
+    return { primary: p.versao_original, count: 1 }
+  }
+  if (p.descricao_proposta && p.descricao_proposta.trim()) {
+    return { primary: p.descricao_proposta.trim(), count: 1 }
+  }
+
+  return { primary: '—', count: 0 }
 }
 
 const formatValor = (valor: number | null, moeda: string | null): string => {
@@ -231,27 +273,53 @@ export default function PropostasCriadasPage() {
         />
       ) : (
         <>
-          <div className="border rounded-lg bg-card overflow-x-auto">
-            <Table className="responsive-table">
+          <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
+            <Table className="responsive-table min-w-[1240px]">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[170px] whitespace-nowrap">Nº Oferta</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Criado por</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Valor Final</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="w-[185px] min-w-[170px] whitespace-nowrap">
+                    Nº Oferta
+                  </TableHead>
+                  <TableHead className="w-[200px] min-w-[170px]">Cliente</TableHead>
+                  <TableHead className="w-[260px] min-w-[210px]">
+                    <div className="flex items-center gap-1.5">
+                      <Cpu className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Máquina / Versão</span>
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[160px] min-w-[130px]">
+                    <div className="flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Tipo Proposta</span>
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[150px] min-w-[130px]">
+                    <div className="flex items-center gap-1.5">
+                      <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Criado por</span>
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[150px] min-w-[130px]">Valor Final</TableHead>
+                  <TableHead className="w-[115px] min-w-[105px]">Status</TableHead>
+                  <TableHead className="w-[100px] min-w-[90px]">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span>Data</span>
+                    </div>
+                  </TableHead>
+                  <TableHead className="w-[180px] min-w-[170px] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginated.map((p) => {
                   const criadoPor = getCriadoPorName(p)
                   const projetoNome = p.projetos?.nome
+                  const clienteNome = p.clientes?.fantasia || p.cliente_original || '—'
+                  const maquinaInfo = getMaquinasInfo(p)
                   return (
-                    <TableRow key={p.id}>
-                      <TableCell data-label="Nº Oferta" className="font-bold text-primary">
+                    <TableRow key={p.id} className="align-top">
+                      {/* Nº Oferta */}
+                      <TableCell data-label="Nº Oferta" className="font-bold text-primary py-3">
                         <div className="flex flex-col gap-1 min-w-[160px]">
                           <span className="font-mono text-xs sm:text-sm font-semibold tracking-tight break-all text-slate-900 dark:text-slate-100 select-all">
                             {displayNumero(p.numero_proposta, p.revisao)}
@@ -260,7 +328,7 @@ export default function PropostasCriadasPage() {
                             {projetoNome && (
                               <Badge
                                 variant="outline"
-                                className="inline-flex items-center gap-1 text-[10.5px] font-normal px-1.5 py-0.5 rounded text-muted-foreground bg-muted/50 border-muted-foreground/20 max-w-[200px] truncate"
+                                className="inline-flex items-center gap-1 text-[10.5px] font-normal px-1.5 py-0.5 rounded text-muted-foreground bg-muted/50 border-muted-foreground/20 max-w-[190px] truncate"
                                 title={`Projeto: ${projetoNome}`}
                               >
                                 <FolderKanban className="w-3 h-3 text-muted-foreground/70 shrink-0" />
@@ -270,58 +338,126 @@ export default function PropostasCriadasPage() {
                             {p.modelo_licitacao && (
                               <Badge
                                 variant="outline"
-                                className="bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700 text-[10.5px] py-0 px-1.5"
+                                className="bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700 text-[10.5px] py-0 px-1.5 font-medium shrink-0"
                               >
                                 Licitação
+                              </Badge>
+                            )}
+                            {p.is_pacote && (
+                              <Badge
+                                variant="outline"
+                                className="bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-700 text-[10.5px] py-0 px-1.5 font-medium shrink-0"
+                              >
+                                Pacote
                               </Badge>
                             )}
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell data-label="Cliente" className="text-xs">
-                        {p.clientes?.fantasia || p.cliente_original || '—'}
+
+                      {/* Cliente */}
+                      <TableCell data-label="Cliente" className="text-xs py-3">
+                        <div
+                          className="font-medium text-foreground leading-snug break-words line-clamp-3 select-text"
+                          title={clienteNome}
+                        >
+                          {clienteNome}
+                        </div>
+                        {p.clientes?.cidade && p.clientes?.estado && (
+                          <span className="text-[11px] text-muted-foreground block mt-0.5">
+                            {p.clientes.cidade}/{p.clientes.estado}
+                          </span>
+                        )}
                       </TableCell>
-                      <TableCell data-label="Criado por" className="text-xs max-w-[160px]">
+
+                      {/* Máquina / Versão */}
+                      <TableCell data-label="Máquina" className="text-xs py-3">
+                        <div className="flex flex-col gap-1">
+                          <span
+                            className="font-medium text-foreground leading-snug break-words line-clamp-3"
+                            title={maquinaInfo.primary !== '—' ? maquinaInfo.primary : undefined}
+                          >
+                            {maquinaInfo.primary}
+                          </span>
+                          {maquinaInfo.secondary && (
+                            <Badge
+                              variant="secondary"
+                              className="w-fit text-[10px] px-1.5 py-0 font-normal text-muted-foreground bg-muted"
+                            >
+                              {maquinaInfo.secondary}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+
+                      {/* Tipo de Proposta */}
+                      <TableCell data-label="Tipo" className="text-xs py-3">
                         <span
-                          className="block truncate font-medium text-foreground"
+                          className="block text-muted-foreground leading-snug break-words line-clamp-2"
+                          title={p.tipo_proposta || undefined}
+                        >
+                          {p.tipo_proposta || '—'}
+                        </span>
+                      </TableCell>
+
+                      {/* Criado por */}
+                      <TableCell data-label="Criado por" className="text-xs py-3">
+                        <span
+                          className="block font-medium text-foreground leading-snug break-words line-clamp-2"
                           title={criadoPor !== '—' ? criadoPor : undefined}
                         >
                           {criadoPor}
                         </span>
                       </TableCell>
-                      <TableCell data-label="Tipo" className="text-xs">
-                        {p.tipo_proposta || '—'}
-                      </TableCell>
-                      <TableCell data-label="Valor Final" className="font-semibold">
+
+                      {/* Valor Final */}
+                      <TableCell
+                        data-label="Valor Final"
+                        className="font-semibold py-3 whitespace-nowrap"
+                      >
                         <div className="flex flex-col leading-tight">
-                          <span>{formatValor(p.valor_final, p.moeda)}</span>
+                          <span className="text-sm font-bold text-foreground">
+                            {formatValor(p.valor_final, p.moeda)}
+                          </span>
                           {p.moeda &&
                             p.moeda !== 'BRL' &&
                             p.valor_final &&
                             formatBrlEquivalent(p.valor_final, p.moeda, rates) && (
-                              <span className="text-xs text-muted-foreground tabular-nums">
+                              <span className="text-[11px] text-muted-foreground tabular-nums mt-0.5">
                                 {formatBrlEquivalent(p.valor_final, p.moeda, rates)}
                               </span>
                             )}
                         </div>
                       </TableCell>
-                      <TableCell data-label="Status">
-                        <Badge variant={statusVariant(p.status)}>
+
+                      {/* Status */}
+                      <TableCell data-label="Status" className="py-3 whitespace-nowrap">
+                        <Badge
+                          variant={statusVariant(p.status)}
+                          className="font-semibold text-[11px]"
+                        >
                           {STATUS_LABELS[p.status] || p.status}
                         </Badge>
                       </TableCell>
-                      <TableCell data-label="Data" className="text-xs text-muted-foreground">
+
+                      {/* Data */}
+                      <TableCell
+                        data-label="Data"
+                        className="text-xs text-muted-foreground py-3 whitespace-nowrap"
+                      >
                         {formatDate(p.created_at)}
                       </TableCell>
-                      <TableCell data-label="Ações" className="text-right">
-                        <div className="flex justify-end gap-1">
+
+                      {/* Ações */}
+                      <TableCell data-label="Ações" className="text-right py-3 whitespace-nowrap">
+                        <div className="flex justify-end items-center gap-0.5">
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => setSelectedProposalForNotify(p)}
                             aria-label={`Reenviar notificação da proposta ${p.numero_proposta || ''}`}
                             title="Enviar ao Cliente (E-mail)"
-                            className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
+                            className="h-8 w-8 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
                           >
                             <Send className="w-4 h-4" />
                           </Button>
@@ -331,6 +467,7 @@ export default function PropostasCriadasPage() {
                             onClick={() => handleCopyPublicLink(p)}
                             aria-label={`Copiar link público da proposta ${p.numero_proposta || ''}`}
                             title="Copiar link público da proposta"
+                            className="h-8 w-8"
                           >
                             {copiedId === p.id ? (
                               <Check className="w-4 h-4 text-emerald-600" />
@@ -343,6 +480,8 @@ export default function PropostasCriadasPage() {
                             size="icon"
                             onClick={() => navigate(`/controle-propostas/editar-proposta/${p.id}`)}
                             aria-label={`Editar proposta ${p.numero_proposta || ''}`}
+                            title="Editar Proposta"
+                            className="h-8 w-8"
                           >
                             <Pencil className="w-4 h-4" />
                           </Button>
@@ -351,6 +490,8 @@ export default function PropostasCriadasPage() {
                             size="icon"
                             onClick={() => navigate(`/controle-propostas/proposta-pdf/${p.id}`)}
                             aria-label={`Visualizar proposta ${p.numero_proposta || ''}`}
+                            title="Visualizar Proposta (PDF)"
+                            className="h-8 w-8"
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -359,15 +500,18 @@ export default function PropostasCriadasPage() {
                             size="icon"
                             onClick={() => window.open(`/proposta/${p.id}/imprimir`, '_blank')}
                             aria-label={`Imprimir proposta ${p.numero_proposta || ''}`}
+                            title="Imprimir Proposta"
+                            className="h-8 w-8"
                           >
                             <Printer className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="text-destructive"
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
                             onClick={() => handleDelete(p.id)}
                             aria-label={`Excluir proposta ${p.numero_proposta || ''}`}
+                            title="Excluir Proposta"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
