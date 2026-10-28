@@ -70,9 +70,16 @@ export interface PropostaSnapshotRoot {
   base_comissao_servicos?: number | null
   percentual_comissao_servicos?: number | null
   comissao_servicos_aplicavel?: boolean | null
-  base_comissao_modo?: 'completa' | 'maquina' | null
+  base_comissao_modo?:
+    | 'VALOR_FINAL'
+    | 'PRECO_ESPECIAL'
+    | 'BASE_CUSTOMIZADA'
+    | 'completa'
+    | 'maquina'
+    | null
+  cotacao_moeda?: number | null
+  data_cotacao_moeda?: string | null
 }
-
 /**
  * Normaliza um objeto de versão para o formato canônico de snapshot.
  */
@@ -160,6 +167,8 @@ export async function buildPropostaSnapshot(params: {
     comissao_servicos_aplicavel?: boolean | null
     base_comissao_modo?: 'completa' | 'maquina' | null
   } | null
+  cotacao_moeda?: number | null
+  data_cotacao_moeda?: string | null
   // Cache opcional de versões já carregadas em memória para evitar requests redundantes
   knownVersoes?: VersaoWithModelo[]
 }): Promise<{ itens_snapshot: PropostaItemSnapshot[]; dados_snapshot: PropostaSnapshotRoot }> {
@@ -174,6 +183,8 @@ export async function buildPropostaSnapshot(params: {
     secoes_adicionais = null,
     campos_adicionais = [],
     comissao_servicos = null,
+    cotacao_moeda = null,
+    data_cotacao_moeda = null,
     knownVersoes = [],
   } = params
 
@@ -305,6 +316,8 @@ export async function buildPropostaSnapshot(params: {
     percentual_comissao_servicos: comissao_servicos?.percentual_comissao_servicos ?? null,
     comissao_servicos_aplicavel: comissao_servicos?.comissao_servicos_aplicavel ?? null,
     base_comissao_modo: comissao_servicos?.base_comissao_modo ?? null,
+    cotacao_moeda: cotacao_moeda ?? null,
+    data_cotacao_moeda: data_cotacao_moeda ?? null,
   }
 
   return { itens_snapshot: itensSnapshot, dados_snapshot: dadosSnapshot }

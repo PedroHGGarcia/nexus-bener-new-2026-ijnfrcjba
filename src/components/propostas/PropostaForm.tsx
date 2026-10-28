@@ -1382,15 +1382,17 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
           : normalizeMoedaCode(form.moeda_original || 'BRL'),
         moeda_original: normalizeMoedaCode(form.moeda_original || 'BRL'),
         cotacao_moeda:
-          converterMoeda &&
-          normalizeMoedaCode(form.moeda) !== normalizeMoedaCode(form.moeda_original)
-            ? form.cotacao_moeda
-            : null,
+          form.cotacao_moeda != null && Number(form.cotacao_moeda) > 0
+            ? Number(form.cotacao_moeda)
+            : normalizeMoedaCode(form.moeda) === 'USD' ||
+                normalizeMoedaCode(form.moeda_original) === 'USD'
+              ? Number(rates?.usdRate ?? 5.4)
+              : normalizeMoedaCode(form.moeda) === 'EUR' ||
+                  normalizeMoedaCode(form.moeda_original) === 'EUR'
+                ? Number(rates?.eurRate ?? 5.9)
+                : null,
         data_cotacao_moeda:
-          converterMoeda &&
-          normalizeMoedaCode(form.moeda) !== normalizeMoedaCode(form.moeda_original)
-            ? form.data_cotacao_moeda
-            : null,
+          form.data_cotacao_moeda || rates?.refDate || new Date().toISOString().split('T')[0],
         valor_sem_desconto: valorSemDesconto,
         percentual_desconto: 0,
         valor_final: valorFinal,
@@ -1486,6 +1488,18 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
               comissao_servicos_aplicavel: false,
               base_comissao_modo: baseComissaoModo,
             },
+        cotacao_moeda:
+          form.cotacao_moeda != null && Number(form.cotacao_moeda) > 0
+            ? Number(form.cotacao_moeda)
+            : normalizeMoedaCode(form.moeda) === 'USD' ||
+                normalizeMoedaCode(form.moeda_original) === 'USD'
+              ? Number(rates?.usdRate ?? 5.4)
+              : normalizeMoedaCode(form.moeda) === 'EUR' ||
+                  normalizeMoedaCode(form.moeda_original) === 'EUR'
+                ? Number(rates?.eurRate ?? 5.9)
+                : null,
+        data_cotacao_moeda:
+          form.data_cotacao_moeda || rates?.refDate || new Date().toISOString().split('T')[0],
         knownVersoes: versoes,
       })
 
@@ -2504,11 +2518,11 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                           (form.moeda === 'USD' || form.moeda_original === 'USD'
                             ? (rates?.usdRate ?? 5.4)
                             : (rates?.eurRate ?? 5.9)),
-                      ).toFixed(2)}
+                      ).toFixed(4)}
                     </strong>
-                    {form.data_cotacao_moeda && (
-                      <span className="text-[11px] text-muted-foreground">
-                        ({form.data_cotacao_moeda})
+                    {(form.data_cotacao_moeda || rates?.refDate) && (
+                      <span className="text-[11px] text-muted-foreground font-medium">
+                        (Cotação de fechamento de {form.data_cotacao_moeda || rates?.refDate})
                       </span>
                     )}
                   </span>
@@ -2533,7 +2547,10 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                             : Number(rates?.eurRate ?? 5.9)
                         if (r) {
                           upd('cotacao_moeda', r)
-                          upd('data_cotacao_moeda', new Date().toISOString().split('T')[0])
+                          upd(
+                            'data_cotacao_moeda',
+                            rates?.refDate || new Date().toISOString().split('T')[0],
+                          )
                         }
                       }}
                     >

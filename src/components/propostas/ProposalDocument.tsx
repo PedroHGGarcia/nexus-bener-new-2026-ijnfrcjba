@@ -1400,7 +1400,7 @@ export function ProposalDocument({ proposal }: Props) {
                 </span>
               </div>
 
-              {/* R4: Bloco de Cotação de Moeda Estrangeira (APENAS quando houver conversão real entre moedas diferentes com taxa) */}
+              {/* R4: Bloco de Cotação de Moeda Estrangeira (PONTO 1: 4 decimais e texto "Cotação de fechamento de DD/MM/AAAA") */}
               {(() => {
                 const moedaOrig = normalizeMoedaCode(
                   proposal.moeda_original || proposal.moeda || 'BRL',
@@ -1409,6 +1409,27 @@ export function ProposalDocument({ proposal }: Props) {
                 const hasRealConversion = moedaProp !== moedaOrig && Boolean(proposal.cotacao_moeda)
 
                 if (!hasRealConversion) return null
+
+                const fmtPtax4 = (n: any) =>
+                  (Number(n) || 0).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 4,
+                    maximumFractionDigits: 4,
+                  })
+
+                const rawData =
+                  proposal.data_cotacao_moeda ||
+                  (proposal as any)?.dados_snapshot?.data_cotacao_moeda
+                let dataFmt = ''
+                if (rawData) {
+                  const s = String(rawData).trim()
+                  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) dataFmt = s
+                  else if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+                    const [y, m, d] = s.split('T')[0].split('-')
+                    if (y && m && d) dataFmt = `${d}/${m}/${y}`
+                  } else {
+                    dataFmt = s
+                  }
+                }
 
                 return (
                   <div className="mb-3 p-2.5 bg-slate-50 border border-slate-300 rounded text-[11px] text-slate-800 flex flex-wrap items-center justify-between gap-2 break-inside-avoid">
@@ -1424,12 +1445,12 @@ export function ProposalDocument({ proposal }: Props) {
                       <span>
                         Taxa aplicada:{' '}
                         <strong>
-                          1 {moedaProp} = {fmtCurrency(proposal.cotacao_moeda, 'BRL')}
+                          1 {moedaProp} = R$ {fmtPtax4(proposal.cotacao_moeda)}
                         </strong>
                       </span>
-                      {proposal.data_cotacao_moeda && (
+                      {dataFmt && (
                         <span className="text-slate-600">
-                          Data da cotação: <strong>{proposal.data_cotacao_moeda}</strong>
+                          <strong>Cotação de fechamento de {dataFmt}</strong>
                         </span>
                       )}
                     </div>

@@ -1046,15 +1046,30 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       })
     })
   } else {
+    // PONTO 3: A linha da máquina deve exibir VALOR UNITÁRIO e SUBTOTAL somente com o valor da máquina (com seus opcionais inclusos) — sem comissão embutida
     const rawSem =
       Number(p.valor_sem_desconto) > 0 ? Number(p.valor_sem_desconto) : Number(p.valor_final || 0)
     const precoEsp =
       p.preco_especial != null && Number(p.preco_especial) > 0 ? Number(p.preco_especial) : null
+    const rawFinalGravado = Number(p.valor_final || 0)
+
+    let valEfetivo = precoEsp != null ? precoEsp : rawFinalGravado
+    let valOrig = rawSem > 0 ? rawSem : valEfetivo
+
+    // Se houver comissão gravada e ela estiver embutida no valor_final, limpamos a linha da máquina
+    const valComissaoPrevia = Number(
+      p.valor_comissao_servicos || dadosSnapshot?.valor_comissao_servicos || 0,
+    )
+    if (valComissaoPrevia > 0 && rawFinalGravado > valComissaoPrevia) {
+      valEfetivo = precoEsp != null ? precoEsp : rawFinalGravado - valComissaoPrevia
+      valOrig = Math.max(
+        valEfetivo,
+        rawSem > valComissaoPrevia ? rawSem - valComissaoPrevia : valEfetivo,
+      )
+    }
+
     const pct = Number(p.percentual_desconto || 0)
-    const hasDisc =
-      pct > 0 || (precoEsp != null && precoEsp > 0) || rawSem > Number(p.valor_final || 0)
-    const valOrig = rawSem > 0 ? rawSem : Number(p.valor_final || 0)
-    const valEfetivo = precoEsp != null ? precoEsp : Number(p.valor_final || 0)
+    const hasDisc = pct > 0 || (precoEsp != null && precoEsp > 0) || valOrig > valEfetivo
     const descPct =
       pct > 0
         ? pct
@@ -1067,7 +1082,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       qtd: 1,
       moeda,
       valOrig,
-      valUnitEfetivo: Number(p.valor_final || 0) > 0 ? Number(p.valor_final) : valEfetivo,
+      valUnitEfetivo: valEfetivo,
       descTxt: descPct > 0 ? `${descPct}%` : '—',
       total: valEfetivo,
       hasDisc,
@@ -1259,14 +1274,14 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.y += rowH
   }
 
-  // Totals row (soma comissão quando aplicável)
+  // PONTO 3: Totals row = subtotal da máquina limpo + linha de comissão (sem soma dupla)
   const rawFinalLayout = Number(p.valor_final || 0)
   let totalComComissao = rawFinalLayout
   if (comissaoAplicavelLayout && valorComissaoLayout > 0) {
-    if (Math.abs(rawFinalLayout - baseCalculoLayout) < 0.05) {
-      totalComComissao = rawFinalLayout + valorComissaoLayout
-    } else {
+    if (Math.abs(rawFinalLayout - (baseCalculoLayout + valorComissaoLayout)) < 0.1) {
       totalComComissao = rawFinalLayout
+    } else {
+      totalComComissao = baseCalculoLayout + valorComissaoLayout
     }
   }
 
@@ -1313,13 +1328,31 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   }
   doc.y += totalH + 8
 
-  // Regra 1: Bloco Câmbio/Cotação só aparece quando há conversão REAL
+  // PONTO 1: Bloco Câmbio/Cotação com 4 decimais e texto "Cotação de fechamento de DD/MM/AAAA"
   const moedaOrigNormalized = normalizeMoeda(p.moeda_original || p.moeda || 'BRL')
   const moedaPropNormalized = normalizeMoeda(moeda)
   if (moedaPropNormalized !== moedaOrigNormalized && p.cotacao_moeda) {
     ensureSpace(24)
     const taxa = Number(p.cotacao_moeda || p.cambio_estimado)
-    const dataCot = p.data_cotacao_moeda || p.cambio_estimado_data
+    const rawDataCot = p.data_cotacao_moeda || p.cambio_estimado_data
+    let dataCotFmt = ''
+    if (rawDataCot) {
+      const s = String(rawDataCot).trim()
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) dataCotFmt = s
+      else if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+        const [y, m, d] = s.split('T')[0].split('-')
+        if (y && m && d) dataCotFmt = `${d}/${m}/${y}`
+      } else {
+        dataCotFmt = s
+      }
+    }
+    const fmtPtax4 = (n: number) =>
+      (Number(n) || 0).toLocaleString('pt-BR', {
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 4,
+      })
+    const cotacaoTexto = dataCotFmt ? ` — Cotação de fechamento de ${dataCotFmt}` : ''
+
     doc.rect(M_LEFT, doc.y, doc.contentW, 18, {
       fill: [0.96, 0.97, 0.97],
       stroke: [0.8, 0.82, 0.84],
@@ -1328,7 +1361,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.txt(
       M_LEFT + 6,
       doc.y + 5,
-      `Câmbio: 1 ${moedaPropNormalized} = R$ ${fmt2(taxa)}${dataCot ? ` (data: ${dataCot})` : ''} — Moeda Original: ${moedaOrigNormalized}`,
+      `Câmbio: 1 ${moedaPropNormalized} = R$ ${fmtPtax4(taxa)}${cotacaoTexto} — Moeda Original: ${moedaOrigNormalized}`,
       {
         font: 'F1',
         size: 8.5,

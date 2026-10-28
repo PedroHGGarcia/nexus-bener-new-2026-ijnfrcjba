@@ -744,7 +744,27 @@ export function buildProposalPdfHtml(
     ? `<div class="footer-creator">Documento gerado por ${escapeHtml(creatorInfo.name)}${creatorInfo.email ? ` — ${escapeHtml(creatorInfo.email)}` : ''}</div>`
     : ''
 
-  // Câmbio / Cotação condicional (Regra 1)
+  // Formatação com 4 casas decimais para taxas PTAX
+  const fmtPtax4 = (n: number | null | undefined) =>
+    (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+
+  // Formatação segura de data DD/MM/AAAA para cotação
+  const formatPtaxDataCotacao = (dt: string | null | undefined): string => {
+    if (!dt) return ''
+    const s = String(dt).trim()
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+      const [y, m, d] = s.split('T')[0].split('-')
+      if (y && m && d) return `${d}/${m}/${y}`
+    }
+    return s
+  }
+
+  const ptaxDataTexto = formatPtaxDataCotacao(
+    proposta.data_cotacao_moeda || dadosSnapshot?.data_cotacao_moeda,
+  )
+
+  // Câmbio / Cotação condicional (PONTO 1: 4 decimais e texto "Cotação de fechamento de DD/MM/AAAA")
   const cambioBanner = hasRealConversion
     ? `<div style="margin-bottom:12px;padding:8px 10px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;font-size:11px;color:#1e293b;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;page-break-inside:avoid;break-inside:avoid;">
         <div style="display:flex;align-items:center;gap:8px;">
@@ -752,8 +772,8 @@ export function buildProposalPdfHtml(
           <span>Moeda da proposta: <strong>${moedaProp}</strong> (Original: ${moedaOrig})</span>
         </div>
         <div style="display:flex;align-items:center;gap:12px;">
-          <span>Taxa aplicada: <strong>1 ${moedaProp} = ${formatCurrencyByMoeda(proposta.cotacao_moeda, 'BRL')}</strong></span>
-          ${proposta.data_cotacao_moeda ? `<span style="color:#64748b;">Data da cotação: <strong>${escapeHtml(proposta.data_cotacao_moeda)}</strong></span>` : ''}
+          <span>Taxa aplicada: <strong>1 ${moedaProp} = R$ ${fmtPtax4(proposta.cotacao_moeda)}</strong></span>
+          ${ptaxDataTexto ? `<span style="color:#475569;"><strong>Cotação de fechamento de ${escapeHtml(ptaxDataTexto)}</strong></span>` : ''}
         </div>
       </div>`
     : ''
@@ -1193,20 +1213,49 @@ export function buildProposalPdfHtml(
             proposta.descricao_proposta ||
             'Equipamento'
           ).toUpperCase()
-          const valFinal = Number(proposta.valor_final ?? proposta.valor_atual ?? 0)
+
+          // PONTO 3: Subtotal da máquina LIMPO (sem comissão embutida).
+          // Se o valor gravado em valor_final embute comissão (rawFinal > comissao), removemos a comissão da linha da máquina
+          const rawFinalGravado = Number(proposta.valor_final ?? proposta.valor_atual ?? 0)
           const pEsp =
             proposta.preco_especial != null && Number(proposta.preco_especial) > 0
               ? Number(proposta.preco_especial)
               : null
-          const valSemDesc =
+          const rawSemDesc =
             proposta.valor_sem_desconto != null && Number(proposta.valor_sem_desconto) > 0
               ? Number(proposta.valor_sem_desconto)
-              : valFinal
+              : rawFinalGravado
+
+          let valEfetivoLimpo = pEsp != null && pEsp > 0 ? pEsp : rawFinalGravado
+          let valOrigLimpo = rawSemDesc > 0 ? rawSemDesc : valEfetivoLimpo
+
+          if (comissaoAplicavel && valorComissaoCalculada > 0) {
+            if (
+              baseCalculoItens > 0 &&
+              Math.abs(rawFinalGravado - (baseCalculoItens + valorComissaoCalculada)) < 0.1
+            ) {
+              valEfetivoLimpo = pEsp != null && pEsp > 0 ? pEsp : baseCalculoItens
+              valOrigLimpo = Math.max(valEfetivoLimpo, rawSemDesc - valorComissaoCalculada)
+            } else if (
+              rawFinalGravado > valorComissaoCalculada &&
+              Math.abs(rawFinalGravado - (valEfetivoLimpo + valorComissaoCalculada)) < 0.1
+            ) {
+              valEfetivoLimpo = rawFinalGravado - valorComissaoCalculada
+              valOrigLimpo = Math.max(valEfetivoLimpo, rawSemDesc - valorComissaoCalculada)
+            } else if (rawFinalGravado > valorComissaoCalculada && baseCalculoItens > 0) {
+              valEfetivoLimpo = pEsp != null && pEsp > 0 ? pEsp : baseCalculoItens
+              valOrigLimpo = Math.max(
+                valEfetivoLimpo,
+                rawSemDesc > valorComissaoCalculada
+                  ? rawSemDesc - valorComissaoCalculada
+                  : baseCalculoItens,
+              )
+            }
+          }
+
           const dPerc = Number(proposta.percentual_desconto || 0)
-          const hasDisc = dPerc > 0 || (pEsp != null && pEsp > 0) || valSemDesc > valFinal
-          const valOrig = valSemDesc > 0 ? valSemDesc : valFinal > 0 ? valFinal : pEsp || 0
-          const valEfetivo = pEsp != null && pEsp > 0 ? pEsp : valFinal
-          const valUnitEfetivo = valFinal > 0 ? valFinal : valEfetivo
+          const hasDisc = dPerc > 0 || (pEsp != null && pEsp > 0) || valOrigLimpo > valEfetivoLimpo
+          const valUnitEfetivo = valEfetivoLimpo
           const fmtM = (n: number) =>
             n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -1235,10 +1284,10 @@ export function buildProposalPdfHtml(
                   ${
                     hasDisc
                       ? `<div style="display:flex;flex-direction:column;align-items:flex-end;">
-                          <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;">${moedaProp} ${fmtM(valOrig)}</span>
+                          <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;">${moedaProp} ${fmtM(valOrigLimpo)}</span>
                           <span style="font-weight:bold;color:#0f172a;">${moedaProp} ${fmtM(valUnitEfetivo)}</span>
                          </div>`
-                      : `<span style="font-weight:bold;color:#0f172a;">${moedaProp} ${fmtM(valOrig)}</span>`
+                      : `<span style="font-weight:bold;color:#0f172a;">${moedaProp} ${fmtM(valOrigLimpo)}</span>`
                   }
                 </td>
                 <td style="padding:8px 10px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${dPerc > 0 ? `${dPerc}%` : '—'}</td>
@@ -1246,10 +1295,10 @@ export function buildProposalPdfHtml(
                   ${
                     hasDisc
                       ? `<div style="display:flex;flex-direction:column;align-items:flex-end;">
-                          <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;">${moedaProp} ${fmtM(valOrig)}</span>
-                          <span style="font-weight:bold;color:#0f172a;font-size:12px;">${moedaProp} ${fmtM(valEfetivo)}</span>
+                          <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;">${moedaProp} ${fmtM(valOrigLimpo)}</span>
+                          <span style="font-weight:bold;color:#0f172a;font-size:12px;">${moedaProp} ${fmtM(valEfetivoLimpo)}</span>
                          </div>`
-                      : `<span style="font-weight:bold;color:#0f172a;font-size:12px;">${moedaProp} ${fmtM(valEfetivo)}</span>`
+                      : `<span style="font-weight:bold;color:#0f172a;font-size:12px;">${moedaProp} ${fmtM(valEfetivoLimpo)}</span>`
                   }
                 </td>
               </tr>
@@ -1261,14 +1310,14 @@ export function buildProposalPdfHtml(
   }
 
   ${(() => {
-    // Total do fornecimento com comissão quando aplicável
+    // PONTO 3: VALOR TOTAL DO FORNECIMENTO = subtotal da máquina limpo + linha de comissão (sem soma dupla)
     const rawFinal = Number(proposta.valor_final ?? proposta.valor_atual ?? 0)
     let totalEfetivoFinal = rawFinal
     if (comissaoAplicavel && valorComissaoCalculada > 0) {
-      if (Math.abs(rawFinal - baseCalculoItens) < 0.05) {
-        totalEfetivoFinal = rawFinal + valorComissaoCalculada
-      } else {
+      if (Math.abs(rawFinal - (baseCalculoItens + valorComissaoCalculada)) < 0.1) {
         totalEfetivoFinal = rawFinal
+      } else {
+        totalEfetivoFinal = baseCalculoItens + valorComissaoCalculada
       }
     }
 

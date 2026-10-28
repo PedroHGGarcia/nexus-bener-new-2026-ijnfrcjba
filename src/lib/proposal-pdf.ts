@@ -681,14 +681,33 @@ export function generatePropostaHtml(
 
           if (!hasRealConversion) return ''
 
+          const fmtPtax4 = (n: any) =>
+            (Number(n) || 0).toLocaleString('pt-BR', {
+              minimumFractionDigits: 4,
+              maximumFractionDigits: 4,
+            })
+          const rawDataCot =
+            proposal.data_cotacao_moeda || (proposal as any)?.dados_snapshot?.data_cotacao_moeda
+          let dataCotFmt = ''
+          if (rawDataCot) {
+            const s = String(rawDataCot).trim()
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) dataCotFmt = s
+            else if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+              const [y, m, d] = s.split('T')[0].split('-')
+              if (y && m && d) dataCotFmt = `${d}/${m}/${y}`
+            } else {
+              dataCotFmt = s
+            }
+          }
+
           return `<div style="margin-bottom:12px;padding:8px 10px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;font-size:11px;color:#1e293b;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="font-weight:bold;color:#0f172a;text-transform:uppercase;font-size:10px;background:#e2e8f0;padding:2px 6px;border-radius:3px;">Câmbio / Cotação</span>
               <span>Moeda da proposta: <strong>${moedaProp}</strong> (Original: ${moedaOrig})</span>
             </div>
             <div style="display:flex;align-items:center;gap:12px;">
-              <span>Taxa aplicada: <strong>1 ${moedaProp} = ${formatCurrencyByMoeda(proposal.cotacao_moeda, 'BRL')}</strong></span>
-              ${proposal.data_cotacao_moeda ? `<span style="color:#64748b;">Data da cotação: <strong>${esc(proposal.data_cotacao_moeda)}</strong></span>` : ''}
+              <span>Taxa aplicada: <strong>1 ${moedaProp} = R$ ${fmtPtax4(proposal.cotacao_moeda)}</strong></span>
+              ${dataCotFmt ? `<span style="color:#475569;"><strong>Cotação de fechamento de ${esc(dataCotFmt)}</strong></span>` : ''}
             </div>
           </div>`
         })()}

@@ -864,7 +864,29 @@ export function buildPublicProposalHtml(
             ${clientEmail ? `<p>E-mail: ${esc(clientEmail)}</p>` : ''}
             ${
               hasRealConversion
-                ? `<p style="font-size:11px;color:#334155;margin-top:4px;"><strong>Moeda da Proposta:</strong> ${esc(moedaProp)} &bull; <strong>Cotação:</strong> 1 ${esc(moedaProp)} = ${formatCurrencyByMoeda(proposta.cotacao_moeda, 'BRL')} ${proposta.data_cotacao_moeda ? `(${esc(proposta.data_cotacao_moeda)})` : ''}</p>`
+                ? (() => {
+                    const fmtPtax4 = (n: any) =>
+                      (Number(n) || 0).toLocaleString('pt-BR', {
+                        minimumFractionDigits: 4,
+                        maximumFractionDigits: 4,
+                      })
+                    const rawData = proposta.data_cotacao_moeda || dadosSnapshot?.data_cotacao_moeda
+                    let dataFmt = ''
+                    if (rawData) {
+                      const s = String(rawData).trim()
+                      if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) dataFmt = s
+                      else if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+                        const [y, m, d] = s.split('T')[0].split('-')
+                        if (y && m && d) dataFmt = `${d}/${m}/${y}`
+                      } else {
+                        dataFmt = s
+                      }
+                    }
+                    const dataTxt = dataFmt
+                      ? ` &bull; <strong>Cotação de fechamento de ${esc(dataFmt)}</strong>`
+                      : ''
+                    return `<p style="font-size:11px;color:#334155;margin-top:4px;"><strong>Moeda da Proposta:</strong> ${esc(moedaProp)} &bull; <strong>Cotação:</strong> 1 ${esc(moedaProp)} = R$ ${fmtPtax4(proposta.cotacao_moeda)}${dataTxt}</p>`
+                  })()
                 : ''
             }
             <p style="padding-top: 10px;">A/C: <strong>${esc(contactName || 'Diretor / Gerente de Compras')}</strong></p>
@@ -999,13 +1021,33 @@ export function buildPublicProposalHtml(
           <span style="font-size:10px;color:#64748b;">${proposta.is_pacote ? 'Pacote de Máquinas' : 'Fornecimento Unitário'}</span>
         </div>
 
-        <!-- Regra 1: Bloco Câmbio/Cotação só aparece quando há conversão REAL -->
+        <!-- Regra 1: Bloco Câmbio/Cotação só aparece quando há conversão REAL (PONTO 1: 4 decimais e texto de fechamento) -->
         ${
           hasRealConversion
-            ? `<div style="background:#f8fafc;border:1px solid #cbd5e1;padding:6px 10px;border-radius:3px;font-size:10px;color:#334155;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;page-break-inside:avoid;break-inside:avoid;">
+            ? (() => {
+                const fmtPtax4 = (n: any) =>
+                  (Number(n) || 0).toLocaleString('pt-BR', {
+                    minimumFractionDigits: 4,
+                    maximumFractionDigits: 4,
+                  })
+                const rawData = proposta.data_cotacao_moeda || dadosSnapshot?.data_cotacao_moeda
+                let dataFmt = ''
+                if (rawData) {
+                  const s = String(rawData).trim()
+                  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) dataFmt = s
+                  else if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+                    const [y, m, d] = s.split('T')[0].split('-')
+                    if (y && m && d) dataFmt = `${d}/${m}/${y}`
+                  } else {
+                    dataFmt = s
+                  }
+                }
+                const dataTxt = dataFmt ? ` &bull; Cotação de fechamento de ${esc(dataFmt)}` : ''
+                return `<div style="background:#f8fafc;border:1px solid #cbd5e1;padding:6px 10px;border-radius:3px;font-size:10px;color:#334155;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;page-break-inside:avoid;break-inside:avoid;">
                  <span>Moeda da proposta: <strong>${esc(moedaProp)}</strong> (Original: ${esc(moedaOrig)})</span>
-                 <span>Taxa de Câmbio: <strong>1 ${esc(moedaProp)} = ${formatCurrencyByMoeda(proposta.cotacao_moeda, 'BRL')}</strong> ${proposta.data_cotacao_moeda ? `(${esc(proposta.data_cotacao_moeda)})` : ''}</span>
+                 <span>Taxa de Câmbio: <strong>1 ${esc(moedaProp)} = R$ ${fmtPtax4(proposta.cotacao_moeda)}</strong>${dataTxt}</span>
                </div>`
+              })()
             : ''
         }
 
@@ -1123,13 +1165,14 @@ export function buildPublicProposalHtml(
               </tr>`
               : ''
 
+          // PONTO 3: Total do Fornecimento = subtotal limpo da máquina + comissão (sem soma dupla)
           const rawFinalTotal = Number(valorFinal || 0)
           let totalFornecimento = rawFinalTotal
           if (comissaoAplicavel && valorComissaoCalculada > 0) {
-            if (Math.abs(rawFinalTotal - baseCalculoItens) < 0.05) {
-              totalFornecimento = rawFinalTotal + valorComissaoCalculada
-            } else {
+            if (Math.abs(rawFinalTotal - (baseCalculoItens + valorComissaoCalculada)) < 0.1) {
               totalFornecimento = rawFinalTotal
+            } else {
+              totalFornecimento = baseCalculoItens + valorComissaoCalculada
             }
           }
 
@@ -1199,25 +1242,87 @@ export function buildPublicProposalHtml(
                       <td style="padding:6px 8px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;">${esc(machineTitle)}</td>
                       <td style="padding:6px 8px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">1</td>
                       <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;">
-                        ${
-                          hasItemDiscount
+                        ${(() => {
+                          // PONTO 3: Subtotal da máquina LIMPO (sem comissão embutida)
+                          let vEfetivoLimpo = valorEfetivoFinal
+                          let vOrigLimpo = valorOriginalTabela
+                          if (comissaoAplicavel && valorComissaoCalculada > 0) {
+                            if (
+                              baseCalculoItens > 0 &&
+                              Math.abs(
+                                valorEfetivoFinal - (baseCalculoItens + valorComissaoCalculada),
+                              ) < 0.1
+                            ) {
+                              vEfetivoLimpo =
+                                precoEspecial != null && precoEspecial > 0
+                                  ? precoEspecial
+                                  : baseCalculoItens
+                              vOrigLimpo = Math.max(
+                                vEfetivoLimpo,
+                                valorOriginalTabela - valorComissaoCalculada,
+                              )
+                            } else if (
+                              valorEfetivoFinal > valorComissaoCalculada &&
+                              Math.abs(
+                                valorEfetivoFinal - (vEfetivoLimpo + valorComissaoCalculada),
+                              ) < 0.1
+                            ) {
+                              vEfetivoLimpo = valorEfetivoFinal - valorComissaoCalculada
+                              vOrigLimpo = Math.max(
+                                vEfetivoLimpo,
+                                valorOriginalTabela - valorComissaoCalculada,
+                              )
+                            }
+                          }
+                          return hasItemDiscount
                             ? `<div>
-                                <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>
-                                <span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valorUnitarioEfetivo, moedaProp)}</span>
+                                <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(vOrigLimpo, moedaProp)}</span>
+                                <span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(vEfetivoLimpo, moedaProp)}</span>
                               </div>`
-                            : `<span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>`
-                        }
+                            : `<span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(vOrigLimpo, moedaProp)}</span>`
+                        })()}
                       </td>
                       <td style="padding:6px 8px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${effectiveDiscountPercent > 0 ? `${effectiveDiscountPercent}%` : '—'}</td>
                       <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:bold;">
-                        ${
-                          hasItemDiscount
+                        ${(() => {
+                          // PONTO 3: Subtotal da máquina LIMPO (sem comissão embutida)
+                          let vEfetivoLimpo = valorEfetivoFinal
+                          let vOrigLimpo = valorOriginalTabela
+                          if (comissaoAplicavel && valorComissaoCalculada > 0) {
+                            if (
+                              baseCalculoItens > 0 &&
+                              Math.abs(
+                                valorEfetivoFinal - (baseCalculoItens + valorComissaoCalculada),
+                              ) < 0.1
+                            ) {
+                              vEfetivoLimpo =
+                                precoEspecial != null && precoEspecial > 0
+                                  ? precoEspecial
+                                  : baseCalculoItens
+                              vOrigLimpo = Math.max(
+                                vEfetivoLimpo,
+                                valorOriginalTabela - valorComissaoCalculada,
+                              )
+                            } else if (
+                              valorEfetivoFinal > valorComissaoCalculada &&
+                              Math.abs(
+                                valorEfetivoFinal - (vEfetivoLimpo + valorComissaoCalculada),
+                              ) < 0.1
+                            ) {
+                              vEfetivoLimpo = valorEfetivoFinal - valorComissaoCalculada
+                              vOrigLimpo = Math.max(
+                                vEfetivoLimpo,
+                                valorOriginalTabela - valorComissaoCalculada,
+                              )
+                            }
+                          }
+                          return hasItemDiscount
                             ? `<div>
-                                <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valorOriginalTabela, moedaProp)}</span>
-                                <span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(valorEfetivoFinal, moedaProp)}</span>
+                                <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(vOrigLimpo, moedaProp)}</span>
+                                <span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(vEfetivoLimpo, moedaProp)}</span>
                               </div>`
-                            : `<span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(valorEfetivoFinal, moedaProp)}</span>`
-                        }
+                            : `<span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(vEfetivoLimpo, moedaProp)}</span>`
+                        })()}
                       </td>
                     </tr>`
               }
