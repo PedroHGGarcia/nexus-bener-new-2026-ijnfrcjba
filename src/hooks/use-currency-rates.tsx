@@ -1,27 +1,28 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { fetchCurrencyRates, getCachedRates, type CurrencyRates } from '@/services/currency-rates'
 
 export function useCurrencyRates() {
-  // Inicializa imediatamente com valor em memória/localStorage ou seguro
   const [rates, setRates] = useState<CurrencyRates>(() => getCachedRates())
   const [loading, setLoading] = useState<boolean>(false)
   const [isCached, setIsCached] = useState<boolean>(() => {
     const initial = getCachedRates()
     return (
+      Boolean(initial.isOutdated) ||
       initial.source.includes('cache') ||
       initial.source === 'padrao-seguro' ||
       initial.source === 'offline-default'
     )
   })
 
-  const reload = async (force = true) => {
+  const reload = useCallback(async (force = true) => {
     setLoading(true)
     try {
       const r = await fetchCurrencyRates(force)
       if (r) {
         setRates(r)
         setIsCached(
-          r.source?.includes('cache') ||
+          Boolean(r.isOutdated) ||
+            r.source?.includes('cache') ||
             r.source === 'padrao-seguro' ||
             r.source === 'offline-default',
         )
@@ -29,7 +30,7 @@ export function useCurrencyRates() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -39,7 +40,8 @@ export function useCurrencyRates() {
         if (mounted && r) {
           setRates(r)
           setIsCached(
-            r.source?.includes('cache') ||
+            Boolean(r.isOutdated) ||
+              r.source?.includes('cache') ||
               r.source === 'padrao-seguro' ||
               r.source === 'offline-default',
           )
