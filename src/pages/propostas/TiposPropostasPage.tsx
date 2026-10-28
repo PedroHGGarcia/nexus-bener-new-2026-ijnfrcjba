@@ -31,7 +31,7 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
 import { Textarea } from '@/components/ui/textarea'
-import { Plus, Search, Edit, Trash2, Loader2, Clock, User, Info, Upload, Eye } from 'lucide-react'
+import { Plus, Search, Edit, Trash2, Loader2, Clock, User, Info, Eye } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -52,13 +52,11 @@ import { useDebounce } from '@/hooks/use-debounce'
 import { formatDate, formatDateTime } from '@/lib/format'
 import { useAuth } from '@/hooks/use-auth'
 import { CustomFieldsEditor, CustomField } from '@/components/propostas/CustomFieldsEditor'
-import { ImportTiposPropostasSheet } from '@/components/propostas/ImportTiposPropostasSheet'
 import {
   fetchTiposProposta,
   insertTipoProposta,
   updateTipoProposta,
   deleteTipoProposta,
-  deleteAllTiposProposta,
   checkNomeDuplicate,
 } from '@/services/tipos-proposta'
 import { TipoProposta } from '@/types/tipo-proposta'
@@ -155,9 +153,6 @@ export default function TiposPropostasPage() {
   const [saving, setSaving] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<TipoProposta | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [deleteAllOpen, setDeleteAllOpen] = useState(false)
-  const [deletingAll, setDeletingAll] = useState(false)
-  const [importSheetOpen, setImportSheetOpen] = useState(false)
   const debouncedSearch = useDebounce(search, 300)
 
   const loadData = useCallback(async () => {
@@ -304,54 +299,11 @@ export default function TiposPropostasPage() {
     }
   }
 
-  const handleDeleteAll = async () => {
-    setDeletingAll(true)
-    try {
-      const count = await deleteAllTiposProposta()
-      toast({
-        title: 'Tipos de proposta excluídos',
-        description: `${count} registro${count !== 1 ? 's' : ''} removido${count !== 1 ? 's' : ''} com sucesso.`,
-      })
-      setDeleteAllOpen(false)
-      loadData()
-    } catch (err) {
-      toast({
-        title: 'Erro ao excluir todos os tipos',
-        description: err instanceof Error ? err.message : '',
-        variant: 'destructive',
-      })
-    } finally {
-      setDeletingAll(false)
-    }
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-2">
         <h1 className="text-2xl font-bold">Tipos de Propostas</h1>
         <div className="flex items-center gap-2">
-          {data.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={() => setDeleteAllOpen(true)}
-              disabled={deletingAll || loading}
-              className="gap-1.5 text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive hover:border-destructive"
-            >
-              {deletingAll ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4" />
-              )}
-              Apagar Todos
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            onClick={() => setImportSheetOpen(true)}
-            className="gap-1.5 border-[#0b3c26]/40 text-[#0b3c26] hover:bg-[#0b3c26]/10"
-          >
-            <Upload className="w-4 h-4" /> Importar / Atualizar CSV
-          </Button>
           <Button onClick={handleNew} className="bg-primary gap-1">
             <Plus className="w-4 h-4" /> Novo
           </Button>
@@ -755,46 +707,6 @@ export default function TiposPropostasPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <AlertDialog
-        open={deleteAllOpen}
-        onOpenChange={(open) => {
-          if (!deletingAll) setDeleteAllOpen(open)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="w-5 h-5 text-destructive" />
-              Apagar todos os tipos de proposta
-            </AlertDialogTitle>
-            <p className="text-sm text-muted-foreground">
-              Tem certeza que deseja excluir <strong>TODOS</strong> os{' '}
-              <strong>{data.length}</strong> tipos de proposta? Esta ação não pode ser desfeita.
-            </p>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deletingAll}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault()
-                handleDeleteAll()
-              }}
-              disabled={deletingAll}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground gap-2"
-            >
-              {deletingAll && <Loader2 className="w-4 h-4 animate-spin" />}
-              {deletingAll ? 'Excluindo...' : 'Sim, excluir todos'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <ImportTiposPropostasSheet
-        open={importSheetOpen}
-        onOpenChange={setImportSheetOpen}
-        onSuccess={loadData}
-      />
 
       {/* Diálogo de visualização do tipo de proposta com segmentação de parágrafos */}
       <Dialog open={!!viewing} onOpenChange={(open) => !open && setViewing(null)}>
