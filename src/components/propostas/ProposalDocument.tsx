@@ -152,9 +152,8 @@ export function ProposalDocument({ proposal }: Props) {
 
   useEffect(() => {
     // Se a proposta possui override local explícito (tipo_proposta_override), prioriza-o
-    const overrideTp = (proposal.tipo_proposta_override || snapshotRoot?.tipo_proposta_override) as
-      | TipoProposta
-      | undefined
+    const overrideTp = (proposal?.tipo_proposta_override ||
+      snapshotRoot?.tipo_proposta_override) as TipoProposta | undefined
 
     // Se o snapshot congelou tipo_proposta_detalhes, usa ele
     const snapshotTp = (overrideTp || snapshotRoot?.tipo_proposta_detalhes) as
@@ -166,13 +165,13 @@ export function ProposalDocument({ proposal }: Props) {
       if (snapshotTp.nome) {
         setTiposPropostaMap((prev) => ({ ...prev, [snapshotTp.nome!]: snapshotTp }))
       }
-      if (proposal.tipo_proposta && proposal.tipo_proposta !== snapshotTp.nome) {
+      if (proposal?.tipo_proposta && proposal.tipo_proposta !== snapshotTp.nome) {
         setTiposPropostaMap((prev) => ({ ...prev, [proposal.tipo_proposta!]: snapshotTp }))
       }
     }
 
     // Se temos itens com tipo_proposta_detalhes congelados em itens_snapshot, popula também
-    const rawSnapshot = proposal.itens_snapshot
+    const rawSnapshot = proposal?.itens_snapshot
     if (Array.isArray(rawSnapshot)) {
       const mapFromItems: Record<string, TipoProposta> = {}
       rawSnapshot.forEach((it) => {
@@ -185,7 +184,7 @@ export function ProposalDocument({ proposal }: Props) {
       }
     }
 
-    if (!proposal.tipo_proposta) return
+    if (!proposal?.tipo_proposta) return
 
     // Se não veio do snapshot nem do override, faz a busca viva (fallback de compatibilidade)
     if (!snapshotTp) {
@@ -202,15 +201,17 @@ export function ProposalDocument({ proposal }: Props) {
           }
         })
     }
-  }, [proposal.tipo_proposta, proposal.tipo_proposta_override, snapshotRoot])
+  }, [proposal?.tipo_proposta, proposal?.tipo_proposta_override, snapshotRoot])
 
   // No modo pacote (ou quando há itens de equipamento), busca os detalhes dos tipos faltantes
   useEffect(() => {
     const nomes = new Set<string>()
-    if (proposal.tipo_proposta) nomes.add(proposal.tipo_proposta)
-    equipmentItems.forEach((it) => {
-      if (it.tipo_proposta) nomes.add(it.tipo_proposta)
-    })
+    if (proposal?.tipo_proposta) nomes.add(proposal.tipo_proposta)
+    if (Array.isArray(equipmentItems)) {
+      equipmentItems.forEach((it) => {
+        if (it?.tipo_proposta) nomes.add(it.tipo_proposta)
+      })
+    }
     const nomesArray = Array.from(nomes).filter((n) => Boolean(n) && !tiposPropostaMap[n])
     if (nomesArray.length === 0) return
 
@@ -223,7 +224,7 @@ export function ProposalDocument({ proposal }: Props) {
           setTiposPropostaMap((prev) => {
             const map: Record<string, TipoProposta> = { ...prev }
             data.forEach((row) => {
-              if (row.nome) {
+              if (row?.nome) {
                 map[row.nome] = row as unknown as TipoProposta
               }
             })
@@ -231,7 +232,7 @@ export function ProposalDocument({ proposal }: Props) {
           })
         }
       })
-  }, [proposal.is_pacote, proposal.tipo_proposta, equipmentItems, tiposPropostaMap])
+  }, [proposal?.is_pacote, proposal?.tipo_proposta, equipmentItems, tiposPropostaMap])
 
   const rawIpiVal =
     proposal.imposto_ipi != null && String(proposal.imposto_ipi).trim() !== ''
@@ -345,7 +346,11 @@ export function ProposalDocument({ proposal }: Props) {
     : '—'
   const numeroBase = (proposal.numero_proposta || '').trim()
   const numeroOferta = numeroBase || '—'
-  const dataEmissao = proposal.dt_cad ? new Date(`${proposal.dt_cad}T12:00:00`) : new Date()
+  const rawCad = proposal.dt_cad ? String(proposal.dt_cad).trim() : ''
+  const parsedDate = rawCad
+    ? new Date(rawCad.includes('T') ? rawCad : `${rawCad}T12:00:00`)
+    : new Date()
+  const dataEmissao = isNaN(parsedDate.getTime()) ? new Date() : parsedDate
   const mesOferta = String(dataEmissao.getMonth() + 1).padStart(2, '0')
   const anoOferta = String(dataEmissao.getFullYear())
   const dataPorExtenso = dataEmissao.toLocaleDateString('pt-BR', {
@@ -353,7 +358,9 @@ export function ProposalDocument({ proposal }: Props) {
     month: 'long',
     year: 'numeric',
   })
-  const dataPorExtensoCap = dataPorExtenso.charAt(0).toUpperCase() + dataPorExtenso.slice(1)
+  const dataPorExtensoCap = dataPorExtenso
+    ? dataPorExtenso.charAt(0).toUpperCase() + dataPorExtenso.slice(1)
+    : ''
   const siglaBox = (
     <div className="border border-black text-[9px] leading-tight text-black shrink-0 break-inside-avoid min-w-[280px] max-w-[340px] w-auto">
       <div className="grid grid-cols-[auto_1fr_auto_auto] divide-x divide-black items-stretch">
@@ -449,62 +456,63 @@ export function ProposalDocument({ proposal }: Props) {
         : 0
 
   // Ponto 13: Cálculo de Serviços e Comissão Bener (Admissão Temporária / Importação Direta)
-  const overrideTp = (proposal.tipo_proposta_override || snapshotRoot?.tipo_proposta_override) as
+  const overrideTp = (proposal?.tipo_proposta_override || snapshotRoot?.tipo_proposta_override) as
     | TipoProposta
     | undefined
-  const currentTipoNome = overrideTp?.nome || proposal.tipo_proposta || tipoProposta?.nome || null
+  const currentTipoNome = overrideTp?.nome || proposal?.tipo_proposta || tipoProposta?.nome || null
   const currentTipoComissao =
     overrideTp?.comissao != null
-      ? Number(overrideTp.comissao)
+      ? Number(overrideTp.comissao) || 0
       : tipoProposta?.comissao != null
-        ? Number(tipoProposta.comissao)
+        ? Number(tipoProposta.comissao) || 0
         : 0
 
   // Base de cálculo da comissão:
   // REGRA NOVA: comissão calculada SEMPRE sobre o VALOR FINAL da proposta (com preço especial aplicado).
-  const proposalAny = proposal as any
+  const proposalAny = (proposal || {}) as any
   const baseCalculoItens = useMemo(() => {
     // 1. Se houver base persistida válida no snapshot/proposta, respeita
     const basePersistida = Number(
-      proposalAny.base_comissao_servicos || snapshotRoot?.base_comissao_servicos || 0,
+      proposalAny?.base_comissao_servicos || snapshotRoot?.base_comissao_servicos || 0,
     )
-    if (basePersistida > 0) {
+    if (!isNaN(basePersistida) && basePersistida > 0) {
       return basePersistida
     }
 
     // 2. Preço especial ou valor final da proposta
     const precoEspecialVal =
-      proposal.preco_especial != null && Number(proposal.preco_especial) > 0
+      proposal?.preco_especial != null && Number(proposal.preco_especial) > 0
         ? Number(proposal.preco_especial)
         : null
     if (precoEspecialVal != null && precoEspecialVal > 0) {
       return precoEspecialVal
     }
 
-    const valorFinalNum = Number(proposal.valor_final ?? proposal.valor_atual ?? 0)
-    if (valorFinalNum > 0) {
+    const valorFinalNum = Number(proposal?.valor_final ?? proposal?.valor_atual ?? 0)
+    if (!isNaN(valorFinalNum) && valorFinalNum > 0) {
       return valorFinalNum
     }
 
     // 3. Fallback: soma dos itens com desconto
     let total = 0
-    if (proposal.is_pacote && equipmentItems.length > 0) {
+    if (proposal?.is_pacote && Array.isArray(equipmentItems) && equipmentItems.length > 0) {
       equipmentItems.forEach((item) => {
-        const qtd = item.quantidade || 1
+        if (!item) return
+        const qtd = Number(item.quantidade) || 1
         const valUnit = Number(item.valor_unitario || 0)
         const descPct = Number(item.desconto_percentual || 0)
         const descVal = Number(item.desconto_valor || 0)
         const subtotal = qtd * valUnit
         const totalItem =
           descVal > 0 ? Math.max(0, subtotal - descVal) : subtotal * (1 - descPct / 100)
-        total += totalItem
+        total += isNaN(totalItem) ? 0 : totalItem
       })
     } else {
-      total = valorEfetivoFinal
+      total = Number(valorEfetivoFinal) || 0
     }
 
     // Soma opcionais inclusos
-    if (Array.isArray(proposal.acessorios_proposta)) {
+    if (Array.isArray(proposal?.acessorios_proposta)) {
       type AccItem = {
         valor?: number
         inclusao?: string
@@ -514,47 +522,49 @@ export function ProposalDocument({ proposal }: Props) {
       }
       const rawAcc = proposal.acessorios_proposta as AccItem[]
       rawAcc.forEach((a) => {
+        if (!a) return
         const isInc = a.inclusao === 'incluir' || a.inclusao === 'preco' || a.inclusao === undefined
         if (isInc && a.valor != null && Number(a.valor) > 0) {
-          const q = a.quantidade || 1
+          const q = Number(a.quantidade) || 1
           const sub = q * Number(a.valor)
           const dPct = Number(a.desconto_percentual || 0)
           const dVal = Number(a.desconto_valor || 0)
           const tot = dVal > 0 ? Math.max(0, sub - dVal) : sub * (1 - dPct / 100)
-          total += tot
+          total += isNaN(tot) ? 0 : tot
         }
       })
     }
 
     return Math.round(total * 100) / 100
   }, [
-    proposalAny.base_comissao_servicos,
+    proposalAny?.base_comissao_servicos,
     snapshotRoot?.base_comissao_servicos,
-    proposal.preco_especial,
-    proposal.valor_final,
-    proposal.valor_atual,
-    proposal.is_pacote,
+    proposal?.preco_especial,
+    proposal?.valor_final,
+    proposal?.valor_atual,
+    proposal?.is_pacote,
     equipmentItems,
     valorEfetivoFinal,
-    proposal.acessorios_proposta,
+    proposal?.acessorios_proposta,
   ])
 
   const comissaoServicosInfo = useMemo(() => {
     // 3 níveis: persistido direto na proposta > snapshot > cálculo via calcComissaoServicosBener
-    const valPersistido = Number(
-      proposalAny.valor_comissao_servicos ?? snapshotRoot?.valor_comissao_servicos ?? 0,
-    )
-    const pctPersistido = Number(
-      proposalAny.percentual_comissao_servicos ??
-        snapshotRoot?.percentual_comissao_servicos ??
-        currentTipoComissao,
-    )
+    const rawValPersistido =
+      proposalAny?.valor_comissao_servicos ?? snapshotRoot?.valor_comissao_servicos ?? 0
+    const valPersistido = Number(rawValPersistido) || 0
+
+    const rawPctPersistido =
+      proposalAny?.percentual_comissao_servicos ??
+      snapshotRoot?.percentual_comissao_servicos ??
+      currentTipoComissao
+    const pctPersistido = Number(rawPctPersistido) || 0
 
     if (valPersistido > 0) {
       return {
         isApplicable: true,
         percentual: pctPersistido,
-        baseCalculo: baseCalculoItens,
+        baseCalculo: baseCalculoItens || 0,
         valorCalculado: valPersistido,
         textoDescritivo:
           'Pagamento Brasil: Serviços e Comissão Bener. Itens considerados p/ base de cálculo: Máquina; Opcionais Inclusos e Impostos sobre serviços Bener',
@@ -564,11 +574,11 @@ export function ProposalDocument({ proposal }: Props) {
     return calcComissaoServicosBener({
       tipoNome: currentTipoNome,
       comissaoPct: currentTipoComissao,
-      baseValor: baseCalculoItens,
+      baseValor: baseCalculoItens || 0,
     })
   }, [
-    proposalAny.valor_comissao_servicos,
-    proposalAny.percentual_comissao_servicos,
+    proposalAny?.valor_comissao_servicos,
+    proposalAny?.percentual_comissao_servicos,
     snapshotRoot?.valor_comissao_servicos,
     snapshotRoot?.percentual_comissao_servicos,
     currentTipoNome,
@@ -576,25 +586,25 @@ export function ProposalDocument({ proposal }: Props) {
     baseCalculoItens,
   ])
 
-  const valorComissaoCalculada = comissaoServicosInfo?.valorCalculado || 0
+  const valorComissaoCalculada = Number(comissaoServicosInfo?.valorCalculado) || 0
 
   // Se a proposta já persistiu o valor_final com a comissão (criada via form novo),
   // ou se é uma proposta antiga onde precisamos somar, garantimos que o total
   // exibido contenha a comissão caso o valor_final armazenado não reflita isso.
   // Regra do Ponto 13: O VALOR TOTAL DO FORNECIMENTO reflete a soma (valor anterior + comissão calculada).
   const valorTotalFornecimentoExibido = useMemo(() => {
-    const rawFinal = Number(proposal.valor_final || 0)
+    const rawFinal = Number(proposal?.valor_final || 0)
     // Se a proposta não tem comissão aplicável, usa o valor_final gravado
     if (!comissaoServicosInfo || valorComissaoCalculada <= 0) {
       return rawFinal
     }
     // Se o valor_final armazenado for igual ou muito próximo da base antes da comissão,
     // soma a comissão; se já incluir (ex: valor_final >= base + comissao - 0.05), mantém rawFinal.
-    if (Math.abs(rawFinal - baseCalculoItens) < 0.05) {
+    if (Math.abs(rawFinal - (baseCalculoItens || 0)) < 0.05) {
       return rawFinal + valorComissaoCalculada
     }
     return rawFinal
-  }, [proposal.valor_final, comissaoServicosInfo, valorComissaoCalculada, baseCalculoItens])
+  }, [proposal?.valor_final, comissaoServicosInfo, valorComissaoCalculada, baseCalculoItens])
 
   const hasTiposPropostaDetails =
     proposal.tipo_proposta ||
@@ -1415,12 +1425,13 @@ export function ProposalDocument({ proposal }: Props) {
                   <tbody>
                     {proposal.is_pacote && equipmentItems.length > 0 ? (
                       equipmentItems.map((item, idx) => {
+                        if (!item) return null
                         const itemNome =
                           item.versoes?.nome || item.versoes?.nome_abreviado || `Item ${idx + 1}`
                         const itemMoeda = normalizeMoedaCode(
                           item.versoes?.moeda || proposal.moeda || 'BRL',
                         )
-                        const qtd = item.quantidade || 1
+                        const qtd = Number(item.quantidade) || 1
                         const valUnit = Number(item.valor_unitario || 0)
                         const descPct = Number(item.desconto_percentual || 0)
                         const descVal = Number(item.desconto_valor || 0)
