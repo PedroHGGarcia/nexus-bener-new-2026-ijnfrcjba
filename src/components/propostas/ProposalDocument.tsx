@@ -468,32 +468,12 @@ export function ProposalDocument({ proposal }: Props) {
         : 0
 
   // Base de cálculo da comissão:
-  // REGRA NOVA: comissão calculada SEMPRE sobre o VALOR FINAL da proposta (com preço especial aplicado).
+  // PONTO 3: Subtotal da máquina DEVE ser limpo (sem comissão embutida).
+  // A comissão fica em linha separada. O Valor Total do Fornecimento = subtotal limpo + comissão.
   const proposalAny = (proposal || {}) as any
-  const baseCalculoItens = useMemo(() => {
-    // 1. Se houver base persistida válida no snapshot/proposta, respeita
-    const basePersistida = Number(
-      proposalAny?.base_comissao_servicos || snapshotRoot?.base_comissao_servicos || 0,
-    )
-    if (!isNaN(basePersistida) && basePersistida > 0) {
-      return basePersistida
-    }
 
-    // 2. Preço especial ou valor final da proposta
-    const precoEspecialVal =
-      proposal?.preco_especial != null && Number(proposal.preco_especial) > 0
-        ? Number(proposal.preco_especial)
-        : null
-    if (precoEspecialVal != null && precoEspecialVal > 0) {
-      return precoEspecialVal
-    }
-
-    const valorFinalNum = Number(proposal?.valor_final ?? proposal?.valor_atual ?? 0)
-    if (!isNaN(valorFinalNum) && valorFinalNum > 0) {
-      return valorFinalNum
-    }
-
-    // 3. Fallback: soma dos itens com desconto
+  // 1. Calcula o subtotal limpo das máquinas + acessórios opcionais inclusos
+  const subtotalMaquinasLimpo = useMemo(() => {
     let total = 0
     if (proposal?.is_pacote && Array.isArray(equipmentItems) && equipmentItems.length > 0) {
       equipmentItems.forEach((item) => {
@@ -508,7 +488,13 @@ export function ProposalDocument({ proposal }: Props) {
         total += isNaN(totalItem) ? 0 : totalItem
       })
     } else {
-      total = Number(valorEfetivoFinal) || 0
+      // Máquina única: Se o valor da versão estiver disponível, prioriza
+      const versaoVal = Number(primaryVersao?.valor || 0)
+      if (versaoVal > 0) {
+        total = versaoVal
+      } else {
+        total = Number(valorEfetivoFinal) || 0
+      }
     }
 
     // Soma opcionais inclusos
@@ -537,19 +523,47 @@ export function ProposalDocument({ proposal }: Props) {
 
     return Math.round(total * 100) / 100
   }, [
-    proposalAny?.base_comissao_servicos,
-    snapshotRoot?.base_comissao_servicos,
-    proposal?.preco_especial,
-    proposal?.valor_final,
-    proposal?.valor_atual,
     proposal?.is_pacote,
     equipmentItems,
+    primaryVersao?.valor,
     valorEfetivoFinal,
     proposal?.acessorios_proposta,
   ])
 
+  const baseCalculoItens = useMemo(() => {
+    // Se houver base persistida válida no snapshot/proposta, respeita
+    const basePersistida = Number(
+      proposalAny?.base_comissao_servicos || snapshotRoot?.base_comissao_servicos || 0,
+    )
+    if (!isNaN(basePersistida) && basePersistida > 0) {
+      return basePersistida
+    }
+
+    // Preço especial se houver
+    const precoEspecialVal =
+      proposal?.preco_especial != null && Number(proposal.preco_especial) > 0
+        ? Number(proposal.preco_especial)
+        : null
+    if (precoEspecialVal != null && precoEspecialVal > 0) {
+      return precoEspecialVal
+    }
+
+    if (subtotalMaquinasLimpo > 0) {
+      return subtotalMaquinasLimpo
+    }
+
+    const valorFinalNum = Number(proposal?.valor_final ?? proposal?.valor_atual ?? 0)
+    return isNaN(valorFinalNum) ? 0 : valorFinalNum
+  }, [
+    proposalAny?.base_comissao_servicos,
+    snapshotRoot?.base_comissao_servicos,
+    proposal?.preco_especial,
+    subtotalMaquinasLimpo,
+    proposal?.valor_final,
+    proposal?.valor_atual,
+  ])
+
   const comissaoServicosInfo = useMemo(() => {
-    // 3 níveis: persistido direto na proposta > snapshot > cálculo via calcComissaoServicosBener
     const rawValPersistido =
       proposalAny?.valor_comissao_servicos ?? snapshotRoot?.valor_comissao_servicos ?? 0
     const valPersistido = Number(rawValPersistido) || 0
@@ -587,24 +601,51 @@ export function ProposalDocument({ proposal }: Props) {
   ])
 
   const valorComissaoCalculada = Number(comissaoServicosInfo?.valorCalculado) || 0
+  const isComissaoAtiva = Boolean(comissaoServicosInfo && valorComissaoCalculada > 0)
 
-  // Se a proposta já persistiu o valor_final com a comissão (criada via form novo),
-  // ou se é uma proposta antiga onde precisamos somar, garantimos que o total
-  // exibido contenha a comissão caso o valor_final armazenado não reflita isso.
-  // Regra do Ponto 13: O VALOR TOTAL DO FORNECIMENTO reflete a soma (valor anterior + comissão calculada).
+  // PONTO 3: Garantir linha da máquina limpa (sem comissão)
+  // Se o valor_final gravado embute comissão (rawFinal ~= base + comissao), subtrair comissão na linha da máquina!
+  const rawValorFinalGravado = Number(proposal?.valor_final || 0)
+  const valorMaquinaLimpoLinha = useMemo(() => {
+    if (!isComissaoAtiva) return valorEfetivoFinal
+    // Se temos subtotalMaquinasLimpo confiável > 0, usa-o
+    if (subtotalMaquinasLimpo > 0) {
+      return subtotalMaquinasLimpo
+    }
+    // Se rawValorFinalGravado tem comissão embutida, remove
+    if (rawValorFinalGravado > valorComissaoCalculada) {
+      return rawValorFinalGravado - valorComissaoCalculada
+    }
+    return valorEfetivoFinal
+  }, [
+    isComissaoAtiva,
+    subtotalMaquinasLimpo,
+    rawValorFinalGravado,
+    valorComissaoCalculada,
+    valorEfetivoFinal,
+  ])
+
+  // PONTO 3: VALOR TOTAL DO FORNECIMENTO = subtotal da máquina limpo + comissão (sem soma dupla)
   const valorTotalFornecimentoExibido = useMemo(() => {
-    const rawFinal = Number(proposal?.valor_final || 0)
-    // Se a proposta não tem comissão aplicável, usa o valor_final gravado
-    if (!comissaoServicosInfo || valorComissaoCalculada <= 0) {
-      return rawFinal
+    if (proposal?.preco_especial != null && Number(proposal.preco_especial) > 0) {
+      return Number(proposal.preco_especial)
     }
-    // Se o valor_final armazenado for igual ou muito próximo da base antes da comissão,
-    // soma a comissão; se já incluir (ex: valor_final >= base + comissao - 0.05), mantém rawFinal.
-    if (Math.abs(rawFinal - (baseCalculoItens || 0)) < 0.05) {
-      return rawFinal + valorComissaoCalculada
+    if (!isComissaoAtiva) {
+      return rawValorFinalGravado > 0 ? rawValorFinalGravado : valorEfetivoFinal
     }
-    return rawFinal
-  }, [proposal?.valor_final, comissaoServicosInfo, valorComissaoCalculada, baseCalculoItens])
+    // Se o valor_final já tinha comissão somada (ex: rawFinal >= valorMaquinaLimpoLinha + valorComissaoCalculada - 0.05)
+    if (Math.abs(rawValorFinalGravado - (valorMaquinaLimpoLinha + valorComissaoCalculada)) < 0.1) {
+      return rawValorFinalGravado
+    }
+    return valorMaquinaLimpoLinha + valorComissaoCalculada
+  }, [
+    proposal?.preco_especial,
+    isComissaoAtiva,
+    rawValorFinalGravado,
+    valorEfetivoFinal,
+    valorMaquinaLimpoLinha,
+    valorComissaoCalculada,
+  ])
 
   const hasTiposPropostaDetails =
     proposal.tipo_proposta ||
@@ -719,11 +760,6 @@ export function ProposalDocument({ proposal }: Props) {
                             {idx + 1}. {itemNome}
                           </h2>
                         </div>
-                        {itemTipoNome && (
-                          <div className="inline-block mt-0.5 bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded text-[9.5px] font-semibold text-slate-800">
-                            Tipo: {itemTipoNome}
-                          </div>
-                        )}
                       </div>
 
                       {/* Foto da máquina */}
@@ -905,11 +941,6 @@ export function ProposalDocument({ proposal }: Props) {
                               </h3>
                             </div>
                             <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-600 mt-1">
-                              {tipoDesc && (
-                                <span className="bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded font-semibold text-slate-800">
-                                  Tipo: {tipoDesc}
-                                </span>
-                              )}
                               <span className="font-medium">
                                 Quantidade:{' '}
                                 <strong className="text-slate-900">{item.quantidade}</strong>
@@ -1172,9 +1203,6 @@ export function ProposalDocument({ proposal }: Props) {
                                     Condições e Detalhes do Tipo de Proposta
                                   </h4>
                                 </div>
-                                <span className="text-[9.5px] font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-1.5 py-0.2 rounded">
-                                  {tipoDesc}
-                                </span>
                               </div>
                               <div className="border border-slate-200 rounded-sm divide-y divide-slate-100 bg-white">
                                 {tipoCampos.map((tc, tcIdx) => (
@@ -1496,11 +1524,11 @@ export function ProposalDocument({ proposal }: Props) {
                                 {fmtCurrency(valorOriginalTabela, proposal.moeda)}
                               </span>
                               <span className="text-slate-900 block whitespace-nowrap">
-                                {fmtCurrency(valorEfetivoFinal, proposal.moeda)}
+                                {fmtCurrency(valorMaquinaLimpoLinha, proposal.moeda)}
                               </span>
                             </div>
                           ) : (
-                            <span>{fmtCurrency(valorEfetivoFinal, proposal.moeda)}</span>
+                            <span>{fmtCurrency(valorMaquinaLimpoLinha, proposal.moeda)}</span>
                           )}
                         </td>
                       </tr>

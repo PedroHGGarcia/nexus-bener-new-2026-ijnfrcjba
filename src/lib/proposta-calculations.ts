@@ -157,6 +157,41 @@ export function isTipoAdmissaoOrImportacao(tipoNome?: string | null): boolean {
   return false
 }
 
+export type ShippingGroup = 'importacao_direta' | 'nacionalizada' | 'outro'
+
+/**
+ * Ponto 4 — Identifica o grupo de método de envio / logística do tipo de proposta:
+ * - 'importacao_direta': tipos que contenham "Importação Direta" (inclui variações CIF, FOB, etc)
+ * - 'nacionalizada': tipos que contenham "Nacionalizada"
+ * - 'outro': demais tipos
+ */
+export function getShippingGroupFromTipoNome(tipoNome?: string | null): ShippingGroup {
+  if (!tipoNome || typeof tipoNome !== 'string') return 'outro'
+  const clean = tipoNome
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+
+  if (clean.includes('importacao direta')) {
+    return 'importacao_direta'
+  }
+  if (clean.includes('nacionalizada')) {
+    return 'nacionalizada'
+  }
+  return 'outro'
+}
+
+export function getShippingGroupLabel(group: ShippingGroup): string {
+  switch (group) {
+    case 'importacao_direta':
+      return 'Importação Direta'
+    case 'nacionalizada':
+      return 'Nacionalizada'
+    default:
+      return 'Outro Método'
+  }
+}
+
 export type BaseComissaoModo = 'completa' | 'maquina'
 
 export const TEXTO_COMISSAO_BENER_VERBATIM =
