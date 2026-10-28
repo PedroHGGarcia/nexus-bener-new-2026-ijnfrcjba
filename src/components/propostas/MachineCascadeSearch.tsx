@@ -362,6 +362,8 @@ export function MachineCascadeSearch({
         v.nome,
         v.nome_abreviado ?? '',
         v.cod_erp ?? '',
+        v.especificacoes_tecnicas ?? '',
+        v.caracteristicas_construtivas ?? '',
         v._modeloNome,
         v._marcaNome,
         v._produtoNome,
@@ -619,8 +621,20 @@ export function MachineCascadeSearch({
                             )}
                           />
                           <div className="flex flex-col min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="truncate text-sm font-semibold">{v.nome}</span>
+                            <span
+                              className="text-sm font-semibold leading-snug break-words max-h-[4.5rem] overflow-hidden select-text"
+                              title={v.nome}
+                            >
+                              {v.nome}
+                            </span>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <span
+                                className="text-xs text-muted-foreground break-words"
+                                title={`${v._categoriaNome} › ${v._produtoNome} › ${v._marcaNome} › ${v._modeloNome}`}
+                              >
+                                {v._categoriaNome} › {v._produtoNome} › {v._marcaNome} ›{' '}
+                                {v._modeloNome}
+                              </span>
                               {v.cod_erp && (
                                 <Badge
                                   variant="outline"
@@ -630,12 +644,8 @@ export function MachineCascadeSearch({
                                 </Badge>
                               )}
                             </div>
-                            <span className="truncate text-xs text-muted-foreground">
-                              {v._categoriaNome} › {v._produtoNome} › {v._marcaNome} ›{' '}
-                              {v._modeloNome}
-                            </span>
                           </div>
-                          <span className="text-xs font-semibold text-[#0b3c26] dark:text-emerald-400 shrink-0 ml-2 tabular-nums">
+                          <span className="text-xs font-semibold text-[#0b3c26] dark:text-emerald-400 shrink-0 ml-2 tabular-nums self-start mt-0.5">
                             {formatCurrencyByMoeda(v.valor ?? 0, v.moeda)}
                           </span>
                         </CommandItem>

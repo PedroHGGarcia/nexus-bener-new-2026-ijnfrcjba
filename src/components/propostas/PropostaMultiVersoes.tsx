@@ -33,7 +33,14 @@ import {
   SelectedAcessorio,
 } from '@/components/propostas/PropostaAcessoriosSection'
 import { VersaoWithModelo } from '@/types/versao'
-import { calculateLineTotal, calculateSubtotal } from '@/lib/proposta-calculations'
+import {
+  calculateLineTotal,
+  calculateSubtotal,
+  getShippingGroupFromTipoNome,
+  getShippingGroupLabel,
+  ShippingGroup,
+} from '@/lib/proposta-calculations'
+import { useToast } from '@/hooks/use-toast'
 import { useDebounce } from '@/hooks/use-debounce'
 import { searchVersoesAtivas, VersaoSearchResult } from '@/services/versoes'
 import { useGerenteCategoryRestriction } from '@/hooks/use-gerente-restriction'
@@ -84,6 +91,7 @@ export function PropostaMultiVersoes({
   acessorios = [],
   onAcessoriosChange,
 }: Props) {
+  const { toast } = useToast()
   const restriction = useGerenteCategoryRestriction()
   const [selectedVersaoId, setSelectedVersaoId] = useState('')
   const [selectedVersaoObj, setSelectedVersaoObj] = useState<SelectedVersaoSummary | null>(null)
@@ -91,6 +99,7 @@ export function PropostaMultiVersoes({
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<VersaoSearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [versaoTiposCache, setVersaoTiposCache] = useState<Record<string, string[]>>({})
 
   // Debounce da busca para não disparar requisição a cada caractere
   const debouncedQuery = useDebounce(searchQuery, 300)
@@ -154,6 +163,21 @@ export function PropostaMultiVersoes({
     const v = selectedVersaoObj || versoes.find((x) => x.id === selectedVersaoId)
     if (!v) return
 
+    // Validação de compatibilidade de shipping group se já existe uma máquina no pacote
+    if (pacoteShippingGroup) {
+      const machineGroup = getMachineShippingGroup(v.id)
+      if (machineGroup && machineGroup !== pacoteShippingGroup) {
+        const machineLabel = getShippingGroupLabel(machineGroup)
+        const pacoteLabel = getShippingGroupLabel(pacoteShippingGroup)
+        toast({
+          title: 'Tipo de fornecimento incompatível',
+          description: `Esta máquina é ${machineLabel} e o pacote já contém máquinas de ${pacoteLabel}. Pacotes só aceitam máquinas com o mesmo tipo de fornecimento.`,
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
     // BUG 2: Uma nova máquina adicionada ao pacote NUNCA herda acessórios antigos
     if (onAcessoriosChange) {
       onAcessoriosChange(acessorios.filter((a) => a.versao_id !== v.id))
@@ -186,7 +210,7 @@ export function PropostaMultiVersoes({
   const [tiposPorVersao, setTiposPorVersao] = useState<Record<string, TipoProposta[]>>({})
   const [loadingTiposMap, setLoadingTiposMap] = useState<Record<string, boolean>>({})
 
-  // Carrega tipos de proposta para cada máquina do pacote
+  // Carrega tipos de proposta para cada máquina do pacote e sincroniza versaoTiposCache
   useEffect(() => {
     const versaoIds = Array.from(new Set(items.map((i) => i.versao_id).filter(Boolean)))
     versaoIds.forEach((vid) => {
@@ -195,23 +219,77 @@ export function PropostaMultiVersoes({
       setLoadingTiposMap((prev) => ({ ...prev, [vid]: true }))
       fetchTiposPropostaByVersaoId(vid, true)
         .then(async (list) => {
-          if (list && list.length > 0) {
-            setTiposPorVersao((prev) => ({ ...prev, [vid]: list }))
-          } else {
-            // Fallback para todos os tipos ativos caso a máquina não tenha tipos vinculados
-            const all = await fetchTiposProposta(true).catch(() => [])
-            setTiposPorVersao((prev) => ({ ...prev, [vid]: all }))
-          }
+          const finalTipos =
+            list && list.length > 0 ? list : await fetchTiposProposta(true).catch(() => [])
+          setTiposPorVersao((prev) => ({ ...prev, [vid]: finalTipos }))
+          setVersaoTiposCache((prev) => ({
+            ...prev,
+            [vid]: finalTipos.map((t) => t.nome),
+          }))
         })
         .catch(async () => {
           const all = await fetchTiposProposta(true).catch(() => [])
           setTiposPorVersao((prev) => ({ ...prev, [vid]: all }))
+          setVersaoTiposCache((prev) => ({
+            ...prev,
+            [vid]: all.map((t) => t.nome),
+          }))
         })
         .finally(() => {
           setLoadingTiposMap((prev) => ({ ...prev, [vid]: false }))
         })
     })
   }, [items, tiposPorVersao, loadingTiposMap])
+
+  // Grupo do pacote calculado a partir da primeira máquina adicionada
+  const pacoteShippingGroup = useMemo<ShippingGroup | null>(() => {
+    if (items.length === 0) return null
+    const firstItem = items[0]
+    // 1. Tenta pelo tipo_proposta já selecionado na primeira máquina
+    if (firstItem.tipo_proposta) {
+      return getShippingGroupFromTipoNome(firstItem.tipo_proposta)
+    }
+    // 2. Se ainda não tem tipo selecionado, tenta pelos tipos disponíveis para a primeira versão
+    const firstTipos =
+      tiposPorVersao[firstItem.versao_id] ||
+      (versaoTiposCache[firstItem.versao_id] || []).map((nome) => ({ nome }))
+    if (firstTipos.length > 0 && firstTipos[0]?.nome) {
+      return getShippingGroupFromTipoNome(firstTipos[0].nome)
+    }
+    return null
+  }, [items, tiposPorVersao, versaoTiposCache])
+
+  // Pré-carrega tipos de proposta para os resultados de busca (para saber o shipping group das opções)
+  useEffect(() => {
+    const candidateIds = searchResults.map((r) => r.id).filter((id) => id && !versaoTiposCache[id])
+
+    if (candidateIds.length === 0) return
+
+    candidateIds.forEach((vid) => {
+      fetchTiposPropostaByVersaoId(vid, true)
+        .then((list) => {
+          if (list && list.length > 0) {
+            setVersaoTiposCache((prev) => ({
+              ...prev,
+              [vid]: list.map((t) => t.nome),
+            }))
+          }
+        })
+        .catch(() => {})
+    })
+  }, [searchResults, versaoTiposCache])
+
+  const getMachineShippingGroup = (versaoId: string): ShippingGroup | null => {
+    const cached = versaoTiposCache[versaoId]
+    if (cached && cached.length > 0) {
+      return getShippingGroupFromTipoNome(cached[0])
+    }
+    const propV = versoes.find((v) => v.id === versaoId)
+    if (propV?.tipos_proposta && propV.tipos_proposta.length > 0) {
+      return getShippingGroupFromTipoNome(propV.tipos_proposta[0])
+    }
+    return null
+  }
 
   const updateItem = (versaoId: string, field: keyof PropostaVersaoItem, value: any) =>
     onChange(
@@ -251,12 +329,18 @@ export function PropostaMultiVersoes({
         if (codErp) subtitleParts.push(`ERP: ${codErp}`)
         const subtitle = subtitleParts.join(' • ')
 
+        const machineGroup = getMachineShippingGroup(v.id)
+        const isIncompatible =
+          !!pacoteShippingGroup && !!machineGroup && machineGroup !== pacoteShippingGroup
+
         return {
           ...v,
           _subtitle: subtitle,
+          _machineGroup: machineGroup,
+          _isIncompatible: isIncompatible,
         }
       })
-  }, [searchResults, items])
+  }, [searchResults, items, pacoteShippingGroup, versaoTiposCache, versoes])
 
   const selectedVersaoDisplay = useMemo(() => {
     if (selectedVersaoObj) return selectedVersaoObj
@@ -374,6 +458,16 @@ export function PropostaMultiVersoes({
                             key={v.id}
                             value={v.id}
                             onSelect={() => {
+                              if (v._isIncompatible && pacoteShippingGroup && v._machineGroup) {
+                                const machineLabel = getShippingGroupLabel(v._machineGroup)
+                                const pacoteLabel = getShippingGroupLabel(pacoteShippingGroup)
+                                toast({
+                                  title: 'Tipo de fornecimento incompatível',
+                                  description: `Esta máquina é ${machineLabel} e o pacote já contém máquinas de ${pacoteLabel}. Pacotes só aceitam máquinas com o mesmo tipo de fornecimento.`,
+                                  variant: 'destructive',
+                                })
+                                return
+                              }
                               setSelectedVersaoId(v.id)
                               setSelectedVersaoObj({
                                 id: v.id,
@@ -383,7 +477,10 @@ export function PropostaMultiVersoes({
                               setComboboxOpen(false)
                               setSearchQuery('')
                             }}
-                            className="cursor-pointer py-2 px-3 items-start gap-2"
+                            className={cn(
+                              'cursor-pointer py-2 px-3 items-start gap-2',
+                              v._isIncompatible && 'opacity-60 bg-muted/30 cursor-not-allowed',
+                            )}
                           >
                             <Check
                               className={cn(
@@ -392,12 +489,22 @@ export function PropostaMultiVersoes({
                               )}
                             />
                             <div className="flex flex-col min-w-0 flex-1">
-                              <span
-                                className="text-sm font-medium text-foreground truncate"
-                                title={v.nome}
-                              >
-                                {v.nome}
-                              </span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span
+                                  className="text-sm font-medium text-foreground truncate"
+                                  title={v.nome}
+                                >
+                                  {v.nome}
+                                </span>
+                                {v._isIncompatible && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0 h-4 border-amber-400 text-amber-700 dark:text-amber-300 dark:border-amber-700 shrink-0 font-normal"
+                                  >
+                                    método diferente
+                                  </Badge>
+                                )}
+                              </div>
                               {v._subtitle && (
                                 <span
                                   className="text-xs text-muted-foreground truncate mt-0.5"
