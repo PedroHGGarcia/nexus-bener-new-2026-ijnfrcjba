@@ -121,7 +121,27 @@ export function PropostaMultiVersoes({
       restriction.hasRestriction && restriction.categoriaId ? restriction.categoriaId : undefined
 
     searchVersoesAtivas(trimmed, 20, catFilter)
-      .then((results) => {
+      .then(async (results) => {
+        if (requestIdRef.current !== currentReq) return
+
+        // Pré-carrega tipos das versões encontradas para ter a informação de grupos disponível
+        const missingIds = results.map((r) => r.id).filter((id) => id && !versaoTiposCache[id])
+        if (missingIds.length > 0) {
+          const promises = missingIds.map((vid) =>
+            fetchTiposPropostaByVersaoId(vid, true)
+              .then((list) => {
+                if (list && list.length > 0) {
+                  setVersaoTiposCache((prev) => ({
+                    ...prev,
+                    [vid]: list.map((t) => t.nome),
+                  }))
+                }
+              })
+              .catch(() => {}),
+          )
+          await Promise.all(promises)
+        }
+
         if (requestIdRef.current === currentReq) {
           setSearchResults(results)
           setIsSearching(false)
@@ -134,7 +154,13 @@ export function PropostaMultiVersoes({
           setIsSearching(false)
         }
       })
-  }, [debouncedQuery, comboboxOpen, restriction.hasRestriction, restriction.categoriaId])
+  }, [
+    debouncedQuery,
+    comboboxOpen,
+    restriction.hasRestriction,
+    restriction.categoriaId,
+    versaoTiposCache,
+  ])
 
   // Limpa o termo quando o combobox fecha (se não tiver selecionado)
   useEffect(() => {
@@ -163,15 +189,16 @@ export function PropostaMultiVersoes({
     const v = selectedVersaoObj || versoes.find((x) => x.id === selectedVersaoId)
     if (!v) return
 
-    // Validação de compatibilidade de shipping group se já existe uma máquina no pacote
+    // Validação de compatibilidade de shipping group se o tipo da primeira máquina já foi selecionado
     if (pacoteShippingGroup) {
-      const machineGroup = getMachineShippingGroup(v.id)
-      if (machineGroup && machineGroup !== pacoteShippingGroup) {
+      const isCompatible = isMachineCompatibleWithGroup(v.id, pacoteShippingGroup)
+      if (!isCompatible) {
+        const machineGroup = getMachineShippingGroup(v.id) || 'outro'
         const machineLabel = getShippingGroupLabel(machineGroup)
         const pacoteLabel = getShippingGroupLabel(pacoteShippingGroup)
         toast({
           title: 'Tipo de fornecimento incompatível',
-          description: `Esta máquina é ${machineLabel} e o pacote já contém máquinas de ${pacoteLabel}. Pacotes só aceitam máquinas com o mesmo tipo de fornecimento.`,
+          description: `Esta máquina é ${machineLabel} e o pacote está configurado para fornecimento de ${pacoteLabel}. Pacotes só aceitam máquinas com o mesmo tipo de fornecimento.`,
           variant: 'destructive',
         })
         return
@@ -241,25 +268,20 @@ export function PropostaMultiVersoes({
     })
   }, [items, tiposPorVersao, loadingTiposMap])
 
-  // Grupo do pacote calculado a partir da primeira máquina adicionada
+  // Grupo do pacote derivado exclusivamente do tipo de proposta selecionado na primeira máquina.
+  // Conforme especificado pelo usuário: antes de adicionar a segunda máquina, deve-se selecionar
+  // o tipo de proposta da primeira linha. Se a primeira máquina ainda não tiver tipo selecionado,
+  // não aplica filtro de grupo (pacoteShippingGroup = null).
   const pacoteShippingGroup = useMemo<ShippingGroup | null>(() => {
     if (items.length === 0) return null
     const firstItem = items[0]
-    // 1. Tenta pelo tipo_proposta já selecionado na primeira máquina
-    if (firstItem.tipo_proposta) {
+    if (firstItem.tipo_proposta && firstItem.tipo_proposta.trim().length > 0) {
       return getShippingGroupFromTipoNome(firstItem.tipo_proposta)
     }
-    // 2. Se ainda não tem tipo selecionado, tenta pelos tipos disponíveis para a primeira versão
-    const firstTipos =
-      tiposPorVersao[firstItem.versao_id] ||
-      (versaoTiposCache[firstItem.versao_id] || []).map((nome) => ({ nome }))
-    if (firstTipos.length > 0 && firstTipos[0]?.nome) {
-      return getShippingGroupFromTipoNome(firstTipos[0].nome)
-    }
     return null
-  }, [items, tiposPorVersao, versaoTiposCache])
+  }, [items])
 
-  // Pré-carrega tipos de proposta para os resultados de busca (para saber o shipping group das opções)
+  // Pré-carrega tipos de proposta para os resultados de busca (para saber os shipping groups das opções)
   useEffect(() => {
     const candidateIds = searchResults.map((r) => r.id).filter((id) => id && !versaoTiposCache[id])
 
@@ -279,14 +301,36 @@ export function PropostaMultiVersoes({
     })
   }, [searchResults, versaoTiposCache])
 
-  const getMachineShippingGroup = (versaoId: string): ShippingGroup | null => {
+  // Retorna os nomes de todos os tipos vinculados a uma máquina (versão)
+  const getMachineTipoNomes = (versaoId: string): string[] => {
     const cached = versaoTiposCache[versaoId]
-    if (cached && cached.length > 0) {
-      return getShippingGroupFromTipoNome(cached[0])
-    }
+    if (cached && cached.length > 0) return cached
+    const fromTipos = tiposPorVersao[versaoId]
+    if (fromTipos && fromTipos.length > 0) return fromTipos.map((t) => t.nome)
     const propV = versoes.find((v) => v.id === versaoId)
     if (propV?.tipos_proposta && propV.tipos_proposta.length > 0) {
-      return getShippingGroupFromTipoNome(propV.tipos_proposta[0])
+      return propV.tipos_proposta
+    }
+    return []
+  }
+
+  // Verifica se uma máquina tem pelo menos um tipo vinculado compatível com o grupo do pacote
+  const isMachineCompatibleWithGroup = (
+    versaoId: string,
+    targetGroup: ShippingGroup | null,
+  ): boolean => {
+    if (!targetGroup) return true
+    const tipos = getMachineTipoNomes(versaoId)
+    // Se ainda não carregou os tipos da máquina, assume compatível até carregar
+    if (tipos.length === 0) return true
+    return tipos.some((t) => getShippingGroupFromTipoNome(t) === targetGroup)
+  }
+
+  // Retorna o grupo principal representativo da máquina (para exibição de avisos e labels)
+  const getMachineShippingGroup = (versaoId: string): ShippingGroup | null => {
+    const tipos = getMachineTipoNomes(versaoId)
+    if (tipos.length > 0) {
+      return getShippingGroupFromTipoNome(tipos[0])
     }
     return null
   }
@@ -313,7 +357,10 @@ export function PropostaMultiVersoes({
   const totalGeral = items.reduce((sum, i) => sum + calculateLineTotal(i), 0)
   const subtotalGeral = items.reduce((sum, i) => sum + calculateSubtotal(i), 0)
 
-  // Enriquecer e filtrar resultados de busca excluindo máquinas que já estão nos itens do pacote
+  // Enriquecer e filtrar resultados de busca excluindo máquinas que já estão nos itens do pacote.
+  // Quando o tipo da primeira máquina foi selecionado (pacoteShippingGroup ativo),
+  // a lista mostra apenas máquinas cujos tipos vinculados pertençam ao MESMO grupo,
+  // ou destaca as incompatíveis com badge "método diferente".
   const enrichedSearchResults = useMemo(() => {
     const alreadySelectedIds = new Set(items.map((i) => i.versao_id))
     return searchResults
@@ -330,8 +377,8 @@ export function PropostaMultiVersoes({
         const subtitle = subtitleParts.join(' • ')
 
         const machineGroup = getMachineShippingGroup(v.id)
-        const isIncompatible =
-          !!pacoteShippingGroup && !!machineGroup && machineGroup !== pacoteShippingGroup
+        const isCompatible = isMachineCompatibleWithGroup(v.id, pacoteShippingGroup)
+        const isIncompatible = !!pacoteShippingGroup && !isCompatible
 
         return {
           ...v,
@@ -340,7 +387,7 @@ export function PropostaMultiVersoes({
           _isIncompatible: isIncompatible,
         }
       })
-  }, [searchResults, items, pacoteShippingGroup, versaoTiposCache, versoes])
+  }, [searchResults, items, pacoteShippingGroup, versaoTiposCache, tiposPorVersao, versoes])
 
   const selectedVersaoDisplay = useMemo(() => {
     if (selectedVersaoObj) return selectedVersaoObj
@@ -458,12 +505,14 @@ export function PropostaMultiVersoes({
                             key={v.id}
                             value={v.id}
                             onSelect={() => {
-                              if (v._isIncompatible && pacoteShippingGroup && v._machineGroup) {
-                                const machineLabel = getShippingGroupLabel(v._machineGroup)
+                              if (v._isIncompatible && pacoteShippingGroup) {
+                                const machineGroup =
+                                  v._machineGroup || getMachineShippingGroup(v.id) || 'outro'
+                                const machineLabel = getShippingGroupLabel(machineGroup)
                                 const pacoteLabel = getShippingGroupLabel(pacoteShippingGroup)
                                 toast({
                                   title: 'Tipo de fornecimento incompatível',
-                                  description: `Esta máquina é ${machineLabel} e o pacote já contém máquinas de ${pacoteLabel}. Pacotes só aceitam máquinas com o mesmo tipo de fornecimento.`,
+                                  description: `Esta máquina é ${machineLabel} e o pacote está configurado para fornecimento de ${pacoteLabel}. Pacotes só aceitam máquinas com o mesmo tipo de fornecimento.`,
                                   variant: 'destructive',
                                 })
                                 return

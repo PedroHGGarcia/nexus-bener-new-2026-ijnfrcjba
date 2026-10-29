@@ -2123,6 +2123,8 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
             const newVersaoId = items[0]?.versao_id
             if (previousVersaoId !== newVersaoId) {
               upd('tipo_proposta', '')
+            } else if (items[0]?.tipo_proposta) {
+              upd('tipo_proposta', items[0].tipo_proposta)
             }
 
             // Detectar mudança na composição de máquinas do pacote (adição/remoção/troca)
