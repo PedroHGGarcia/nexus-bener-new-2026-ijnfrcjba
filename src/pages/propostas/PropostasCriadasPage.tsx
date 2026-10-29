@@ -34,9 +34,11 @@ import {
   User as UserIcon,
   Calendar,
   Layers,
+  MessageSquare,
 } from 'lucide-react'
 import { Proposta } from '@/types/proposta'
 import { ReenviarNotificacaoDialog } from '@/components/propostas/ReenviarNotificacaoDialog'
+import { EnviarWhatsAppDialog } from '@/components/propostas/EnviarWhatsAppDialog'
 import { toast } from '@/hooks/use-toast'
 import { LoadingState, EmptyState, ErrorState } from '@/components/StateViews'
 import { useAuth } from '@/hooks/use-auth'
@@ -133,6 +135,8 @@ export default function PropostasCriadasPage() {
   const [pageSize, setPageSize] = useState(PAGE_SIZE)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [selectedProposalForNotify, setSelectedProposalForNotify] =
+    useState<PropostaWithRelations | null>(null)
+  const [selectedProposalForWhatsApp, setSelectedProposalForWhatsApp] =
     useState<PropostaWithRelations | null>(null)
   const debouncedSearch = useDebounce(search, 300)
   const { rates } = useCurrencyRates()
@@ -454,10 +458,20 @@ export default function PropostasCriadasPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => setSelectedProposalForWhatsApp(p)}
+                            aria-label={`Enviar proposta ${p.numero_proposta || ''} por WhatsApp`}
+                            title="Enviar Proposta por WhatsApp"
+                            className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
+                          >
+                            <MessageSquare className="w-4 h-4 fill-emerald-600/20" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => setSelectedProposalForNotify(p)}
                             aria-label={`Reenviar notificação da proposta ${p.numero_proposta || ''}`}
                             title="Enviar ao Cliente (E-mail)"
-                            className="h-8 w-8 text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
+                            className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                           >
                             <Send className="w-4 h-4" />
                           </Button>
@@ -543,6 +557,14 @@ export default function PropostasCriadasPage() {
         }}
         proposta={selectedProposalForNotify}
         onSuccess={loadData}
+      />
+
+      <EnviarWhatsAppDialog
+        open={Boolean(selectedProposalForWhatsApp)}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) setSelectedProposalForWhatsApp(null)
+        }}
+        proposta={selectedProposalForWhatsApp}
       />
     </div>
   )

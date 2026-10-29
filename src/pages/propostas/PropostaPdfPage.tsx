@@ -11,13 +11,14 @@ import {
   SelectItem,
   SelectValue,
 } from '@/components/ui/select'
-import { Printer, ArrowLeft, Link as LinkIcon, Check, Send } from 'lucide-react'
+import { Printer, ArrowLeft, Link as LinkIcon, Check, Send, MessageSquare } from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 import { LoadingState, ErrorState } from '@/components/StateViews'
 import { SignatureSection } from '@/components/propostas/SignatureSection'
 import { ProposalDocument } from '@/components/propostas/ProposalDocument'
 import { ReenviarNotificacaoDialog } from '@/components/propostas/ReenviarNotificacaoDialog'
+import { EnviarWhatsAppDialog } from '@/components/propostas/EnviarWhatsAppDialog'
 import { fetchPropostaById, updatePropostaStatus } from '@/services/propostas'
 import { sendProposalEmail } from '@/services/proposal-email'
 import { useProposalPrintTitle } from '@/hooks/use-proposal-print-title'
@@ -32,6 +33,7 @@ export default function PropostaPdfPage() {
   const [error, setError] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
   const [notifyDialogOpen, setNotifyDialogOpen] = useState(false)
+  const [whatsAppDialogOpen, setWhatsAppDialogOpen] = useState(false)
 
   // Names the saved PDF after the proposal number (Proposta-<numero>.pdf)
   useProposalPrintTitle(proposal)
@@ -207,6 +209,13 @@ export default function PropostaPdfPage() {
             </Select>
           )}
           <Button
+            onClick={() => setWhatsAppDialogOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold shadow-sm cursor-pointer"
+            title="Enviar proposta por WhatsApp"
+          >
+            <MessageSquare className="w-4 h-4 fill-white" /> Enviar por WhatsApp
+          </Button>
+          <Button
             variant="outline"
             onClick={handleCopyLink}
             className="gap-2"
@@ -224,10 +233,11 @@ export default function PropostaPdfPage() {
           </Button>
           <Button
             onClick={() => setNotifyDialogOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold shadow-sm cursor-pointer"
+            variant="outline"
+            className="gap-2 font-medium"
             title="Enviar proposta por E-mail"
           >
-            <Send className="w-4 h-4" /> Enviar ao Cliente (E-mail)
+            <Send className="w-4 h-4 text-muted-foreground" /> E-mail
           </Button>
           <Button
             onClick={() => {
@@ -273,6 +283,13 @@ export default function PropostaPdfPage() {
 
         <div className="flex items-center gap-3">
           <Button
+            onClick={() => setWhatsAppDialogOpen(true)}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold shadow-sm cursor-pointer"
+            title="Enviar proposta por WhatsApp"
+          >
+            <MessageSquare className="w-4 h-4 fill-white" /> Enviar por WhatsApp
+          </Button>
+          <Button
             variant="outline"
             onClick={handleCopyLink}
             className="gap-2"
@@ -290,10 +307,11 @@ export default function PropostaPdfPage() {
           </Button>
           <Button
             onClick={() => setNotifyDialogOpen(true)}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold shadow-sm cursor-pointer"
+            variant="outline"
+            className="gap-2 font-medium"
             title="Enviar proposta por E-mail"
           >
-            <Send className="w-4 h-4" /> Enviar ao Cliente (E-mail)
+            <Send className="w-4 h-4 text-muted-foreground" /> E-mail
           </Button>
           <Button
             onClick={() => {
@@ -328,6 +346,12 @@ export default function PropostaPdfPage() {
         onOpenChange={setNotifyDialogOpen}
         proposta={proposal}
         onSuccess={loadData}
+      />
+
+      <EnviarWhatsAppDialog
+        open={whatsAppDialogOpen}
+        onOpenChange={setWhatsAppDialogOpen}
+        proposta={proposal}
       />
     </div>
   )

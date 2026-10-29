@@ -52,9 +52,14 @@ export interface ClienteContato {
   created_at?: string
 }
 
-export type ClienteContatoInput = Omit<ClienteContato, 'cliente_id' | 'created_at'> & {
+export type ClienteContatoInput = {
   id?: string
   cliente_id?: string
+  nome: string
+  email?: string | null
+  telefone?: string | null
+  cargo?: string | null
+  is_principal?: boolean
 }
 
 export type ClienteInsert = Omit<Cliente, 'id' | 'created_at' | 'updated_at'>

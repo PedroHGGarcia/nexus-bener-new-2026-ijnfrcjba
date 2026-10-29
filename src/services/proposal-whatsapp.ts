@@ -243,7 +243,186 @@ export function buildDefaultWhatsAppMessage(params: {
   const numero = (params.numeroProposta || '').trim() || 'comercial'
   const link = params.linkProposta.trim()
 
-  return `Olá ${nome}, a proposta ${numero} da Bener Máquinas está disponível: ${link}`
+  return `Olá ${nome}, segue a proposta ${numero} da Bener Máquinas. Você pode visualizá-la neste link: ${link}`
+}
+
+/**
+ * Formata um número para o deep link do wa.me:
+ * 1. Remove qualquer caractere não numérico.
+ * 2. Remove zero à esquerda se houver (ex: 019... -> 19...).
+ * 3. Se não começar com código do país (DDI), prefixa com 55 (Brasil).
+ * 4. Retorna apenas os dígitos no padrão internacional.
+ */
+export function formatPhoneForWaMe(rawPhone: string | null | undefined): string {
+  if (!rawPhone) return ''
+  let digits = rawPhone.replace(/\D/g, '')
+  if (!digits) return ''
+
+  if (digits.startsWith('0') && digits.length >= 11) {
+    digits = digits.slice(1)
+  }
+
+  // Se tem 10 dígitos (DDD + 8) ou 11 dígitos (DDD + 9), adiciona 55 (Brasil)
+  if (digits.length === 10 || digits.length === 11) {
+    digits = `55${digits}`
+  } else if (!digits.startsWith('55') && digits.length <= 11) {
+    digits = `55${digits}`
+  }
+
+  return digits
+}
+
+export interface ResolvedTargetContact {
+  phone: string | null
+  cleanPhoneForWa: string
+  contactName: string
+  source:
+    | 'snapshot_contato'
+    | 'rel_contato'
+    | 'cliente_celular'
+    | 'cliente_telefone'
+    | 'proposta_telefone'
+    | 'manual'
+    | 'nenhum'
+  sourceLabel: string
+}
+
+/**
+ * Resolve o contato e telefone de destino da proposta na seguinte ordem de prioridade:
+ * (a) Snapshot de contato salvo na proposta (dados_snapshot) ou relação cliente_contatos
+ * (b) Cadastro do cliente (celular / contatos / telefone)
+ * (c) Telefone geral da proposta
+ */
+export async function resolveProposalTargetPhone(
+  proposta: PropostaWithRelations,
+): Promise<ResolvedTargetContact> {
+  const clienteNome =
+    proposta.clientes?.fantasia ||
+    proposta.clientes?.razao_social ||
+    proposta.cliente_original ||
+    'Cliente'
+
+  // 1. (a) Snapshot do contato congelado na proposta (dados_snapshot)
+  const dadosSnap = proposta.dados_snapshot as any
+  if (dadosSnap?.contato_telefone && String(dadosSnap.contato_telefone).trim()) {
+    const raw = String(dadosSnap.contato_telefone).trim()
+    const clean = formatPhoneForWaMe(raw)
+    const name = dadosSnap.contato_nome || proposta.contato || clienteNome
+    return {
+      phone: raw,
+      cleanPhoneForWa: clean,
+      contactName: name,
+      source: 'snapshot_contato',
+      sourceLabel: `Contato da proposta (${name})`,
+    }
+  }
+
+  // 1. (b) Contato vinculado via relação cliente_contatos
+  if (proposta.cliente_contatos?.telefone && String(proposta.cliente_contatos.telefone).trim()) {
+    const raw = String(proposta.cliente_contatos.telefone).trim()
+    const clean = formatPhoneForWaMe(raw)
+    const name = proposta.cliente_contatos.nome || proposta.contato || clienteNome
+    return {
+      phone: raw,
+      cleanPhoneForWa: clean,
+      contactName: name,
+      source: 'rel_contato',
+      sourceLabel: `Contato vinculado (${name})`,
+    }
+  }
+
+  // 2. Telefone/Celular do cadastro do cliente ou contatos do cliente
+  const candidate = await resolveProposalClientPhone(proposta)
+  if (candidate.celular) {
+    const clean = formatPhoneForWaMe(candidate.celular)
+    const name = candidate.nomeContato || proposta.contato || clienteNome
+    return {
+      phone: candidate.celular,
+      cleanPhoneForWa: clean,
+      contactName: name,
+      source: candidate.origem === 'cliente_celular' ? 'cliente_celular' : 'cliente_telefone',
+      sourceLabel: candidate.labelOrigem || 'Cadastro do cliente',
+    }
+  }
+
+  // 3. Fallback: telefone registrado no cabeçalho da proposta
+  if (proposta.telefone && String(proposta.telefone).trim()) {
+    const raw = String(proposta.telefone).trim()
+    const clean = formatPhoneForWaMe(raw)
+    const name = proposta.contato || clienteNome
+    return {
+      phone: raw,
+      cleanPhoneForWa: clean,
+      contactName: name,
+      source: 'proposta_telefone',
+      sourceLabel: 'Telefone da proposta',
+    }
+  }
+
+  return {
+    phone: null,
+    cleanPhoneForWa: '',
+    contactName: proposta.contato || clienteNome,
+    source: 'nenhum',
+    sourceLabel: 'Nenhum telefone cadastrado',
+  }
+}
+
+export interface EnviarPropostaWhatsappParams {
+  propostaId: string
+  numeroDestino: string
+  mensagem: string
+  propostaNumero?: string | null
+}
+
+/**
+ * PONTO DE INTEGRAÇÃO OFICIAL DO ENVIO POR WHATSAPP:
+ *
+ * Nível 1 (Atual - Demo com Diretoria):
+ * Abre o WhatsApp (Web no desktop ou App no celular) via deep link https://wa.me/<numero>?text=<mensagem>
+ * direcionado para o número do cliente com a mensagem e link público da proposta pré-montados.
+ *
+ * =========================================================================================
+ * [PONTO DE INTEGRAÇÃO FUTURO - CLOUD API DA META]:
+ * Quando a diretoria aprovar a contratação e as credenciais da Meta Cloud API estiverem ativas:
+ *
+ * 1. Substituir ou complementar o window.open abaixo por uma chamada para a edge function
+ *    supabase.functions.invoke('meta-whatsapp-send', {
+ *      body: {
+ *        propostaId: params.propostaId,
+ *        to: cleanNumber,
+ *        message: params.mensagem,
+ *        template: 'proposta_comercial_v1', // se utilizar template HSM aprovado
+ *      }
+ *    })
+ * 2. Registrar auditoria do disparo automático no backend.
+ * =========================================================================================
+ */
+export async function enviarPropostaWhatsapp(
+  params: EnviarPropostaWhatsappParams,
+): Promise<{ ok: boolean; waUrl: string; error?: string }> {
+  const cleanNumber = formatPhoneForWaMe(params.numeroDestino)
+
+  if (!cleanNumber || cleanNumber.length < 10) {
+    return {
+      ok: false,
+      waUrl: '',
+      error: 'Número de WhatsApp inválido ou incompleto. Informe DDD + número do telefone.',
+    }
+  }
+
+  const encodedMessage = encodeURIComponent(params.mensagem)
+  const waUrl = `https://wa.me/${cleanNumber}?text=${encodedMessage}`
+
+  // Nível 1: Abre WhatsApp Web / App diretamente no dispositivo do vendedor
+  if (typeof window !== 'undefined') {
+    window.open(waUrl, '_blank', 'noopener,noreferrer')
+  }
+
+  return {
+    ok: true,
+    waUrl,
+  }
 }
 
 export type NotificationChannel = 'whatsapp' | 'email' | 'ambos'

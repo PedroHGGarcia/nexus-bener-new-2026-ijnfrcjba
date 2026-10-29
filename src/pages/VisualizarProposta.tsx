@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
-import { Printer, Loader2, RefreshCw } from 'lucide-react'
+import { Printer, Loader2, RefreshCw, MessageSquare } from 'lucide-react'
 import { ProposalDocument } from '@/components/propostas/ProposalDocument'
+import { EnviarWhatsAppDialog } from '@/components/propostas/EnviarWhatsAppDialog'
 import { fetchPublicProposta } from '@/services/propostas'
 import { useProposalPrintTitle } from '@/hooks/use-proposal-print-title'
 import { PropostaWithRelations } from '@/types/proposta'
@@ -13,6 +14,7 @@ export default function VisualizarProposta() {
   const [proposal, setProposal] = useState<PropostaWithRelations | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [whatsAppDialogOpen, setWhatsAppDialogOpen] = useState(false)
 
   // Names the saved PDF after the proposal number (Proposta-<numero>.pdf)
   useProposalPrintTitle(proposal)
@@ -84,9 +86,18 @@ export default function VisualizarProposta() {
               : 'Proposta Comercial'}
           </span>
         </div>
-        <Button onClick={handlePrint} className="gap-2 bg-primary">
-          <Printer className="w-4 h-4" /> Imprimir
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setWhatsAppDialogOpen(true)}
+            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm cursor-pointer"
+            title="Enviar proposta por WhatsApp"
+          >
+            <MessageSquare className="w-4 h-4 fill-white" /> Enviar por WhatsApp
+          </Button>
+          <Button onClick={handlePrint} variant="outline" className="gap-2">
+            <Printer className="w-4 h-4" /> Imprimir
+          </Button>
+        </div>
       </div>
 
       {/* Main Proposal Document (same layout as PropostaPdfPage & ImprimirProposta) */}
@@ -95,11 +106,24 @@ export default function VisualizarProposta() {
       </div>
 
       {/* Bottom action bar - Hidden during print */}
-      <div className="no-print max-w-4xl mx-auto mt-4 flex justify-end items-center bg-white p-3 sm:p-4 rounded-lg border shadow-sm">
-        <Button onClick={handlePrint} className="gap-2 bg-primary">
+      <div className="no-print max-w-4xl mx-auto mt-4 flex justify-end items-center gap-2 bg-white p-3 sm:p-4 rounded-lg border shadow-sm">
+        <Button
+          onClick={() => setWhatsAppDialogOpen(true)}
+          className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm cursor-pointer"
+          title="Enviar proposta por WhatsApp"
+        >
+          <MessageSquare className="w-4 h-4 fill-white" /> Enviar por WhatsApp
+        </Button>
+        <Button onClick={handlePrint} variant="outline" className="gap-2">
           <Printer className="w-4 h-4" /> Imprimir
         </Button>
       </div>
+
+      <EnviarWhatsAppDialog
+        open={whatsAppDialogOpen}
+        onOpenChange={setWhatsAppDialogOpen}
+        proposta={proposal}
+      />
     </div>
   )
 }
