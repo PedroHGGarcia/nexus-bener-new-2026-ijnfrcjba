@@ -110,6 +110,11 @@ export async function printProposalPdf(propostaId: string): Promise<void> {
             'Geração de PDF bloqueada: todas as máquinas do pacote devem ter tipo de proposta dentro do mesmo método de fornecimento.',
           )
         }
+        if (itTipo !== firstTipo) {
+          throw new Error(
+            `Geração de PDF bloqueada: todas as máquinas do pacote devem ter exatamente o tipo de proposta selecionado neste pacote (${firstTipo}).`,
+          )
+        }
       }
     }
   }

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -213,6 +213,19 @@ export function PropostaMultiVersoes({
       }
     }
 
+    // Ponto 19 (Filtro Fino): A máquina DEVE ter o mesmo tipo de proposta da primeira máquina
+    if (pacoteTargetTipo) {
+      const isCompatibleExact = isMachineCompatibleWithExactTipo(v.id, pacoteTargetTipo)
+      if (!isCompatibleExact) {
+        toast({
+          title: 'Tipo de proposta incompatível no pacote',
+          description: `Esta máquina não possui o tipo de proposta selecionado neste pacote (${pacoteTargetTipo}). Cadastre o tipo na máquina ou remova-a do pacote.`,
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
     // BUG 2: Uma nova máquina adicionada ao pacote NUNCA herda acessórios antigos
     if (onAcessoriosChange) {
       onAcessoriosChange(acessorios.filter((a) => a.versao_id !== v.id))
@@ -227,6 +240,7 @@ export function PropostaMultiVersoes({
         valor_unitario: v.valor || 0,
         desconto_percentual: 0,
         desconto_valor: 0,
+        tipo_proposta: items.length > 0 && pacoteTargetTipo ? pacoteTargetTipo : undefined,
       },
     ])
     setSelectedVersaoId('')
@@ -235,7 +249,28 @@ export function PropostaMultiVersoes({
 
   const removeItem = (versaoId: string) => {
     if (items.length <= 1) return
-    onChange(items.filter((i) => i.versao_id !== versaoId))
+    const remaining = items.filter((i) => i.versao_id !== versaoId)
+    // Se a primeira máquina for removida, a nova primeira máquina dita o tipo
+    if (items[0]?.versao_id === versaoId && remaining.length > 0) {
+      const newFirstTipo = remaining[0]?.tipo_proposta?.trim() || ''
+      if (newFirstTipo) {
+        onChange(
+          remaining.map((i, idx) => {
+            if (idx === 0) return i
+            const hasTipo = isMachineCompatibleWithExactTipo(i.versao_id, newFirstTipo)
+            return {
+              ...i,
+              tipo_proposta: hasTipo ? newFirstTipo : i.tipo_proposta,
+            }
+          }),
+        )
+      } else {
+        onChange(remaining)
+      }
+    } else {
+      onChange(remaining)
+    }
+
     if (onAcessoriosChange) {
       onAcessoriosChange(acessorios.filter((a) => a.versao_id !== versaoId))
     }
@@ -244,6 +279,69 @@ export function PropostaMultiVersoes({
   // Mapa de tipos de proposta disponíveis para cada máquina do pacote
   const [tiposPorVersao, setTiposPorVersao] = useState<Record<string, TipoProposta[]>>({})
   const [loadingTiposMap, setLoadingTiposMap] = useState<Record<string, boolean>>({})
+
+  // Retorna os nomes de todos os tipos vinculados a uma máquina (versão)
+  const getMachineTipoNomes = useCallback(
+    (versaoId: string): string[] => {
+      const cached = versaoTiposCache[versaoId]
+      if (cached && cached.length > 0) return cached
+      const fromTipos = tiposPorVersao[versaoId]
+      if (fromTipos && fromTipos.length > 0) return fromTipos.map((t) => t.nome)
+      const propV = versoes.find((v) => v.id === versaoId)
+      if (propV?.tipos_proposta && propV.tipos_proposta.length > 0) {
+        return propV.tipos_proposta
+      }
+      return []
+    },
+    [versaoTiposCache, tiposPorVersao, versoes],
+  )
+
+  // Tipo exato da primeira máquina (chave do pacote - Ponto 19 Filtro Fino)
+  const pacoteTargetTipo = useMemo<string | null>(() => {
+    if (items.length === 0) return null
+    const firstItem = items[0]
+    if (firstItem?.tipo_proposta && firstItem.tipo_proposta.trim().length > 0) {
+      return firstItem.tipo_proposta.trim()
+    }
+    return null
+  }, [items])
+
+  // Verifica se uma máquina possui exatamente o tipo de proposta do pacote entre seus tipos vinculados
+  const isMachineCompatibleWithExactTipo = useCallback(
+    (versaoId: string, targetTipo: string | null): boolean => {
+      if (!targetTipo) return true
+      const tipos = getMachineTipoNomes(versaoId)
+      // Se ainda não carregou os tipos da máquina, não bloqueia preventivamente
+      if (tipos.length === 0) return true
+      const targetNorm = targetTipo.toLowerCase().trim()
+      return tipos.some((t) => t.toLowerCase().trim() === targetNorm)
+    },
+    [getMachineTipoNomes],
+  )
+
+  // Verifica se uma máquina tem pelo menos um tipo vinculado compatível com o grupo do pacote
+  const isMachineCompatibleWithGroup = useCallback(
+    (versaoId: string, targetGroup: ShippingGroup | null): boolean => {
+      if (!targetGroup) return true
+      const tipos = getMachineTipoNomes(versaoId)
+      // Se ainda não carregou os tipos da máquina, assume compatível até carregar
+      if (tipos.length === 0) return true
+      return tipos.some((t) => getShippingGroupFromTipoNome(t) === targetGroup)
+    },
+    [getMachineTipoNomes],
+  )
+
+  // Retorna o grupo principal representativo da máquina (para exibição de avisos e labels)
+  const getMachineShippingGroup = useCallback(
+    (versaoId: string): ShippingGroup | null => {
+      const tipos = getMachineTipoNomes(versaoId)
+      if (tipos.length > 0) {
+        return getShippingGroupFromTipoNome(tipos[0])
+      }
+      return null
+    },
+    [getMachineTipoNomes],
+  )
 
   // Carrega tipos de proposta para cada máquina do pacote e sincroniza versaoTiposCache
   useEffect(() => {
@@ -276,6 +374,25 @@ export function PropostaMultiVersoes({
     })
   }, [items, tiposPorVersao, loadingTiposMap])
 
+  // Ponto 19: Assegurar que qualquer máquina seguinte (idx > 0) receba o tipo herdado da primeira
+  // caso possua o tipo vinculado e ainda esteja com o campo vazio
+  useEffect(() => {
+    if (items.length <= 1 || !pacoteTargetTipo) return
+    let needsUpdate = false
+    const updated = items.map((item, idx) => {
+      if (idx === 0) return item
+      const hasExact = isMachineCompatibleWithExactTipo(item.versao_id, pacoteTargetTipo)
+      if (hasExact && item.tipo_proposta !== pacoteTargetTipo) {
+        needsUpdate = true
+        return { ...item, tipo_proposta: pacoteTargetTipo }
+      }
+      return item
+    })
+    if (needsUpdate) {
+      onChange(updated)
+    }
+  }, [items, pacoteTargetTipo, versaoTiposCache, tiposPorVersao])
+
   // Ponto 18: Bloqueio rígido da adição de novas máquinas enquanto a primeira máquina
   // não tiver um tipo de proposta selecionado.
   const isAddBlocked = useMemo(() => {
@@ -283,6 +400,18 @@ export function PropostaMultiVersoes({
     const firstItem = items[0]
     return !firstItem?.tipo_proposta || firstItem.tipo_proposta.trim().length === 0
   }, [items])
+
+  // Lista de máquinas adicionadas ao pacote que não possuem o tipo definido na primeira máquina
+  const incompatibleItemsInPackage = useMemo(() => {
+    if (!pacoteTargetTipo || items.length <= 1) return []
+    return items.filter((item, idx) => {
+      if (idx === 0) return false
+      // Se ainda não tem tipo ou tipo diferente do alvo
+      const itemTipo = item.tipo_proposta?.trim()
+      const hasTipoLinked = isMachineCompatibleWithExactTipo(item.versao_id, pacoteTargetTipo)
+      return !hasTipoLinked || (itemTipo && itemTipo !== pacoteTargetTipo)
+    })
+  }, [items, pacoteTargetTipo, versaoTiposCache, tiposPorVersao, versoes])
 
   // Grupo do pacote derivado exclusivamente do tipo de proposta selecionado na primeira máquina.
   // Conforme especificado pelo usuário: antes de adicionar a segunda máquina, deve-se selecionar
@@ -317,41 +446,26 @@ export function PropostaMultiVersoes({
     })
   }, [searchResults, versaoTiposCache])
 
-  // Retorna os nomes de todos os tipos vinculados a uma máquina (versão)
-  const getMachineTipoNomes = (versaoId: string): string[] => {
-    const cached = versaoTiposCache[versaoId]
-    if (cached && cached.length > 0) return cached
-    const fromTipos = tiposPorVersao[versaoId]
-    if (fromTipos && fromTipos.length > 0) return fromTipos.map((t) => t.nome)
-    const propV = versoes.find((v) => v.id === versaoId)
-    if (propV?.tipos_proposta && propV.tipos_proposta.length > 0) {
-      return propV.tipos_proposta
+  const updateItem = (versaoId: string, field: keyof PropostaVersaoItem, value: any) => {
+    const isFirstItem = items[0]?.versao_id === versaoId
+    if (field === 'tipo_proposta' && isFirstItem) {
+      const newTipo = typeof value === 'string' ? value : ''
+      onChange(
+        items.map((i, idx) => {
+          if (idx === 0) {
+            return { ...i, tipo_proposta: newTipo }
+          }
+          // Para as máquinas seguintes: se tiver o novo tipo vinculado, herda automaticamente
+          const hasNewTipo = isMachineCompatibleWithExactTipo(i.versao_id, newTipo)
+          return {
+            ...i,
+            tipo_proposta: hasNewTipo ? newTipo : i.tipo_proposta,
+          }
+        }),
+      )
+      return
     }
-    return []
-  }
 
-  // Verifica se uma máquina tem pelo menos um tipo vinculado compatível com o grupo do pacote
-  const isMachineCompatibleWithGroup = (
-    versaoId: string,
-    targetGroup: ShippingGroup | null,
-  ): boolean => {
-    if (!targetGroup) return true
-    const tipos = getMachineTipoNomes(versaoId)
-    // Se ainda não carregou os tipos da máquina, assume compatível até carregar
-    if (tipos.length === 0) return true
-    return tipos.some((t) => getShippingGroupFromTipoNome(t) === targetGroup)
-  }
-
-  // Retorna o grupo principal representativo da máquina (para exibição de avisos e labels)
-  const getMachineShippingGroup = (versaoId: string): ShippingGroup | null => {
-    const tipos = getMachineTipoNomes(versaoId)
-    if (tipos.length > 0) {
-      return getShippingGroupFromTipoNome(tipos[0])
-    }
-    return null
-  }
-
-  const updateItem = (versaoId: string, field: keyof PropostaVersaoItem, value: any) =>
     onChange(
       items.map((i) => {
         if (i.versao_id !== versaoId) return i
@@ -361,12 +475,29 @@ export function PropostaMultiVersoes({
         return { ...i, [field]: value }
       }),
     )
+  }
 
   const moveItem = (index: number, dir: -1 | 1) => {
     const ni = index + dir
     if (ni < 0 || ni >= items.length) return
     const arr = [...items]
     ;[arr[index], arr[ni]] = [arr[ni], arr[index]]
+    // Se a primeira máquina mudou de posição, o tipo da nova primeira máquina vira a referência
+    if (index === 0 || ni === 0) {
+      const newFirstTipo = arr[0]?.tipo_proposta?.trim() || ''
+      if (newFirstTipo) {
+        const reevaluated = arr.map((i, idx) => {
+          if (idx === 0) return i
+          const hasTipo = isMachineCompatibleWithExactTipo(i.versao_id, newFirstTipo)
+          return {
+            ...i,
+            tipo_proposta: hasTipo ? newFirstTipo : i.tipo_proposta,
+          }
+        })
+        onChange(reevaluated)
+        return
+      }
+    }
     onChange(arr)
   }
 
@@ -374,9 +505,9 @@ export function PropostaMultiVersoes({
   const subtotalGeral = items.reduce((sum, i) => sum + calculateSubtotal(i), 0)
 
   // Enriquecer e filtrar resultados de busca excluindo máquinas que já estão nos itens do pacote.
-  // Quando o tipo da primeira máquina foi selecionado (pacoteShippingGroup ativo),
-  // a lista mostra apenas máquinas cujos tipos vinculados pertençam ao MESMO grupo,
-  // ou destaca as incompatíveis com badge "método diferente".
+  // Ponto 4 & 18: compatibilidade de grupo com badge "método diferente".
+  // Ponto 19: filtro fino com tipo idêntico ao da primeira máquina. Se não tiver o tipo,
+  // é bloqueada com badge "sem tipo do pacote" e mensagem explicativa.
   const enrichedSearchResults = useMemo(() => {
     const alreadySelectedIds = new Set(items.map((i) => i.versao_id))
     return searchResults
@@ -393,17 +524,31 @@ export function PropostaMultiVersoes({
         const subtitle = subtitleParts.join(' • ')
 
         const machineGroup = getMachineShippingGroup(v.id)
-        const isCompatible = isMachineCompatibleWithGroup(v.id, pacoteShippingGroup)
-        const isIncompatible = !!pacoteShippingGroup && !isCompatible
+        const isCompatibleGroup = isMachineCompatibleWithGroup(v.id, pacoteShippingGroup)
+        const isCompatibleExact = isMachineCompatibleWithExactTipo(v.id, pacoteTargetTipo)
+
+        const isGroupIncompatible = !!pacoteShippingGroup && !isCompatibleGroup
+        const isExactIncompatible = !!pacoteTargetTipo && !isCompatibleExact
+        const isIncompatible = isGroupIncompatible || isExactIncompatible
 
         return {
           ...v,
           _subtitle: subtitle,
           _machineGroup: machineGroup,
+          _isGroupIncompatible: isGroupIncompatible,
+          _isExactIncompatible: isExactIncompatible,
           _isIncompatible: isIncompatible,
         }
       })
-  }, [searchResults, items, pacoteShippingGroup, versaoTiposCache, tiposPorVersao, versoes])
+  }, [
+    searchResults,
+    items,
+    pacoteShippingGroup,
+    pacoteTargetTipo,
+    versaoTiposCache,
+    tiposPorVersao,
+    versoes,
+  ])
 
   const selectedVersaoDisplay = useMemo(() => {
     if (selectedVersaoObj) return selectedVersaoObj
@@ -548,7 +693,15 @@ export function PropostaMultiVersoes({
                               key={v.id}
                               value={v.id}
                               onSelect={() => {
-                                if (v._isIncompatible && pacoteShippingGroup) {
+                                if (v._isExactIncompatible && pacoteTargetTipo) {
+                                  toast({
+                                    title: 'Tipo de proposta incompatível no pacote',
+                                    description: `Esta máquina não possui o tipo de proposta selecionado neste pacote (${pacoteTargetTipo}). Cadastre o tipo na máquina ou remova-a do pacote.`,
+                                    variant: 'destructive',
+                                  })
+                                  return
+                                }
+                                if (v._isGroupIncompatible && pacoteShippingGroup) {
                                   const machineGroup =
                                     v._machineGroup || getMachineShippingGroup(v.id) || 'outro'
                                   const machineLabel = getShippingGroupLabel(machineGroup)
@@ -588,14 +741,22 @@ export function PropostaMultiVersoes({
                                   >
                                     {v.nome}
                                   </span>
-                                  {v._isIncompatible && (
+                                  {v._isExactIncompatible && pacoteTargetTipo ? (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] px-1.5 py-0 h-4 border-destructive/60 text-destructive dark:text-red-400 dark:border-destructive/60 shrink-0 font-normal"
+                                      title={`Não possui o tipo "${pacoteTargetTipo}"`}
+                                    >
+                                      sem tipo do pacote
+                                    </Badge>
+                                  ) : v._isGroupIncompatible ? (
                                     <Badge
                                       variant="outline"
                                       className="text-[10px] px-1.5 py-0 h-4 border-amber-400 text-amber-700 dark:text-amber-300 dark:border-amber-700 shrink-0 font-normal"
                                     >
                                       método diferente
                                     </Badge>
-                                  )}
+                                  ) : null}
                                 </div>
                                 {v._subtitle && (
                                   <span
@@ -603,6 +764,11 @@ export function PropostaMultiVersoes({
                                     title={v._subtitle}
                                   >
                                     {v._subtitle}
+                                  </span>
+                                )}
+                                {v._isExactIncompatible && pacoteTargetTipo && (
+                                  <span className="text-[11px] text-destructive/80 dark:text-red-400 mt-0.5 leading-tight">
+                                    Não possui o tipo &ldquo;{pacoteTargetTipo}&rdquo; cadastrado.
                                   </span>
                                 )}
                               </div>
@@ -640,6 +806,26 @@ export function PropostaMultiVersoes({
             {isAddBlocked && (
               <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
                 Selecione o tipo de proposta da máquina anterior para adicionar outra
+              </div>
+            )}
+            {incompatibleItemsInPackage.length > 0 && pacoteTargetTipo && (
+              <div className="rounded-md bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 p-3 text-xs text-red-900 dark:text-red-200 space-y-1">
+                <div className="font-semibold flex items-center gap-1.5">
+                  <X className="w-4 h-4 text-destructive shrink-0" />
+                  <span>Máquinas incompatíveis detectadas no pacote:</span>
+                </div>
+                <p className="leading-relaxed">
+                  Esta máquina não possui o tipo de proposta selecionado neste pacote (
+                  {pacoteTargetTipo}). Cadastre o tipo na máquina ou remova-a do pacote.
+                </p>
+                <ul className="list-disc list-inside space-y-0.5 pt-1 text-[11px] text-red-800 dark:text-red-300">
+                  {incompatibleItemsInPackage.map((it) => (
+                    <li key={it.versao_id}>
+                      <span className="font-medium">{it.nome}</span> &mdash; não possui vínculo com
+                      &ldquo;{pacoteTargetTipo}&rdquo;
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
           </div>
@@ -728,35 +914,76 @@ export function PropostaMultiVersoes({
                       <Label className="md:hidden text-xs text-muted-foreground block mb-1">
                         Tipo de Proposta desta máquina *
                       </Label>
-                      <Select
-                        value={item.tipo_proposta || ''}
-                        onValueChange={(val) => updateItem(item.versao_id, 'tipo_proposta', val)}
-                        disabled={disabled || isLoadingTipos}
-                      >
-                        <SelectTrigger
-                          className={cn(
-                            'h-9 text-xs',
-                            !item.tipo_proposta && 'border-amber-400 dark:border-amber-600',
-                          )}
+                      {idx === 0 ? (
+                        <Select
+                          value={item.tipo_proposta || ''}
+                          onValueChange={(val) => updateItem(item.versao_id, 'tipo_proposta', val)}
+                          disabled={disabled || isLoadingTipos}
                         >
-                          <SelectValue
-                            placeholder={
-                              isLoadingTipos
-                                ? 'Carregando tipos...'
-                                : tiposDisponiveis.length === 0
-                                  ? 'Nenhum tipo disponível'
-                                  : 'Selecione o tipo desta máquina...'
+                          <SelectTrigger
+                            className={cn(
+                              'h-9 text-xs',
+                              !item.tipo_proposta && 'border-amber-400 dark:border-amber-600',
+                            )}
+                          >
+                            <SelectValue
+                              placeholder={
+                                isLoadingTipos
+                                  ? 'Carregando tipos...'
+                                  : tiposDisponiveis.length === 0
+                                    ? 'Nenhum tipo disponível'
+                                    : 'Selecione o tipo desta máquina...'
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {tiposDisponiveis.map((t) => (
+                              <SelectItem key={t.id} value={t.nome} className="text-xs">
+                                {t.nome}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        /* Ponto 19 (Filtro Fino): Na segunda máquina em diante, o tipo é travado e herdado */
+                        <div className="space-y-1">
+                          <div
+                            className={cn(
+                              'h-9 px-3 rounded-md border text-xs flex items-center justify-between gap-1.5 transition-colors',
+                              item.tipo_proposta && item.tipo_proposta === pacoteTargetTipo
+                                ? 'bg-muted/50 border-input text-foreground cursor-not-allowed select-none'
+                                : 'bg-destructive/10 border-destructive/60 text-destructive',
+                            )}
+                            title={
+                              item.tipo_proposta && item.tipo_proposta === pacoteTargetTipo
+                                ? `Tipo herdado da 1ª máquina: ${item.tipo_proposta}`
+                                : `Incompatível: esta máquina não possui o tipo "${pacoteTargetTipo}"`
                             }
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {tiposDisponiveis.map((t) => (
-                            <SelectItem key={t.id} value={t.nome} className="text-xs">
-                              {t.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                          >
+                            <span className="truncate font-medium">
+                              {item.tipo_proposta || pacoteTargetTipo || 'Indefinido'}
+                            </span>
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                'text-[10px] px-1.5 py-0 h-4 shrink-0 font-normal inline-flex items-center gap-1',
+                                item.tipo_proposta === pacoteTargetTipo
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border-blue-200 dark:border-blue-800'
+                                  : 'bg-destructive/20 text-destructive border-destructive/30',
+                              )}
+                            >
+                              <Layers className="w-2.5 h-2.5" />
+                              herdado do pacote
+                            </Badge>
+                          </div>
+                          {(!item.tipo_proposta || item.tipo_proposta !== pacoteTargetTipo) && (
+                            <p className="text-[11px] text-destructive leading-tight">
+                              Esta máquina não possui o tipo de proposta selecionado neste pacote (
+                              {pacoteTargetTipo}). Cadastre o tipo na máquina ou remova-a do pacote.
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="md:col-span-1">

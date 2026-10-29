@@ -136,6 +136,63 @@ Deno.serve(async (req: Request) => {
     const dadosSnapshot = proposal.dados_snapshot as Record<string, any> | null
     const itensSnapshot = proposal.itens_snapshot as any[] | null
 
+    // Ponto 18 & Ponto 19: Validação no PDF público para pacotes
+    if (proposal.is_pacote) {
+      let candidateItems: any[] = []
+      if (Array.isArray(itensSnapshot) && itensSnapshot.length > 0) {
+        candidateItems = itensSnapshot
+      } else if (proposal.id) {
+        const { data: pv } = await adminClient
+          .from('proposta_versoes')
+          .select('tipo_proposta, ordem')
+          .eq('proposta_id', proposal.id)
+          .order('ordem', { ascending: true })
+        candidateItems = pv || []
+      }
+
+      if (candidateItems.length > 0) {
+        const firstTipo =
+          (typeof candidateItems[0]?.tipo_proposta === 'string' &&
+            candidateItems[0].tipo_proposta.trim()) ||
+          (typeof proposal.tipo_proposta === 'string' && proposal.tipo_proposta.trim()) ||
+          ''
+
+        if (!firstTipo) {
+          return new Response(
+            renderErrorPage(
+              'Documento bloqueado',
+              'Geração de PDF bloqueada: selecione o tipo de proposta da primeira máquina do pacote antes de gerar o documento.',
+            ),
+            {
+              status: 400,
+              headers: { 'Content-Type': 'text/html; charset=utf-8', ...cors },
+            },
+          )
+        }
+
+        for (let i = 0; i < candidateItems.length; i++) {
+          const itTipo =
+            typeof candidateItems[i]?.tipo_proposta === 'string'
+              ? candidateItems[i].tipo_proposta.trim()
+              : i === 0
+                ? firstTipo
+                : ''
+          if (!itTipo || itTipo !== firstTipo) {
+            return new Response(
+              renderErrorPage(
+                'Documento bloqueado',
+                `Geração de PDF bloqueada: a máquina #${i + 1} do pacote não possui o tipo de proposta selecionado neste pacote (${firstTipo}).`,
+              ),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'text/html; charset=utf-8', ...cors },
+              },
+            )
+          }
+        }
+      }
+    }
+
     // Tipo de proposta
     let tipoPropostaData: Record<string, unknown> | null =
       (dadosSnapshot?.tipo_proposta_detalhes as Record<string, unknown>) || null

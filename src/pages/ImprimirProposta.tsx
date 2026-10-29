@@ -53,6 +53,10 @@ export default function ImprimirProposta() {
               'Geração de documento/PDF bloqueada: as máquinas do pacote possuem métodos de fornecimento incompatíveis.'
             break
           }
+          if (itTipo !== firstTipo) {
+            pacotePdfBlockReason = `Geração de documento/PDF bloqueada: a máquina "${itens[i]?.nome || `#${i + 1}`}" não possui o tipo de proposta selecionado neste pacote (${firstTipo}).`
+            break
+          }
         }
       }
     }

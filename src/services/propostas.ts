@@ -140,6 +140,12 @@ export async function insertProposta(
             'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
           )
         }
+        // Ponto 19 (Filtro Fino): Todas as máquinas seguintes herdam e devem ter exatamente o tipo da primeira máquina
+        if (itemTipo !== firstTipo) {
+          throw new Error(
+            `Esta máquina não possui o tipo de proposta selecionado neste pacote (${firstTipo}). Cadastre o tipo na máquina ou remova-a do pacote.`,
+          )
+        }
       }
     }
   }
@@ -282,6 +288,12 @@ export async function createPropostaVersion(
         if (getGroup(itemTipo) !== firstGroup) {
           throw new Error(
             'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
+          )
+        }
+        // Ponto 19 (Filtro Fino): Todas as máquinas seguintes herdam e devem ter exatamente o tipo da primeira máquina
+        if (itemTipo !== firstTipo) {
+          throw new Error(
+            `Esta máquina não possui o tipo de proposta selecionado neste pacote (${firstTipo}). Cadastre o tipo na máquina ou remova-a do pacote.`,
           )
         }
       }
@@ -439,6 +451,12 @@ export async function updateProposta(
         if (getGroup(itemTipo) !== firstGroup) {
           throw new Error(
             'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
+          )
+        }
+        // Ponto 19 (Filtro Fino): Todas as máquinas seguintes herdam e devem ter exatamente o tipo da primeira máquina
+        if (itemTipo !== firstTipo) {
+          throw new Error(
+            `Esta máquina não possui o tipo de proposta selecionado neste pacote (${firstTipo}). Cadastre o tipo na máquina ou remova-a do pacote.`,
           )
         }
       }

@@ -1652,7 +1652,8 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         if (lower.includes('nacionalizada')) return 'Nacionalizada'
         return 'Outro'
       }
-      const firstGroup = getGroup(itensVersoes[0].tipo_proposta!)
+      const firstTipo = itensVersoes[0].tipo_proposta!.trim()
+      const firstGroup = getGroup(firstTipo)
       const itemIncompativel = itensVersoes.find(
         (it) => it.tipo_proposta && getGroup(it.tipo_proposta) !== firstGroup,
       )
@@ -1663,6 +1664,25 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
             'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
           variant: 'destructive',
         })
+        return
+      }
+
+      // Ponto 19: Todas as máquinas seguintes devem ter exatamente o tipo da primeira máquina
+      const itemTipoDiferente = itensVersoes.find(
+        (it, idx) => idx > 0 && it.tipo_proposta && it.tipo_proposta.trim() !== firstTipo,
+      )
+      if (itemTipoDiferente) {
+        toast({
+          title: 'Tipo de proposta incompatível no pacote',
+          description: `Esta máquina não possui o tipo de proposta selecionado neste pacote (${firstTipo}). Cadastre o tipo na máquina ou remova-a do pacote.`,
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itemTipoDiferente.versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
         return
       }
     } else {
@@ -2161,8 +2181,10 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
           onChange={async (items) => {
             const previousVersaoId = itensVersoes[0]?.versao_id
             const newVersaoId = items[0]?.versao_id
+            const newTipo = items[0]?.tipo_proposta
+
             if (previousVersaoId !== newVersaoId) {
-              upd('tipo_proposta', '')
+              upd('tipo_proposta', newTipo || '')
             } else if (items[0]?.tipo_proposta) {
               upd('tipo_proposta', items[0].tipo_proposta)
             }

@@ -201,6 +201,18 @@ Deno.serve(async (req: Request) => {
               },
             )
           }
+          // Ponto 19: Todas as máquinas seguintes herdam e devem ter exatamente o tipo da primeira máquina
+          if (itTipo !== firstTipo) {
+            return new Response(
+              JSON.stringify({
+                error: `Geração de PDF bloqueada: a máquina #${i + 1} do pacote não possui o tipo de proposta selecionado neste pacote (${firstTipo}).`,
+              }),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', ...cors },
+              },
+            )
+          }
         }
       }
     }
