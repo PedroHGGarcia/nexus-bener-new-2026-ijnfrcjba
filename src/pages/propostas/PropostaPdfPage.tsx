@@ -125,6 +125,52 @@ export default function PropostaPdfPage() {
   if (loading) return <LoadingState count={4} />
   if (error || !proposal) return <ErrorState message="Proposta não encontrada" onRetry={loadData} />
 
+  // Ponto 18 & Ponto 6: Validação de bloqueio de documento/PDF se pacote sem tipo de proposta
+  let pacotePdfBlockReason: string | null = null
+  if (proposal.is_pacote) {
+    const rawItens = proposal.itens_snapshot as Array<{
+      tipo_proposta?: string
+      nome?: string
+    }> | null
+    const itens = Array.isArray(rawItens) ? rawItens : []
+    if (itens.length > 0) {
+      const firstTipo =
+        (typeof itens[0]?.tipo_proposta === 'string' && itens[0].tipo_proposta.trim()) ||
+        (typeof proposal.tipo_proposta === 'string' && proposal.tipo_proposta.trim()) ||
+        ''
+      if (!firstTipo) {
+        pacotePdfBlockReason =
+          'Geração de PDF bloqueada: a primeira máquina do pacote não possui tipo de proposta definido.'
+      } else {
+        const getGroup = (t: string) => {
+          const lower = t.toLowerCase()
+          if (lower.includes('importacao direta') || lower.includes('importação direta'))
+            return 'Importação Direta'
+          if (lower.includes('nacionalizada')) return 'Nacionalizada'
+          return 'Outro'
+        }
+        const firstGroup = getGroup(firstTipo)
+        for (let i = 0; i < itens.length; i++) {
+          const itTipo =
+            typeof itens[i]?.tipo_proposta === 'string'
+              ? itens[i].tipo_proposta!.trim()
+              : i === 0
+                ? firstTipo
+                : ''
+          if (!itTipo) {
+            pacotePdfBlockReason = `Geração de PDF bloqueada: a máquina "${itens[i]?.nome || `#${i + 1}`}" do pacote não possui tipo de proposta definido.`
+            break
+          }
+          if (getGroup(itTipo) !== firstGroup) {
+            pacotePdfBlockReason =
+              'Geração de PDF bloqueada: as máquinas do pacote possuem tipos de fornecimento incompatíveis.'
+            break
+          }
+        }
+      }
+    }
+  }
+
   const allowedStatuses = STATUS_FLOW[proposal.status] || []
 
   return (
@@ -180,8 +226,20 @@ export default function PropostaPdfPage() {
             <Send className="w-4 h-4" /> Enviar ao Cliente (E-mail)
           </Button>
           <Button
-            onClick={() => window.open(`/proposta/${proposal.id}/imprimir`, '_blank')}
+            onClick={() => {
+              if (pacotePdfBlockReason) {
+                toast({
+                  title: 'Geração bloqueada',
+                  description: pacotePdfBlockReason,
+                  variant: 'destructive',
+                })
+                return
+              }
+              window.open(`/proposta/${proposal.id}/imprimir`, '_blank')
+            }}
+            disabled={Boolean(pacotePdfBlockReason)}
             className="bg-primary gap-2"
+            title={pacotePdfBlockReason || 'Imprimir proposta'}
           >
             <Printer className="w-4 h-4" /> Imprimir
           </Button>
@@ -234,13 +292,32 @@ export default function PropostaPdfPage() {
             <Send className="w-4 h-4" /> Enviar ao Cliente (E-mail)
           </Button>
           <Button
-            onClick={() => window.open(`/proposta/${proposal.id}/imprimir`, '_blank')}
+            onClick={() => {
+              if (pacotePdfBlockReason) {
+                toast({
+                  title: 'Geração bloqueada',
+                  description: pacotePdfBlockReason,
+                  variant: 'destructive',
+                })
+                return
+              }
+              window.open(`/proposta/${proposal.id}/imprimir`, '_blank')
+            }}
+            disabled={Boolean(pacotePdfBlockReason)}
             className="bg-primary gap-2"
+            title={pacotePdfBlockReason || 'Imprimir proposta'}
           >
             <Printer className="w-4 h-4" /> Imprimir
           </Button>
         </div>
       </div>
+
+      {pacotePdfBlockReason && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200 print:hidden">
+          <p className="font-semibold text-sm">Documento bloqueado para impressão / PDF</p>
+          <p className="text-xs mt-1">{pacotePdfBlockReason}</p>
+        </div>
+      )}
 
       <ReenviarNotificacaoDialog
         open={notifyDialogOpen}

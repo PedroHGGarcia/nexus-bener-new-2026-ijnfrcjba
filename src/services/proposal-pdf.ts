@@ -70,6 +70,50 @@ export async function generateProposalPdf(
 export async function printProposalPdf(propostaId: string): Promise<void> {
   // Rather than document.write on an empty window (which has an empty origin or about:blank route),
   // navigate directly to the dedicated printable route which mounts only the ProposalDocument.
+  // Ponto 18 & Ponto 6: Validação prévia de pacote antes de abrir impressão
+  const { data: prop } = await supabase
+    .from('propostas')
+    .select('is_pacote, tipo_proposta, itens_snapshot')
+    .eq('id', propostaId)
+    .maybeSingle()
+
+  if (prop?.is_pacote) {
+    const rawItens = prop.itens_snapshot as Array<{ tipo_proposta?: string; nome?: string }> | null
+    const itens = Array.isArray(rawItens) ? rawItens : []
+    if (itens.length > 0) {
+      const firstTipo =
+        (typeof itens[0]?.tipo_proposta === 'string' && itens[0].tipo_proposta.trim()) ||
+        (typeof prop.tipo_proposta === 'string' && prop.tipo_proposta.trim()) ||
+        ''
+      if (!firstTipo) {
+        throw new Error(
+          'Geração de PDF bloqueada: selecione o tipo de proposta da primeira máquina do pacote antes de imprimir.',
+        )
+      }
+      const getGroup = (t: string) => {
+        const lower = t.toLowerCase()
+        if (lower.includes('importacao direta') || lower.includes('importação direta'))
+          return 'Importação Direta'
+        if (lower.includes('nacionalizada')) return 'Nacionalizada'
+        return 'Outro'
+      }
+      const firstGroup = getGroup(firstTipo)
+      for (let i = 0; i < itens.length; i++) {
+        const itTipo =
+          typeof itens[i]?.tipo_proposta === 'string'
+            ? itens[i].tipo_proposta!.trim()
+            : i === 0
+              ? firstTipo
+              : ''
+        if (!itTipo || getGroup(itTipo) !== firstGroup) {
+          throw new Error(
+            'Geração de PDF bloqueada: todas as máquinas do pacote devem ter tipo de proposta dentro do mesmo método de fornecimento.',
+          )
+        }
+      }
+    }
+  }
+
   const printUrl = `/proposta/${propostaId}/imprimir`
   const printWindow = window.open(printUrl, '_blank')
   if (!printWindow) {

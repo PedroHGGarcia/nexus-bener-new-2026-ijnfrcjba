@@ -1610,6 +1610,24 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     }
 
     if (form.is_pacote) {
+      if (
+        itensVersoes.length > 0 &&
+        (!itensVersoes[0].tipo_proposta || !itensVersoes[0].tipo_proposta.trim())
+      ) {
+        toast({
+          title: 'Tipo de proposta da primeira máquina obrigatório',
+          description: 'Selecione o tipo de proposta da primeira máquina para prosseguir.',
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itensVersoes[0].versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+
       const itemSemTipo = itensVersoes.find((it) => !it.tipo_proposta || !it.tipo_proposta.trim())
       if (itemSemTipo) {
         toast({
@@ -1623,6 +1641,28 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         if (el) {
           el.scrollIntoView({ behavior: 'smooth', block: 'center' })
         }
+        return
+      }
+
+      // Validação de grupos consistentes em todas as máquinas
+      const getGroup = (t: string) => {
+        const lower = t.toLowerCase()
+        if (lower.includes('importacao direta') || lower.includes('importação direta'))
+          return 'Importação Direta'
+        if (lower.includes('nacionalizada')) return 'Nacionalizada'
+        return 'Outro'
+      }
+      const firstGroup = getGroup(itensVersoes[0].tipo_proposta!)
+      const itemIncompativel = itensVersoes.find(
+        (it) => it.tipo_proposta && getGroup(it.tipo_proposta) !== firstGroup,
+      )
+      if (itemIncompativel) {
+        toast({
+          title: 'Tipo de fornecimento incompatível',
+          description:
+            'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
+          variant: 'destructive',
+        })
         return
       }
     } else {

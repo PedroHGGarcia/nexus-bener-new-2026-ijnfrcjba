@@ -12,9 +12,58 @@ export default function ImprimirProposta() {
   const [proposal, setProposal] = useState<PropostaWithRelations | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Ponto 18 & Ponto 6: Validação de bloqueio se pacote sem tipo de proposta definido
+  let pacotePdfBlockReason: string | null = null
+  if (proposal?.is_pacote) {
+    const rawItens = proposal.itens_snapshot as Array<{
+      tipo_proposta?: string
+      nome?: string
+    }> | null
+    const itens = Array.isArray(rawItens) ? rawItens : []
+    if (itens.length > 0) {
+      const firstTipo =
+        (typeof itens[0]?.tipo_proposta === 'string' && itens[0].tipo_proposta.trim()) ||
+        (typeof proposal.tipo_proposta === 'string' && proposal.tipo_proposta.trim()) ||
+        ''
+      if (!firstTipo) {
+        pacotePdfBlockReason =
+          'Geração de documento/PDF bloqueada: a primeira máquina do pacote não possui tipo de proposta definido.'
+      } else {
+        const getGroup = (t: string) => {
+          const lower = t.toLowerCase()
+          if (lower.includes('importacao direta') || lower.includes('importação direta'))
+            return 'Importação Direta'
+          if (lower.includes('nacionalizada')) return 'Nacionalizada'
+          return 'Outro'
+        }
+        const firstGroup = getGroup(firstTipo)
+        for (let i = 0; i < itens.length; i++) {
+          const itTipo =
+            typeof itens[i]?.tipo_proposta === 'string'
+              ? itens[i].tipo_proposta!.trim()
+              : i === 0
+                ? firstTipo
+                : ''
+          if (!itTipo) {
+            pacotePdfBlockReason = `Geração de documento/PDF bloqueada: a máquina "${itens[i]?.nome || `#${i + 1}`}" não possui tipo de proposta definido.`
+            break
+          }
+          if (getGroup(itTipo) !== firstGroup) {
+            pacotePdfBlockReason =
+              'Geração de documento/PDF bloqueada: as máquinas do pacote possuem métodos de fornecimento incompatíveis.'
+            break
+          }
+        }
+      }
+    }
+  }
+
   // Names the saved PDF after the proposal (Proposta-<numero>.pdf) and
   // opens the print dialog automatically once the document is rendered.
-  useProposalPrintTitle(proposal, { autoPrint: true, ready: !loading })
+  useProposalPrintTitle(proposal, {
+    autoPrint: !pacotePdfBlockReason,
+    ready: !loading && !pacotePdfBlockReason,
+  })
 
   useEffect(() => {
     fetchPropostaById(id!).then((data) => {
@@ -35,6 +84,21 @@ export default function ImprimirProposta() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white text-destructive print:hidden">
         Proposta não encontrada
+      </div>
+    )
+  }
+
+  if (pacotePdfBlockReason) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 print:hidden">
+        <div className="max-w-md w-full rounded-lg border border-amber-300 bg-amber-50 p-6 text-amber-900 shadow-md">
+          <h2 className="text-lg font-bold">Geração de Documento Bloqueada</h2>
+          <p className="mt-2 text-sm leading-relaxed">{pacotePdfBlockReason}</p>
+          <p className="mt-3 text-xs text-amber-800">
+            Defina o tipo de proposta de todas as máquinas dentro do mesmo método de fornecimento
+            antes de imprimir ou gerar o PDF.
+          </p>
+        </div>
       </div>
     )
   }

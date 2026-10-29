@@ -127,6 +127,84 @@ Deno.serve(async (req: Request) => {
     const dadosSnapshot = proposalData.dados_snapshot as Record<string, any> | null
     const itensSnapshot = proposalData.itens_snapshot as any[] | null
 
+    // Ponto 18 & Ponto 6: Geração do PDF — um pacote sem tipo de proposta definido NUNCA pode gerar documento.
+    // Bloquear a geração até que TODA máquina do pacote tenha tipo de proposta dentro do mesmo grupo.
+    if (proposalData.is_pacote) {
+      let candidateItems: any[] = []
+      if (Array.isArray(itensSnapshot) && itensSnapshot.length > 0) {
+        candidateItems = itensSnapshot
+      } else if (proposalData.id) {
+        const { data: pv } = await adminClient
+          .from('proposta_versoes')
+          .select('tipo_proposta, ordem')
+          .eq('proposta_id', proposalData.id)
+          .order('ordem', { ascending: true })
+        candidateItems = pv || []
+      }
+
+      if (candidateItems.length > 0) {
+        const firstItem = candidateItems[0]
+        const firstTipo =
+          (typeof firstItem?.tipo_proposta === 'string' && firstItem.tipo_proposta.trim()) ||
+          (typeof proposalData.tipo_proposta === 'string' && proposalData.tipo_proposta.trim()) ||
+          ''
+
+        if (!firstTipo) {
+          return new Response(
+            JSON.stringify({
+              error:
+                'Geração de PDF bloqueada: selecione o tipo de proposta da primeira máquina do pacote antes de gerar o documento.',
+            }),
+            {
+              status: 400,
+              headers: { 'Content-Type': 'application/json', ...cors },
+            },
+          )
+        }
+
+        const getGroup = (t: string) => {
+          const lower = t.toLowerCase()
+          if (lower.includes('importacao direta') || lower.includes('importação direta'))
+            return 'Importação Direta'
+          if (lower.includes('nacionalizada')) return 'Nacionalizada'
+          return 'Outro'
+        }
+
+        const firstGroup = getGroup(firstTipo)
+        for (let i = 0; i < candidateItems.length; i++) {
+          const itTipo =
+            typeof candidateItems[i]?.tipo_proposta === 'string'
+              ? candidateItems[i].tipo_proposta.trim()
+              : i === 0
+                ? firstTipo
+                : ''
+          if (!itTipo) {
+            return new Response(
+              JSON.stringify({
+                error: `Geração de PDF bloqueada: a máquina #${i + 1} do pacote não possui tipo de proposta definido.`,
+              }),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', ...cors },
+              },
+            )
+          }
+          if (getGroup(itTipo) !== firstGroup) {
+            return new Response(
+              JSON.stringify({
+                error:
+                  'Geração de PDF bloqueada: máquinas com tipos de fornecimento incompatíveis no pacote.',
+              }),
+              {
+                status: 400,
+                headers: { 'Content-Type': 'application/json', ...cors },
+              },
+            )
+          }
+        }
+      }
+    }
+
     // Incorpora valores de comissão recebidos no body caso não estejam gravados no registro
     if (valor_comissao_servicos != null) {
       proposalData.valor_comissao_servicos = valor_comissao_servicos

@@ -98,17 +98,26 @@ export async function insertProposta(
     throw new Error('A associação a um projeto é obrigatória para emitir a proposta.')
   }
 
-  // Ponto 4: Validação no salvamento — Pacote exige tipos de proposta do mesmo método de envio
-  if (
-    payload.is_pacote &&
-    Array.isArray(payload.itens_snapshot) &&
-    payload.itens_snapshot.length > 1
-  ) {
-    const tipos = (payload.itens_snapshot as Array<{ tipo_proposta?: string; nome?: string }>)
-      .map((it) => it.tipo_proposta)
-      .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+  // Ponto 18 & Ponto 4: Validação no salvamento — Pacote exige tipo de proposta definido na primeira máquina
+  // e tipos de proposta do mesmo método de fornecimento em todas as máquinas.
+  if (payload.is_pacote) {
+    const itens = Array.isArray(payload.itens_snapshot)
+      ? (payload.itens_snapshot as Array<{ tipo_proposta?: string; nome?: string }>)
+      : []
 
-    if (tipos.length > 1) {
+    if (itens.length > 0) {
+      const firstItem = itens[0]
+      const firstTipo =
+        (typeof firstItem?.tipo_proposta === 'string' && firstItem.tipo_proposta.trim()) ||
+        (typeof payload.tipo_proposta === 'string' && payload.tipo_proposta.trim()) ||
+        ''
+
+      if (!firstTipo) {
+        throw new Error(
+          'Selecione o tipo de proposta da primeira máquina para salvar a proposta pacote.',
+        )
+      }
+
       const getGroup = (t: string) => {
         const lower = t.toLowerCase()
         if (lower.includes('importacao direta') || lower.includes('importação direta'))
@@ -116,12 +125,21 @@ export async function insertProposta(
         if (lower.includes('nacionalizada')) return 'Nacionalizada'
         return 'Outro'
       }
-      const firstGroup = getGroup(tipos[0])
-      const hasDivergent = tipos.some((t) => getGroup(t) !== firstGroup)
-      if (hasDivergent) {
-        throw new Error(
-          'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
-        )
+
+      const firstGroup = getGroup(firstTipo)
+      for (let i = 1; i < itens.length; i++) {
+        const itemTipo =
+          typeof itens[i]?.tipo_proposta === 'string' ? itens[i].tipo_proposta!.trim() : ''
+        if (!itemTipo) {
+          throw new Error(
+            `Selecione o tipo de proposta para a máquina "${itens[i].nome || `Item ${i + 1}`}" do pacote.`,
+          )
+        }
+        if (getGroup(itemTipo) !== firstGroup) {
+          throw new Error(
+            'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
+          )
+        }
       }
     }
   }
@@ -220,16 +238,30 @@ export async function createPropostaVersion(
     throw new Error('A associação a um projeto é obrigatória para emitir a proposta.')
   }
 
-  // Ponto 4: Validação no salvamento — Pacote exige tipos de proposta do mesmo método de envio
+  // Ponto 18 & Ponto 4: Validação no salvamento — Pacote exige tipo de proposta definido na primeira máquina
+  // e tipos de proposta do mesmo método de fornecimento em todas as máquinas.
   const isPacoteVersion = payload.is_pacote !== undefined ? payload.is_pacote : original.is_pacote
   const itensParaValidar =
     payload.itens_snapshot !== undefined ? payload.itens_snapshot : original.itens_snapshot
-  if (isPacoteVersion && Array.isArray(itensParaValidar) && itensParaValidar.length > 1) {
-    const tipos = (itensParaValidar as Array<{ tipo_proposta?: string }>)
-      .map((it) => it.tipo_proposta)
-      .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+  if (isPacoteVersion) {
+    const itens = Array.isArray(itensParaValidar)
+      ? (itensParaValidar as Array<{ tipo_proposta?: string; nome?: string }>)
+      : []
 
-    if (tipos.length > 1) {
+    if (itens.length > 0) {
+      const firstItem = itens[0]
+      const firstTipo =
+        (typeof firstItem?.tipo_proposta === 'string' && firstItem.tipo_proposta.trim()) ||
+        (typeof payload.tipo_proposta === 'string' && payload.tipo_proposta.trim()) ||
+        (typeof original.tipo_proposta === 'string' && original.tipo_proposta.trim()) ||
+        ''
+
+      if (!firstTipo) {
+        throw new Error(
+          'Selecione o tipo de proposta da primeira máquina para salvar a proposta pacote.',
+        )
+      }
+
       const getGroup = (t: string) => {
         const lower = t.toLowerCase()
         if (lower.includes('importacao direta') || lower.includes('importação direta'))
@@ -237,12 +269,21 @@ export async function createPropostaVersion(
         if (lower.includes('nacionalizada')) return 'Nacionalizada'
         return 'Outro'
       }
-      const firstGroup = getGroup(tipos[0])
-      const hasDivergent = tipos.some((t) => getGroup(t) !== firstGroup)
-      if (hasDivergent) {
-        throw new Error(
-          'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
-        )
+
+      const firstGroup = getGroup(firstTipo)
+      for (let i = 1; i < itens.length; i++) {
+        const itemTipo =
+          typeof itens[i]?.tipo_proposta === 'string' ? itens[i].tipo_proposta!.trim() : ''
+        if (!itemTipo) {
+          throw new Error(
+            `Selecione o tipo de proposta para a máquina "${itens[i].nome || `Item ${i + 1}`}" do pacote.`,
+          )
+        }
+        if (getGroup(itemTipo) !== firstGroup) {
+          throw new Error(
+            'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
+          )
+        }
       }
     }
   }
@@ -360,6 +401,50 @@ export async function updateProposta(
   payload: Partial<PropostaInsert>,
   userName?: string,
 ): Promise<Proposta> {
+  if (payload.is_pacote) {
+    const itens = Array.isArray(payload.itens_snapshot)
+      ? (payload.itens_snapshot as Array<{ tipo_proposta?: string; nome?: string }>)
+      : []
+
+    if (itens.length > 0) {
+      const firstItem = itens[0]
+      const firstTipo =
+        (typeof firstItem?.tipo_proposta === 'string' && firstItem.tipo_proposta.trim()) ||
+        (typeof payload.tipo_proposta === 'string' && payload.tipo_proposta.trim()) ||
+        ''
+
+      if (!firstTipo) {
+        throw new Error(
+          'Selecione o tipo de proposta da primeira máquina para salvar a proposta pacote.',
+        )
+      }
+
+      const getGroup = (t: string) => {
+        const lower = t.toLowerCase()
+        if (lower.includes('importacao direta') || lower.includes('importação direta'))
+          return 'Importação Direta'
+        if (lower.includes('nacionalizada')) return 'Nacionalizada'
+        return 'Outro'
+      }
+
+      const firstGroup = getGroup(firstTipo)
+      for (let i = 1; i < itens.length; i++) {
+        const itemTipo =
+          typeof itens[i]?.tipo_proposta === 'string' ? itens[i].tipo_proposta!.trim() : ''
+        if (!itemTipo) {
+          throw new Error(
+            `Selecione o tipo de proposta para a máquina "${itens[i].nome || `Item ${i + 1}`}" do pacote.`,
+          )
+        }
+        if (getGroup(itemTipo) !== firstGroup) {
+          throw new Error(
+            'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
+          )
+        }
+      }
+    }
+  }
+
   const updatePayload = { ...payload, user: userName ?? 'Sistema' }
   const { data, error } = await supabase
     .from(TABLE)

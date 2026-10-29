@@ -182,6 +182,14 @@ export function PropostaMultiVersoes({
   }
 
   const addMachine = () => {
+    if (isAddBlocked) {
+      toast({
+        title: 'Seleção pendente',
+        description: 'Selecione o tipo de proposta da máquina anterior para adicionar outra',
+        variant: 'destructive',
+      })
+      return
+    }
     if (!selectedVersaoId) return
     if (items.some((i) => i.versao_id === selectedVersaoId)) return
 
@@ -267,6 +275,14 @@ export function PropostaMultiVersoes({
         })
     })
   }, [items, tiposPorVersao, loadingTiposMap])
+
+  // Ponto 18: Bloqueio rígido da adição de novas máquinas enquanto a primeira máquina
+  // não tiver um tipo de proposta selecionado.
+  const isAddBlocked = useMemo(() => {
+    if (items.length === 0) return false
+    const firstItem = items[0]
+    return !firstItem?.tipo_proposta || firstItem.tipo_proposta.trim().length === 0
+  }, [items])
 
   // Grupo do pacote derivado exclusivamente do tipo de proposta selecionado na primeira máquina.
   // Conforme especificado pelo usuário: antes de adicionar a segunda máquina, deve-se selecionar
@@ -417,174 +433,215 @@ export function PropostaMultiVersoes({
         </div>
 
         {!disabled && (
-          <div className="flex gap-2 items-end">
-            <div className="flex-1 min-w-0">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
-                Adicionar Equipamento
-              </Label>
-              <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={comboboxOpen}
-                    disabled={disabled}
-                    title={selectedVersaoDisplay ? selectedVersaoDisplay.nome : undefined}
-                    className={cn(
-                      'w-full h-10 justify-between font-normal text-left px-3 text-sm rounded-md transition-colors',
-                      'border border-input bg-background hover:bg-accent/40',
-                      !selectedVersaoId && 'text-muted-foreground',
-                    )}
-                  >
-                    <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
-                      <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <span className="truncate">
-                        {selectedVersaoDisplay
-                          ? selectedVersaoDisplay.nome
-                          : 'Pesquisar máquina...'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {selectedVersaoId && !disabled && (
-                        <span
-                          role="button"
-                          tabIndex={0}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedVersaoId('')
-                            setSelectedVersaoObj(null)
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
+          <div className="space-y-1.5">
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                    Adicionar Equipamento
+                  </Label>
+                  {isAddBlocked && (
+                    <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                      Selecione o tipo de proposta da máquina anterior para adicionar outra
+                    </span>
+                  )}
+                </div>
+                <Popover
+                  open={comboboxOpen && !isAddBlocked}
+                  onOpenChange={(open) => {
+                    if (isAddBlocked) {
+                      setComboboxOpen(false)
+                      return
+                    }
+                    setComboboxOpen(open)
+                  }}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={comboboxOpen}
+                      disabled={disabled || isAddBlocked}
+                      title={
+                        isAddBlocked
+                          ? 'Selecione o tipo de proposta da máquina anterior para adicionar outra'
+                          : selectedVersaoDisplay
+                            ? selectedVersaoDisplay.nome
+                            : undefined
+                      }
+                      className={cn(
+                        'w-full h-10 justify-between font-normal text-left px-3 text-sm rounded-md transition-colors',
+                        'border border-input bg-background hover:bg-accent/40',
+                        !selectedVersaoId && 'text-muted-foreground',
+                        isAddBlocked &&
+                          'opacity-60 cursor-not-allowed bg-muted/40 hover:bg-muted/40 text-muted-foreground border-amber-300 dark:border-amber-700/60',
+                      )}
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1 mr-2">
+                        <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span className="truncate">
+                          {isAddBlocked
+                            ? 'Bloqueado: selecione o tipo da máquina anterior...'
+                            : selectedVersaoDisplay
+                              ? selectedVersaoDisplay.nome
+                              : 'Pesquisar máquina...'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {selectedVersaoId && !disabled && !isAddBlocked && (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
                               e.stopPropagation()
                               setSelectedVersaoId('')
                               setSelectedVersaoObj(null)
-                            }
-                          }}
-                          className="rounded-sm hover:bg-muted p-0.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          title="Limpar seleção"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </span>
-                      )}
-                      <ChevronsUpDown className="w-4 h-4 opacity-50 shrink-0" />
-                    </div>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[--radix-popover-trigger-width] max-w-[calc(100vw-2rem)] p-0"
-                  align="start"
-                  sideOffset={4}
-                >
-                  <Command shouldFilter={false}>
-                    <CommandInput
-                      value={searchQuery}
-                      onValueChange={setSearchQuery}
-                      placeholder="Buscar por nome, modelo, marca ou ERP..."
-                    />
-                    {/* Altura contida (~10 itens visíveis com scroll suave) */}
-                    <CommandList className="max-h-72 overflow-y-auto">
-                      {!hasMinChars ? (
-                        <div className="p-4 text-sm text-center text-muted-foreground flex flex-col items-center justify-center gap-1.5">
-                          <Search className="w-4 h-4 opacity-40" />
-                          <span>Digite pelo menos 2 caracteres para pesquisar máquinas...</span>
-                        </div>
-                      ) : isSearching ? (
-                        <div className="p-4 text-sm text-center text-muted-foreground flex items-center justify-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                          <span>Pesquisando máquinas no catálogo...</span>
-                        </div>
-                      ) : enrichedSearchResults.length === 0 ? (
-                        <CommandEmpty className="p-4 text-sm text-center text-muted-foreground">
-                          Nenhuma máquina encontrada para &ldquo;{trimmedQuery}&rdquo;.
-                        </CommandEmpty>
-                      ) : (
-                        enrichedSearchResults.map((v) => (
-                          <CommandItem
-                            key={v.id}
-                            value={v.id}
-                            onSelect={() => {
-                              if (v._isIncompatible && pacoteShippingGroup) {
-                                const machineGroup =
-                                  v._machineGroup || getMachineShippingGroup(v.id) || 'outro'
-                                const machineLabel = getShippingGroupLabel(machineGroup)
-                                const pacoteLabel = getShippingGroupLabel(pacoteShippingGroup)
-                                toast({
-                                  title: 'Tipo de fornecimento incompatível',
-                                  description: `Esta máquina é ${machineLabel} e o pacote está configurado para fornecimento de ${pacoteLabel}. Pacotes só aceitam máquinas com o mesmo tipo de fornecimento.`,
-                                  variant: 'destructive',
-                                })
-                                return
-                              }
-                              setSelectedVersaoId(v.id)
-                              setSelectedVersaoObj({
-                                id: v.id,
-                                nome: v.nome,
-                                valor: v.valor,
-                              })
-                              setComboboxOpen(false)
-                              setSearchQuery('')
                             }}
-                            className={cn(
-                              'cursor-pointer py-2 px-3 items-start gap-2',
-                              v._isIncompatible && 'opacity-60 bg-muted/30 cursor-not-allowed',
-                            )}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.stopPropagation()
+                                setSelectedVersaoId('')
+                                setSelectedVersaoObj(null)
+                              }
+                            }}
+                            className="rounded-sm hover:bg-muted p-0.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            title="Limpar seleção"
                           >
-                            <Check
+                            <X className="w-3.5 h-3.5" />
+                          </span>
+                        )}
+                        <ChevronsUpDown className="w-4 h-4 opacity-50 shrink-0" />
+                      </div>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[--radix-popover-trigger-width] max-w-[calc(100vw-2rem)] p-0"
+                    align="start"
+                    sideOffset={4}
+                  >
+                    <Command shouldFilter={false}>
+                      <CommandInput
+                        value={searchQuery}
+                        onValueChange={setSearchQuery}
+                        placeholder="Buscar por nome, modelo, marca ou ERP..."
+                      />
+                      {/* Altura contida (~10 itens visíveis com scroll suave) */}
+                      <CommandList className="max-h-72 overflow-y-auto">
+                        {!hasMinChars ? (
+                          <div className="p-4 text-sm text-center text-muted-foreground flex flex-col items-center justify-center gap-1.5">
+                            <Search className="w-4 h-4 opacity-40" />
+                            <span>Digite pelo menos 2 caracteres para pesquisar máquinas...</span>
+                          </div>
+                        ) : isSearching ? (
+                          <div className="p-4 text-sm text-center text-muted-foreground flex items-center justify-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                            <span>Pesquisando máquinas no catálogo...</span>
+                          </div>
+                        ) : enrichedSearchResults.length === 0 ? (
+                          <CommandEmpty className="p-4 text-sm text-center text-muted-foreground">
+                            Nenhuma máquina encontrada para &ldquo;{trimmedQuery}&rdquo;.
+                          </CommandEmpty>
+                        ) : (
+                          enrichedSearchResults.map((v) => (
+                            <CommandItem
+                              key={v.id}
+                              value={v.id}
+                              onSelect={() => {
+                                if (v._isIncompatible && pacoteShippingGroup) {
+                                  const machineGroup =
+                                    v._machineGroup || getMachineShippingGroup(v.id) || 'outro'
+                                  const machineLabel = getShippingGroupLabel(machineGroup)
+                                  const pacoteLabel = getShippingGroupLabel(pacoteShippingGroup)
+                                  toast({
+                                    title: 'Tipo de fornecimento incompatível',
+                                    description: `Esta máquina é ${machineLabel} e o pacote está configurado para fornecimento de ${pacoteLabel}. Pacotes só aceitam máquinas com o mesmo tipo de fornecimento.`,
+                                    variant: 'destructive',
+                                  })
+                                  return
+                                }
+                                setSelectedVersaoId(v.id)
+                                setSelectedVersaoObj({
+                                  id: v.id,
+                                  nome: v.nome,
+                                  valor: v.valor,
+                                })
+                                setComboboxOpen(false)
+                                setSearchQuery('')
+                              }}
                               className={cn(
-                                'h-4 w-4 shrink-0 mt-0.5 text-primary',
-                                selectedVersaoId === v.id ? 'opacity-100' : 'opacity-0',
+                                'cursor-pointer py-2 px-3 items-start gap-2',
+                                v._isIncompatible && 'opacity-60 bg-muted/30 cursor-not-allowed',
                               )}
-                            />
-                            <div className="flex flex-col min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span
-                                  className="text-sm font-medium text-foreground truncate"
-                                  title={v.nome}
-                                >
-                                  {v.nome}
-                                </span>
-                                {v._isIncompatible && (
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[10px] px-1.5 py-0 h-4 border-amber-400 text-amber-700 dark:text-amber-300 dark:border-amber-700 shrink-0 font-normal"
+                            >
+                              <Check
+                                className={cn(
+                                  'h-4 w-4 shrink-0 mt-0.5 text-primary',
+                                  selectedVersaoId === v.id ? 'opacity-100' : 'opacity-0',
+                                )}
+                              />
+                              <div className="flex flex-col min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span
+                                    className="text-sm font-medium text-foreground truncate"
+                                    title={v.nome}
                                   >
-                                    método diferente
-                                  </Badge>
+                                    {v.nome}
+                                  </span>
+                                  {v._isIncompatible && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] px-1.5 py-0 h-4 border-amber-400 text-amber-700 dark:text-amber-300 dark:border-amber-700 shrink-0 font-normal"
+                                    >
+                                      método diferente
+                                    </Badge>
+                                  )}
+                                </div>
+                                {v._subtitle && (
+                                  <span
+                                    className="text-xs text-muted-foreground truncate mt-0.5"
+                                    title={v._subtitle}
+                                  >
+                                    {v._subtitle}
+                                  </span>
                                 )}
                               </div>
-                              {v._subtitle && (
-                                <span
-                                  className="text-xs text-muted-foreground truncate mt-0.5"
-                                  title={v._subtitle}
-                                >
-                                  {v._subtitle}
+                              {v.valor != null && v.valor > 0 && (
+                                <span className="text-xs font-semibold text-primary shrink-0 tabular-nums self-center">
+                                  {fmtCurrency(v.valor)}
                                 </span>
                               )}
-                            </div>
-                            {v.valor != null && v.valor > 0 && (
-                              <span className="text-xs font-semibold text-primary shrink-0 tabular-nums self-center">
-                                {fmtCurrency(v.valor)}
-                              </span>
-                            )}
-                          </CommandItem>
-                        ))
-                      )}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                            </CommandItem>
+                          ))
+                        )}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Button
+                type="button"
+                onClick={addMachine}
+                disabled={!selectedVersaoId || isAddBlocked}
+                className={cn(
+                  'gap-1.5 h-10 shrink-0',
+                  isAddBlocked && 'opacity-60 cursor-not-allowed',
+                )}
+                title={
+                  isAddBlocked
+                    ? 'Selecione o tipo de proposta da máquina anterior para adicionar outra'
+                    : undefined
+                }
+              >
+                <Plus className="w-4 h-4" />
+                Adicionar
+              </Button>
             </div>
-            <Button
-              type="button"
-              onClick={addMachine}
-              disabled={!selectedVersaoId}
-              className="gap-1.5 h-10 shrink-0"
-            >
-              <Plus className="w-4 h-4" />
-              Adicionar
-            </Button>
+            {isAddBlocked && (
+              <div className="rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+                Selecione o tipo de proposta da máquina anterior para adicionar outra
+              </div>
+            )}
           </div>
         )}
 
