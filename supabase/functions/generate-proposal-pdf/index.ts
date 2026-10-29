@@ -12,6 +12,9 @@ const DEFAULT_APP_URL = 'https://nexus.bener.com.br'
 /**
  * generate-proposal-pdf
  *
+ * Deploy v0.0.71: Atualizado com os geradores de PDF (_shared/pdf-builder.ts e pdf-generator.ts)
+ * refletindo os Pontos 1 e 3 (PTAX com 4 decimais e subtotal limpo com comissão em linha própria).
+ *
  * Receives a proposal id (or full proposal payload), fetches proposal +
  * items + cliente + tipo_proposta, builds the shared HTML document AND a
  * real PDF binary (pure-Deno generator, zero external deps), uploads the
