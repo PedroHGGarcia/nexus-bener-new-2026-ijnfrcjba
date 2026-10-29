@@ -1707,6 +1707,272 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       return false
     }
 
+      if (hasRepError || !userRepresentante) {
+    return true
+  }
+
+      if (hasRepError || !userRepresentante) {
+=======
+    setProjetoError(null)
+    return true
+  }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+=======
+    setProjetoError(null)
+    return true
+  }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+    return true
+  }
+
+  return (
+=======
+      if (hasRepError || !userRepresentante) {
+    return true
+  }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
+        toast({
+          title: 'Cadastro de representante não localizado',
+          description:
+            'Seu usuário possui papel de representante, mas não foi encontrado um registro correspondente de Representante vinculado. Entre em contato com o suporte ou administrador.',
+          variant: 'destructive',
+        })
+        return
+      }
+      if (form.representante !== userRepresentante.id) {
+        toast({
+          title: 'Permissão negada',
+          description: 'Representantes só podem emitir propostas em seu próprio nome.',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
+    if (!form.cliente) {
+      toast({ title: 'Selecione um cliente', variant: 'destructive' })
+      return
+    }
+
+    // Regra de Contato do Cliente:
+    // 0 contatos: BLOQUEAR emissão
+    if (contatosCliente.length === 0 && !loadingContatos) {
+      toast({
+        title: 'Contato do cliente obrigatório',
+        description:
+          'Este cliente não possui nenhum contato cadastrado. É obrigatório cadastrar pelo menos um contato para prosseguir com a emissão da proposta.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Se possui contatos mas nenhum foi selecionado
+    if (contatosCliente.length > 0 && !contatoId) {
+      toast({
+        title: 'Selecione um contato',
+        description: 'Selecione o contato destinatário da proposta.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (itensVersoes.length === 0) {
+      toast({ title: 'Selecione ao menos uma versão do equipamento', variant: 'destructive' })
+      return
+    }
+
+    if (form.is_pacote) {
+      if (
+        itensVersoes.length > 0 &&
+        (!itensVersoes[0].tipo_proposta || !itensVersoes[0].tipo_proposta.trim())
+      ) {
+        toast({
+          title: 'Tipo de proposta da primeira máquina obrigatório',
+          description: 'Selecione o tipo de proposta da primeira máquina para prosseguir.',
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itensVersoes[0].versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+
+      const itemSemTipo = itensVersoes.find((it) => !it.tipo_proposta || !it.tipo_proposta.trim())
+      if (itemSemTipo) {
+        toast({
+          title: 'Tipo de proposta pendente',
+          description: `Selecione o tipo de proposta para a máquina "${itemSemTipo.nome || 'do pacote'}".`,
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itemSemTipo.versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+
+      // Validação de grupos consistentes em todas as máquinas
+      const getGroup = (t: string) => {
+        const lower = t.toLowerCase()
+        if (lower.includes('importacao direta') || lower.includes('importação direta'))
+          return 'Importação Direta'
+        if (lower.includes('nacionalizada')) return 'Nacionalizada'
+        return 'Outro'
+      }
+      const firstTipo = itensVersoes[0].tipo_proposta!.trim()
+      const firstGroup = getGroup(firstTipo)
+      const itemIncompativel = itensVersoes.find(
+        (it) => it.tipo_proposta && getGroup(it.tipo_proposta) !== firstGroup,
+      )
+      if (itemIncompativel) {
+        toast({
+          title: 'Tipo de fornecimento incompatível',
+          description:
+            'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Ponto 19: Todas as máquinas seguintes devem ter exatamente o tipo da primeira máquina
+      const itemTipoDiferente = itensVersoes.find(
+        (it, idx) => idx > 0 && it.tipo_proposta && it.tipo_proposta.trim() !== firstTipo,
+      )
+      if (itemTipoDiferente) {
+        toast({
+          title: 'Tipo de proposta incompatível no pacote',
+          description: `Esta máquina não possui o tipo de proposta selecionado neste pacote (${firstTipo}). Cadastre o tipo na máquina ou remova-a do pacote.`,
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itemTipoDiferente.versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+    } else {
+      if (!form.tipo_proposta) {
+        toast({ title: 'Selecione o tipo de proposta', variant: 'destructive' })
+        return
+      }
+    }
+
+    // Validação obrigatória de Associação de Projeto (exigência Bianca)
+    if (projetoMode === 'new' && !novoProjetoNome.trim()) {
+      const msg = 'Informe o nome do novo projeto para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
+
+    if (projetoMode === 'existing' && !projetoExistenteId) {
+      const msg = 'Selecione um projeto ou crie um novo para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
+
+    setProjetoError(null)
+
+    // Pre-open print-ready PDF window synchronously inside the user-gesture click handler
+    // so modern browser popup blockers allow opening the generated document automatically.
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+=======
+    setProjetoError(null)
+    return true
+  }
+
+  return (
+=======
     if (projetoMode === 'existing' && !projetoExistenteId) {
       const msg = 'Selecione um projeto ou crie um novo para emitir a proposta'
       setProjetoError(msg)
@@ -1726,7 +1992,726 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
     return true
   }
 
+  return (
+=======
       if (hasRepError || !userRepresentante) {
+    return true
+  }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
+        toast({
+          title: 'Cadastro de representante não localizado',
+          description:
+            'Seu usuário possui papel de representante, mas não foi encontrado um registro correspondente de Representante vinculado. Entre em contato com o suporte ou administrador.',
+          variant: 'destructive',
+        })
+        return
+      }
+      if (form.representante !== userRepresentante.id) {
+        toast({
+          title: 'Permissão negada',
+          description: 'Representantes só podem emitir propostas em seu próprio nome.',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
+    if (!form.cliente) {
+      toast({ title: 'Selecione um cliente', variant: 'destructive' })
+      return
+    }
+
+    // Regra de Contato do Cliente:
+    // 0 contatos: BLOQUEAR emissão
+    if (contatosCliente.length === 0 && !loadingContatos) {
+      toast({
+        title: 'Contato do cliente obrigatório',
+        description:
+          'Este cliente não possui nenhum contato cadastrado. É obrigatório cadastrar pelo menos um contato para prosseguir com a emissão da proposta.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Se possui contatos mas nenhum foi selecionado
+    if (contatosCliente.length > 0 && !contatoId) {
+      toast({
+        title: 'Selecione um contato',
+        description: 'Selecione o contato destinatário da proposta.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (itensVersoes.length === 0) {
+      toast({ title: 'Selecione ao menos uma versão do equipamento', variant: 'destructive' })
+      return
+    }
+
+    if (form.is_pacote) {
+      if (
+        itensVersoes.length > 0 &&
+        (!itensVersoes[0].tipo_proposta || !itensVersoes[0].tipo_proposta.trim())
+      ) {
+        toast({
+          title: 'Tipo de proposta da primeira máquina obrigatório',
+          description: 'Selecione o tipo de proposta da primeira máquina para prosseguir.',
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itensVersoes[0].versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+
+      const itemSemTipo = itensVersoes.find((it) => !it.tipo_proposta || !it.tipo_proposta.trim())
+      if (itemSemTipo) {
+        toast({
+          title: 'Tipo de proposta pendente',
+          description: `Selecione o tipo de proposta para a máquina "${itemSemTipo.nome || 'do pacote'}".`,
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itemSemTipo.versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+
+      // Validação de grupos consistentes em todas as máquinas
+      const getGroup = (t: string) => {
+        const lower = t.toLowerCase()
+        if (lower.includes('importacao direta') || lower.includes('importação direta'))
+          return 'Importação Direta'
+        if (lower.includes('nacionalizada')) return 'Nacionalizada'
+        return 'Outro'
+      }
+      const firstTipo = itensVersoes[0].tipo_proposta!.trim()
+      const firstGroup = getGroup(firstTipo)
+      const itemIncompativel = itensVersoes.find(
+        (it) => it.tipo_proposta && getGroup(it.tipo_proposta) !== firstGroup,
+      )
+      if (itemIncompativel) {
+        toast({
+          title: 'Tipo de fornecimento incompatível',
+          description:
+            'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Ponto 19: Todas as máquinas seguintes devem ter exatamente o tipo da primeira máquina
+      const itemTipoDiferente = itensVersoes.find(
+        (it, idx) => idx > 0 && it.tipo_proposta && it.tipo_proposta.trim() !== firstTipo,
+      )
+      if (itemTipoDiferente) {
+        toast({
+          title: 'Tipo de proposta incompatível no pacote',
+          description: `Esta máquina não possui o tipo de proposta selecionado neste pacote (${firstTipo}). Cadastre o tipo na máquina ou remova-a do pacote.`,
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itemTipoDiferente.versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+    } else {
+      if (!form.tipo_proposta) {
+        toast({ title: 'Selecione o tipo de proposta', variant: 'destructive' })
+        return
+      }
+    }
+
+    // Validação obrigatória de Associação de Projeto (exigência Bianca)
+    if (projetoMode === 'new' && !novoProjetoNome.trim()) {
+      const msg = 'Informe o nome do novo projeto para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
+
+    if (projetoMode === 'existing' && !projetoExistenteId) {
+      const msg = 'Selecione um projeto ou crie um novo para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
+
+    setProjetoError(null)
+
+    // Pre-open print-ready PDF window synchronously inside the user-gesture click handler
+    // so modern browser popup blockers allow opening the generated document automatically.
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+=======
+    setProjetoError(null)
+    return true
+  }
+
+  return (
+=======
+    setProjetoError(null)
+    return true
+  }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
+        toast({
+          title: 'Cadastro de representante não localizado',
+          description:
+            'Seu usuário possui papel de representante, mas não foi encontrado um registro correspondente de Representante vinculado. Entre em contato com o suporte ou administrador.',
+          variant: 'destructive',
+        })
+        return
+      }
+      if (form.representante !== userRepresentante.id) {
+        toast({
+          title: 'Permissão negada',
+          description: 'Representantes só podem emitir propostas em seu próprio nome.',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
+    if (!form.cliente) {
+      toast({ title: 'Selecione um cliente', variant: 'destructive' })
+      return
+    }
+
+    // Regra de Contato do Cliente:
+    // 0 contatos: BLOQUEAR emissão
+    if (contatosCliente.length === 0 && !loadingContatos) {
+      toast({
+        title: 'Contato do cliente obrigatório',
+        description:
+          'Este cliente não possui nenhum contato cadastrado. É obrigatório cadastrar pelo menos um contato para prosseguir com a emissão da proposta.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Se possui contatos mas nenhum foi selecionado
+    if (contatosCliente.length > 0 && !contatoId) {
+      toast({
+        title: 'Selecione um contato',
+        description: 'Selecione o contato destinatário da proposta.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (itensVersoes.length === 0) {
+      toast({ title: 'Selecione ao menos uma versão do equipamento', variant: 'destructive' })
+      return
+    }
+
+    if (form.is_pacote) {
+      if (
+        itensVersoes.length > 0 &&
+        (!itensVersoes[0].tipo_proposta || !itensVersoes[0].tipo_proposta.trim())
+      ) {
+        toast({
+          title: 'Tipo de proposta da primeira máquina obrigatório',
+          description: 'Selecione o tipo de proposta da primeira máquina para prosseguir.',
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itensVersoes[0].versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+
+      const itemSemTipo = itensVersoes.find((it) => !it.tipo_proposta || !it.tipo_proposta.trim())
+      if (itemSemTipo) {
+        toast({
+          title: 'Tipo de proposta pendente',
+          description: `Selecione o tipo de proposta para a máquina "${itemSemTipo.nome || 'do pacote'}".`,
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itemSemTipo.versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+
+      // Validação de grupos consistentes em todas as máquinas
+      const getGroup = (t: string) => {
+        const lower = t.toLowerCase()
+        if (lower.includes('importacao direta') || lower.includes('importação direta'))
+          return 'Importação Direta'
+        if (lower.includes('nacionalizada')) return 'Nacionalizada'
+        return 'Outro'
+      }
+      const firstTipo = itensVersoes[0].tipo_proposta!.trim()
+      const firstGroup = getGroup(firstTipo)
+      const itemIncompativel = itensVersoes.find(
+        (it) => it.tipo_proposta && getGroup(it.tipo_proposta) !== firstGroup,
+      )
+      if (itemIncompativel) {
+        toast({
+          title: 'Tipo de fornecimento incompatível',
+          description:
+            'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Ponto 19: Todas as máquinas seguintes devem ter exatamente o tipo da primeira máquina
+      const itemTipoDiferente = itensVersoes.find(
+        (it, idx) => idx > 0 && it.tipo_proposta && it.tipo_proposta.trim() !== firstTipo,
+      )
+      if (itemTipoDiferente) {
+        toast({
+          title: 'Tipo de proposta incompatível no pacote',
+          description: `Esta máquina não possui o tipo de proposta selecionado neste pacote (${firstTipo}). Cadastre o tipo na máquina ou remova-a do pacote.`,
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itemTipoDiferente.versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+    } else {
+      if (!form.tipo_proposta) {
+        toast({ title: 'Selecione o tipo de proposta', variant: 'destructive' })
+        return
+      }
+    }
+
+    // Validação obrigatória de Associação de Projeto (exigência Bianca)
+    if (projetoMode === 'new' && !novoProjetoNome.trim()) {
+      const msg = 'Informe o nome do novo projeto para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
+
+    if (projetoMode === 'existing' && !projetoExistenteId) {
+      const msg = 'Selecione um projeto ou crie um novo para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
+
+    if (projetoMode === 'existing' && !projetoExistenteId) {
+      const msg = 'Selecione um projeto ou crie um novo para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return false
+    }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+=======
+      if (hasRepError || !userRepresentante) {
+=======
+    setProjetoError(null)
+    return true
+  }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+    return true
+  }
+
+  return (
+=======
+      if (hasRepError || !userRepresentante) {
+    return true
+  }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
+        toast({
+          title: 'Cadastro de representante não localizado',
+          description:
+            'Seu usuário possui papel de representante, mas não foi encontrado um registro correspondente de Representante vinculado. Entre em contato com o suporte ou administrador.',
+          variant: 'destructive',
+        })
+        return
+      }
+      if (form.representante !== userRepresentante.id) {
+        toast({
+          title: 'Permissão negada',
+          description: 'Representantes só podem emitir propostas em seu próprio nome.',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
+    if (!form.cliente) {
+      toast({ title: 'Selecione um cliente', variant: 'destructive' })
+      return
+    }
+
+    // Regra de Contato do Cliente:
+    // 0 contatos: BLOQUEAR emissão
+    if (contatosCliente.length === 0 && !loadingContatos) {
+      toast({
+        title: 'Contato do cliente obrigatório',
+        description:
+          'Este cliente não possui nenhum contato cadastrado. É obrigatório cadastrar pelo menos um contato para prosseguir com a emissão da proposta.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Se possui contatos mas nenhum foi selecionado
+    if (contatosCliente.length > 0 && !contatoId) {
+      toast({
+        title: 'Selecione um contato',
+        description: 'Selecione o contato destinatário da proposta.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    if (itensVersoes.length === 0) {
+      toast({ title: 'Selecione ao menos uma versão do equipamento', variant: 'destructive' })
+      return
+    }
+
+    if (form.is_pacote) {
+      if (
+        itensVersoes.length > 0 &&
+        (!itensVersoes[0].tipo_proposta || !itensVersoes[0].tipo_proposta.trim())
+      ) {
+        toast({
+          title: 'Tipo de proposta da primeira máquina obrigatório',
+          description: 'Selecione o tipo de proposta da primeira máquina para prosseguir.',
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itensVersoes[0].versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+
+      const itemSemTipo = itensVersoes.find((it) => !it.tipo_proposta || !it.tipo_proposta.trim())
+      if (itemSemTipo) {
+        toast({
+          title: 'Tipo de proposta pendente',
+          description: `Selecione o tipo de proposta para a máquina "${itemSemTipo.nome || 'do pacote'}".`,
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itemSemTipo.versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+
+      // Validação de grupos consistentes em todas as máquinas
+      const getGroup = (t: string) => {
+        const lower = t.toLowerCase()
+        if (lower.includes('importacao direta') || lower.includes('importação direta'))
+          return 'Importação Direta'
+        if (lower.includes('nacionalizada')) return 'Nacionalizada'
+        return 'Outro'
+      }
+      const firstTipo = itensVersoes[0].tipo_proposta!.trim()
+      const firstGroup = getGroup(firstTipo)
+      const itemIncompativel = itensVersoes.find(
+        (it) => it.tipo_proposta && getGroup(it.tipo_proposta) !== firstGroup,
+      )
+      if (itemIncompativel) {
+        toast({
+          title: 'Tipo de fornecimento incompatível',
+          description:
+            'Pacotes só aceitam máquinas com o mesmo tipo de fornecimento. Verifique os tipos de proposta selecionados para cada equipamento.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      // Ponto 19: Todas as máquinas seguintes devem ter exatamente o tipo da primeira máquina
+      const itemTipoDiferente = itensVersoes.find(
+        (it, idx) => idx > 0 && it.tipo_proposta && it.tipo_proposta.trim() !== firstTipo,
+      )
+      if (itemTipoDiferente) {
+        toast({
+          title: 'Tipo de proposta incompatível no pacote',
+          description: `Esta máquina não possui o tipo de proposta selecionado neste pacote (${firstTipo}). Cadastre o tipo na máquina ou remova-a do pacote.`,
+          variant: 'destructive',
+        })
+        const el =
+          document.getElementById(`pacote-item-${itemTipoDiferente.versao_id}`) ||
+          document.getElementById('pacote-item-0')
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+        return
+      }
+    } else {
+      if (!form.tipo_proposta) {
+        toast({ title: 'Selecione o tipo de proposta', variant: 'destructive' })
+        return
+      }
+    }
+
+    // Validação obrigatória de Associação de Projeto (exigência Bianca)
+    if (projetoMode === 'new' && !novoProjetoNome.trim()) {
+      const msg = 'Informe o nome do novo projeto para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
+
+    if (projetoMode === 'existing' && !projetoExistenteId) {
+      const msg = 'Selecione um projeto ou crie um novo para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return
+    }
+
+    setProjetoError(null)
+
+    // Pre-open print-ready PDF window synchronously inside the user-gesture click handler
+    // so modern browser popup blockers allow opening the generated document automatically.
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+=======
+    setProjetoError(null)
+    return true
+  }
+
+  return (
+=======
+    if (projetoMode === 'existing' && !projetoExistenteId) {
+      const msg = 'Selecione um projeto ou crie um novo para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return false
+    }
+
+    setProjetoError(null)
+    return true
+  }
+
+  return (
+=======
+      if (hasRepError || !userRepresentante) {
+    return true
+  }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
         toast({
           title: 'Cadastro de representante não localizado',
           description:
@@ -4868,13 +5853,20 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
-      return
+      return false
     }
 
     setProjetoError(null)
+    return true
+  }
 
-    // Pre-open print-ready PDF window synchronously inside the user-gesture click handler
-    // so modern browser popup blockers allow opening the generated document automatically.
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
     const preOpenedTab = preOpenProposalPrintTab()
 
     try {
@@ -4888,6 +5880,180 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
   return (
     <div className="space-y-6 pb-6">
       {/* Navigation Header */}
+      <div className="flex items-center justify-between border-b pb-4">
+=======
+  // END OF SUBMIT
+      <div className="flex items-center justify-between border-b pb-4">
+=======
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onCancel} className="gap-1 text-slate-600">
+=======
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onCancel} className="gap-1 text-slate-600">
+=======
+      <div className="flex items-center justify-between border-b pb-4">
+=======
+    if (projetoMode === 'existing' && !projetoExistenteId) {
+      const msg = 'Selecione um projeto ou crie um novo para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return false
+    }
+
+    setProjetoError(null)
+    return true
+  }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
+      <div className="flex items-center justify-between border-b pb-4">
+=======
+  // END OF SUBMIT
+      <div className="flex items-center justify-between border-b pb-4">
+=======
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onCancel} className="gap-1 text-slate-600">
+=======
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onCancel} className="gap-1 text-slate-600">
+=======
+    if (projetoMode === 'existing' && !projetoExistenteId) {
+      const msg = 'Selecione um projeto ou crie um novo para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return false
+    }
+
+    setProjetoError(null)
+    return true
+  }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
+      <div className="flex items-center justify-between border-b pb-4">
+=======
+  // END OF SUBMIT
+      <div className="flex items-center justify-between border-b pb-4">
+=======
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onCancel} className="gap-1 text-slate-600">
+=======
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
+      <div className="flex items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={onCancel} className="gap-1 text-slate-600">
+=======
+      <div className="flex items-center justify-between border-b pb-4">
+=======
+    if (projetoMode === 'existing' && !projetoExistenteId) {
+      const msg = 'Selecione um projeto ou crie um novo para emitir a proposta'
+      setProjetoError(msg)
+      toast({
+        title: 'Associação de projeto obrigatória',
+        description: msg,
+        variant: 'destructive',
+      })
+      const el = document.getElementById('secao-associacao-projeto')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      return false
+    }
+
+    setProjetoError(null)
+    return true
+  }
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e && e.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!validateForm()) return
+
+    const preOpenedTab = preOpenProposalPrintTab()
+
+    try {
+      await proceedWithSave(preOpenedTab)
+    } catch (saveErr) {
+      preOpenedTab.close()
+      throw saveErr
+    }
+  }
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* Navigation Header */}
+      <div className="flex items-center justify-between border-b pb-4">
+=======
+  // END OF SUBMIT
+      <div className="flex items-center justify-between border-b pb-4">
+=======
       <div className="flex items-center justify-between border-b pb-4">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onCancel} className="gap-1 text-slate-600">
