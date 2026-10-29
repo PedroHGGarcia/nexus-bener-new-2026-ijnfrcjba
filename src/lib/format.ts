@@ -26,10 +26,10 @@ export function formatDateTime(dateStr: string | null | undefined): string {
   return `${dd}/${mm}/${yyyy} ${hh}:${min}`
 }
 
-export type MoedaCode = 'BRL' | 'USD' | 'EUR' | 'CHF'
+export type MoedaCode = 'BRL' | 'USD' | 'EUR' | 'JPY' | 'CHF'
 
 /**
- * Normaliza textos livres de moedas (ex.: 'DOLAR', 'REAIS', 'EURO', 'FRANCO SUÍÇO')
+ * Normaliza textos livres de moedas (ex.: 'DOLAR', 'REAIS', 'EURO', 'IENE', 'FRANCO SUÍÇO')
  * gravados no banco para o código padrão de 3 letras.
  */
 export function normalizeMoedaCode(raw?: string | null): MoedaCode {
@@ -41,6 +41,9 @@ export function normalizeMoedaCode(raw?: string | null): MoedaCode {
   }
   if (cleaned === 'EUR' || cleaned === 'EURO') {
     return 'EUR'
+  }
+  if (cleaned === 'JPY' || cleaned === 'IENE' || cleaned === 'YEN' || cleaned === 'IÊN') {
+    return 'JPY'
   }
   if (
     cleaned === 'CHF' ||
@@ -69,6 +72,7 @@ export function formatCurrencyByMoeda(
   })
   if (currency === 'USD') return `US$ ${formatted}`
   if (currency === 'EUR') return `€ ${formatted}`
+  if (currency === 'JPY') return `¥ ${formatted}`
   if (currency === 'CHF') return `CHF ${formatted}`
   return `R$ ${formatted}`
 }

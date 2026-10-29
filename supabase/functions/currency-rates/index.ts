@@ -1,4 +1,4 @@
-import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
+// Deno Edge Runtime
 import { getCorsHeaders } from '../_shared/cors.ts'
 
 // Ponto 1: Cotação de Fechamento PTAX do Banco Central do Brasil (Olinda)
@@ -23,7 +23,7 @@ function formatBrDate(d: Date): string {
   return `${dd}/${mm}/${yyyy}`
 }
 
-async function fetchBcbPtaxClosing(moeda: 'USD' | 'EUR'): Promise<PtaxResult | null> {
+async function fetchBcbPtaxClosing(moeda: 'USD' | 'EUR' | 'JPY'): Promise<PtaxResult | null> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 4000)
 
@@ -92,6 +92,7 @@ async function fetchAwesomeFallback(): Promise<{
   rates: {
     USD: { rate: number; pctChange: number; refDate: string }
     EUR: { rate: number; pctChange: number; refDate: string }
+    JPY: { rate: number; pctChange: number; refDate: string }
   }
   source: string
   refDate: string
@@ -99,9 +100,12 @@ async function fetchAwesomeFallback(): Promise<{
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 3500)
   try {
-    const response = await fetch('https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL', {
-      signal: controller.signal,
-    })
+    const response = await fetch(
+      'https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,JPY-BRL',
+      {
+        signal: controller.signal,
+      },
+    )
     clearTimeout(timer)
     if (!response.ok) {
       throw new Error(`Upstream API returned ${response.status}`)
@@ -109,10 +113,12 @@ async function fetchAwesomeFallback(): Promise<{
     const data = await response.json()
     const usdBid = data.USDBRL ? parseFloat(data.USDBRL.bid) : 0
     const eurBid = data.EURBRL ? parseFloat(data.EURBRL.bid) : 0
+    const jpyBid = data.JPYBRL ? parseFloat(data.JPYBRL.bid) : 0
     const usdPct = data.USDBRL ? parseFloat(data.USDBRL.pctChange) : 0
     const eurPct = data.EURBRL ? parseFloat(data.EURBRL.pctChange) : 0
+    const jpyPct = data.JPYBRL ? parseFloat(data.JPYBRL.pctChange) : 0
 
-    if (!usdBid || !eurBid) {
+    if (!usdBid || !eurBid || !jpyBid) {
       throw new Error('Invalid rate data from upstream')
     }
 
@@ -127,6 +133,7 @@ async function fetchAwesomeFallback(): Promise<{
       rates: {
         USD: { rate: Number(usdBid.toFixed(4)), pctChange: usdPct, refDate: fallbackDate },
         EUR: { rate: Number(eurBid.toFixed(4)), pctChange: eurPct, refDate: fallbackDate },
+        JPY: { rate: Number(jpyBid.toFixed(4)), pctChange: jpyPct, refDate: fallbackDate },
       },
       source: 'economia.awesomeapi.com.br (fallback de contingência)',
       refDate: fallbackDate,
@@ -145,20 +152,55 @@ Deno.serve(async (req: Request) => {
 
   try {
     // 1. Tentar Banco Central do Brasil (Olinda) - Fechamento PTAX dia útil anterior
-    const [usdPtax, eurPtax] = await Promise.all([
+    const [usdPtax, eurPtax, jpyPtax] = await Promise.all([
       fetchBcbPtaxClosing('USD'),
       fetchBcbPtaxClosing('EUR'),
+      fetchBcbPtaxClosing('JPY'),
     ])
 
-    if (usdPtax && eurPtax) {
-      const refDate = usdPtax.refDate || eurPtax.refDate
+    if (usdPtax && eurPtax && jpyPtax) {
+      const refDate = usdPtax.refDate || eurPtax.refDate || jpyPtax.refDate
       return new Response(
         JSON.stringify({
           rates: {
             USD: { rate: usdPtax.rate, pctChange: 0, refDate: usdPtax.refDate },
             EUR: { rate: eurPtax.rate, pctChange: 0, refDate: eurPtax.refDate },
+            JPY: { rate: jpyPtax.rate, pctChange: 0, refDate: jpyPtax.refDate },
           },
           refDate,
+          timestamp: usdPtax.dataHoraCotacao || new Date().toISOString(),
+          source: 'Banco Central do Brasil - PTAX Fechamento (Olinda)',
+          isOfficialPtax: true,
+        }),
+        {
+          headers: { 'Content-Type': 'application/json', Connection: 'keep-alive', ...cors },
+        },
+      )
+    }
+
+    // Se USD e EUR deram certo mas JPY falhou pontualmente, ou vice-versa, tenta complementar com AwesomeAPI
+    if (usdPtax && eurPtax) {
+      let jpyFallbackRate = 0.038
+      let jpyRefDate = usdPtax.refDate
+      try {
+        const awesome = await fetchAwesomeFallback()
+        jpyFallbackRate = awesome.rates.JPY.rate
+        jpyRefDate = awesome.rates.JPY.refDate
+      } catch {
+        // mantém estimativa segura
+      }
+      return new Response(
+        JSON.stringify({
+          rates: {
+            USD: { rate: usdPtax.rate, pctChange: 0, refDate: usdPtax.refDate },
+            EUR: { rate: eurPtax.rate, pctChange: 0, refDate: eurPtax.refDate },
+            JPY: {
+              rate: jpyPtax?.rate ?? jpyFallbackRate,
+              pctChange: 0,
+              refDate: jpyPtax?.refDate ?? jpyRefDate,
+            },
+          },
+          refDate: usdPtax.refDate,
           timestamp: usdPtax.dataHoraCotacao || new Date().toISOString(),
           source: 'Banco Central do Brasil - PTAX Fechamento (Olinda)',
           isOfficialPtax: true,

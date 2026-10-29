@@ -3,8 +3,10 @@ import { supabase } from '@/lib/supabase/client'
 export interface CurrencyRates {
   usdRate: number
   eurRate: number
+  jpyRate: number
   usdPctChange: number
   eurPctChange: number
+  jpyPctChange: number
   timestamp: string
   source: string
   refDate?: string // Data de referência da cotação de fechamento PTAX (ex.: "27/10/2026")
@@ -12,9 +14,9 @@ export interface CurrencyRates {
 }
 
 const CACHE_TTL = 15 * 60 * 1000 // 15 minutos (fechamento não muda a cada segundo)
-const STORAGE_KEY = 'nexus_currency_rates_cache_v2'
+const STORAGE_KEY = 'nexus_currency_rates_cache_v3'
 
-function computePreviousWorkdayBrDate(): string {
+export function computePreviousWorkdayBrDate(): string {
   const d = new Date()
   d.setDate(d.getDate() - 1)
   if (d.getDay() === 0) d.setDate(d.getDate() - 2) // Domingo -> Sexta
@@ -28,8 +30,10 @@ function computePreviousWorkdayBrDate(): string {
 export const SAFE_DEFAULT_RATES: CurrencyRates = {
   usdRate: 5.4998,
   eurRate: 5.9254,
+  jpyRate: 0.0382,
   usdPctChange: 0,
   eurPctChange: 0,
+  jpyPctChange: 0,
   timestamp: new Date().toISOString(),
   source: 'padrao-seguro',
   refDate: computePreviousWorkdayBrDate(),
@@ -45,7 +49,11 @@ function loadStoredRates(): CurrencyRates | null {
     if (!raw) return null
     const parsed = JSON.parse(raw)
     if (parsed && typeof parsed.usdRate === 'number' && typeof parsed.eurRate === 'number') {
-      return parsed as CurrencyRates
+      return {
+        ...parsed,
+        jpyRate: typeof parsed.jpyRate === 'number' ? parsed.jpyRate : SAFE_DEFAULT_RATES.jpyRate,
+        jpyPctChange: typeof parsed.jpyPctChange === 'number' ? parsed.jpyPctChange : 0,
+      } as CurrencyRates
     }
   } catch {
     // ignore
@@ -76,16 +84,19 @@ async function fetchClientOlindaFallback(): Promise<CurrencyRates | null> {
 
     const urlUsd = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaPeriodo(moeda=@moeda,dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@moeda='USD'&@dataInicial=${formatOlinda(start)}&@dataFinalCotacao=${formatOlinda(end)}&$top=10&$orderby=dataHoraCotacao%20desc&$format=json`
     const urlEur = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaPeriodo(moeda=@moeda,dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@moeda='EUR'&@dataInicial=${formatOlinda(start)}&@dataFinalCotacao=${formatOlinda(end)}&$top=10&$orderby=dataHoraCotacao%20desc&$format=json`
+    const urlJpy = `https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaPeriodo(moeda=@moeda,dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)?@moeda='JPY'&@dataInicial=${formatOlinda(start)}&@dataFinalCotacao=${formatOlinda(end)}&$top=10&$orderby=dataHoraCotacao%20desc&$format=json`
 
-    const [resUsd, resEur] = await Promise.all([
+    const [resUsd, resEur, resJpy] = await Promise.all([
       fetch(urlUsd, { signal: controller.signal }),
       fetch(urlEur, { signal: controller.signal }),
+      fetch(urlJpy, { signal: controller.signal }).catch(() => null),
     ])
     clearTimeout(timer)
 
     if (!resUsd.ok || !resEur.ok) return null
     const jsonUsd = await resUsd.json()
     const jsonEur = await resEur.json()
+    const jsonJpy = resJpy && resJpy.ok ? await resJpy.json() : null
 
     const itemUsd =
       jsonUsd?.value?.find((v: any) =>
@@ -99,9 +110,17 @@ async function fetchClientOlindaFallback(): Promise<CurrencyRates | null> {
           .toLowerCase()
           .includes('fecha'),
       ) || jsonEur?.value?.[0]
+    const itemJpy =
+      jsonJpy?.value?.find((v: any) =>
+        String(v.tipoBoletim || '')
+          .toLowerCase()
+          .includes('fecha'),
+      ) || jsonJpy?.value?.[0]
 
     const usdVal = Number(itemUsd?.cotacaoVenda || itemUsd?.cotacaoCompra)
     const eurVal = Number(itemEur?.cotacaoVenda || itemEur?.cotacaoCompra)
+    const jpyVal =
+      Number(itemJpy?.cotacaoVenda || itemJpy?.cotacaoCompra) || SAFE_DEFAULT_RATES.jpyRate
 
     if (!usdVal || !eurVal) return null
 
@@ -116,8 +135,10 @@ async function fetchClientOlindaFallback(): Promise<CurrencyRates | null> {
     return {
       usdRate: Number(usdVal.toFixed(4)),
       eurRate: Number(eurVal.toFixed(4)),
+      jpyRate: Number(jpyVal.toFixed(4)),
       usdPctChange: 0,
       eurPctChange: 0,
+      jpyPctChange: 0,
       timestamp: itemUsd.dataHoraCotacao || new Date().toISOString(),
       source: 'Banco Central do Brasil - PTAX Fechamento (Direto)',
       refDate,
@@ -152,13 +173,18 @@ export async function fetchCurrencyRates(forceRefresh = false): Promise<Currency
         data.refDate ||
         data.rates.USD.refDate ||
         data.rates.EUR.refDate ||
+        data.rates.JPY?.refDate ||
         computePreviousWorkdayBrDate()
+
+      const jpyRaw = data.rates.JPY?.rate ?? SAFE_DEFAULT_RATES.jpyRate
 
       cachedRates = {
         usdRate: Number(Number(data.rates.USD.rate).toFixed(4)),
         eurRate: Number(Number(data.rates.EUR.rate).toFixed(4)),
+        jpyRate: Number(Number(jpyRaw).toFixed(4)),
         usdPctChange: Number(data.rates.USD.pctChange ?? 0),
         eurPctChange: Number(data.rates.EUR.pctChange ?? 0),
+        jpyPctChange: Number(data.rates.JPY?.pctChange ?? 0),
         timestamp: data.timestamp ?? new Date().toISOString(),
         source: data.source ?? 'Banco Central do Brasil - PTAX (edge-function)',
         refDate,
@@ -227,6 +253,7 @@ export function convertToBrl(
   if (!rates || !value || !moeda || moeda === 'BRL') return null
   if (moeda === 'USD') return value * rates.usdRate
   if (moeda === 'EUR') return value * rates.eurRate
+  if (moeda === 'JPY') return value * rates.jpyRate
   return null
 }
 

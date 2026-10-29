@@ -1,90 +1,112 @@
-import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Info, TrendingUp, TrendingDown } from 'lucide-react'
-
-interface RateItem {
-  code: string
-  rate: number
-  pctChange: number
-  previous: number
-}
+import { Badge } from '@/components/ui/badge'
+import { Info, TrendingUp, TrendingDown, Calendar, AlertTriangle } from 'lucide-react'
+import { useCurrencyRates } from '@/hooks/use-currency-rates'
+import { formatPtaxRate, SAFE_DEFAULT_RATES } from '@/services/currency-rates'
 
 export function LicitacaoCambioDashboard() {
-  const [rates, setRates] = useState<Record<string, RateItem>>({
-    USD: { code: 'USD/BRL', rate: 5.0856, pctChange: 0.12, previous: 5.0789 },
-    EUR: { code: 'EUR/BRL', rate: 5.8524, pctChange: -0.08, previous: 5.8569 },
-    JPY: { code: 'JPY/BRL', rate: 0.0324, pctChange: 0.01, previous: 0.0323 },
-  })
+  const { rates, isCached } = useCurrencyRates()
+  const currentRates = rates || SAFE_DEFAULT_RATES
 
-  useEffect(() => {
-    fetch('https://economia.awesomeapi.com.br/last/USD-BRL,EUR-BRL,JPY-BRL')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.USDBRL) {
-          setRates({
-            USD: {
-              code: 'USD/BRL',
-              rate: parseFloat(data.USDBRL.bid),
-              pctChange: parseFloat(data.USDBRL.pctChange),
-              previous: parseFloat(data.USDBRL.bid) - parseFloat(data.USDBRL.varBid || '0'),
-            },
-            EUR: {
-              code: 'EUR/BRL',
-              rate: parseFloat(data.EURBRL.bid),
-              pctChange: parseFloat(data.EURBRL.pctChange),
-              previous: parseFloat(data.EURBRL.bid) - parseFloat(data.EURBRL.varBid || '0'),
-            },
-            JPY: {
-              code: 'JPY/BRL',
-              rate: parseFloat(data.JPYBRL.bid),
-              pctChange: parseFloat(data.JPYBRL.pctChange),
-              previous: parseFloat(data.JPYBRL.bid) - parseFloat(data.JPYBRL.varBid || '0'),
-            },
-          })
-        }
-      })
-      .catch(() => {})
-  }, [])
+  const isOutdated =
+    Boolean(currentRates.isOutdated) ||
+    isCached ||
+    currentRates.source?.includes('cache') ||
+    currentRates.source === 'offline-default' ||
+    currentRates.source === 'padrao-seguro'
+
+  const refDateText = currentRates.refDate
+    ? `Cotação de fechamento de ${currentRates.refDate}`
+    : 'Cotação de fechamento do dia útil anterior'
+
+  const items = [
+    {
+      key: 'USD',
+      code: 'USD/BRL',
+      symbol: '$',
+      rate: currentRates.usdRate,
+      pctChange: currentRates.usdPctChange,
+    },
+    {
+      key: 'EUR',
+      code: 'EUR/BRL',
+      symbol: '€',
+      rate: currentRates.eurRate,
+      pctChange: currentRates.eurPctChange,
+    },
+    {
+      key: 'JPY',
+      code: 'JPY/BRL',
+      symbol: '¥',
+      rate: currentRates.jpyRate,
+      pctChange: currentRates.jpyPctChange,
+    },
+  ]
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-        <Info className="w-3.5 h-3.5 text-slate-400" />
-        Variação Cambial — USD / EUR / JPY
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+          <Info className="w-3.5 h-3.5 text-slate-400" />
+          Taxas PTAX — USD / EUR / JPY (Fechamento do Dia Útil Anterior)
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded shadow-2xs">
+            <Calendar className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
+            {refDateText}
+          </span>
+          {isOutdated && (
+            <Badge
+              variant="outline"
+              className="text-[10px] h-5 px-1.5 border-amber-400 bg-amber-50 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-700 inline-flex items-center gap-1 font-medium"
+            >
+              <AlertTriangle className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+              cotação desatualizada (cache)
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {Object.entries(rates).map(([key, item]) => {
+        {items.map((item) => {
+          const hasChange = typeof item.pctChange === 'number' && item.pctChange !== 0
           const isUp = item.pctChange >= 0
-          const symbol = key === 'USD' ? '$' : key === 'EUR' ? '€' : '¥'
           return (
-            <Card key={key} className="bg-slate-50/70 dark:bg-slate-900/50 border-slate-200">
+            <Card key={item.key} className="bg-slate-50/70 dark:bg-slate-900/50 border-slate-200">
               <CardContent className="p-3.5 flex items-center justify-between">
                 <div>
                   <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-wide">
                     {item.code}
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
-                    <span className="text-xs font-bold text-slate-500">{symbol}</span>
-                    <span className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                      R$ {item.rate.toFixed(4)}
+                    <span className="text-xs font-bold text-slate-500">{item.symbol}</span>
+                    <span className="text-lg font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                      R$ {formatPtaxRate(item.rate)}
                     </span>
                   </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                    Anterior: R$ {item.previous.toFixed(4)}
-                  </span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">{refDateText}</span>
                 </div>
 
-                <div
-                  className={`flex items-center gap-0.5 px-2 py-1 rounded text-xs font-semibold ${
-                    isUp
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
-                      : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400'
-                  }`}
-                >
-                  {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                  <span>{Math.abs(item.pctChange).toFixed(2)}%</span>
-                </div>
+                {hasChange ? (
+                  <div
+                    className={`flex items-center gap-0.5 px-2 py-1 rounded text-xs font-semibold ${
+                      isUp
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
+                        : 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-400'
+                    }`}
+                  >
+                    {isUp ? (
+                      <TrendingUp className="w-3 h-3" />
+                    ) : (
+                      <TrendingDown className="w-3 h-3" />
+                    )}
+                    <span>{Math.abs(item.pctChange).toFixed(2)}%</span>
+                  </div>
+                ) : (
+                  <div className="text-[10px] text-slate-500 font-medium px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded">
+                    PTAX Fechamento
+                  </div>
+                )}
               </CardContent>
             </Card>
           )

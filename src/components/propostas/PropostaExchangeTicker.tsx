@@ -45,6 +45,14 @@ export function PropostaExchangeTicker() {
         </span>
       </span>
 
+      {/* Iene PTAX (4 casas decimais) */}
+      <span className="inline-flex items-center gap-1">
+        <strong className="text-slate-900 dark:text-slate-100 font-bold">Iene (JPY):</strong>{' '}
+        <span className="text-slate-900 dark:text-slate-100 font-semibold tabular-nums">
+          R$ {formatPtaxRate(currentRates.jpyRate)}
+        </span>
+      </span>
+
       <span className="text-slate-700 dark:text-slate-300 font-medium text-xs">
         Real: <strong>R$ 1,0000</strong>
       </span>

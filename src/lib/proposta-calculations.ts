@@ -90,6 +90,7 @@ export function convertCurrency(
     cotacaoMoeda?: number | null
     usdRate?: number | null
     eurRate?: number | null
+    jpyRate?: number | null
   },
 ): number {
   const from = normalizeMoedaCode(fromMoeda)
@@ -109,6 +110,9 @@ export function convertCurrency(
     }
     if (m === 'EUR' && rates?.eurRate && rates.eurRate > 0) {
       return Number(rates.eurRate)
+    }
+    if (m === 'JPY' && rates?.jpyRate && rates.jpyRate > 0) {
+      return Number(rates.jpyRate)
     }
     return 1
   }

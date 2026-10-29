@@ -23,7 +23,8 @@ function getEffectiveRate(
   if (taxConfig.cambioEstimado && taxConfig.cambioEstimado > 0) return taxConfig.cambioEstimado
   if (moeda === 'USD' && rates) return rates.usdRate
   if (moeda === 'EUR' && rates) return rates.eurRate
-  return moeda === 'USD' ? 5.09 : 5.85
+  if (moeda === 'JPY' && rates) return rates.jpyRate
+  return moeda === 'USD' ? 5.4998 : moeda === 'EUR' ? 5.9254 : moeda === 'JPY' ? 0.0382 : 1
 }
 
 export function LicitacaoMemoriaCompleta({ items, moeda, taxConfig, rates }: Props) {
@@ -31,7 +32,7 @@ export function LicitacaoMemoriaCompleta({ items, moeda, taxConfig, rates }: Pro
   const icmsRate = taxConfig.estadoFaturamento ? getIcmsRate(taxConfig.estadoFaturamento) : 0
   const ipiRate = IPI_DEFAULT_RATE
   const isLiquido = taxConfig.regimePreco === 'liquido'
-  const symbol = moeda === 'USD' ? 'US$' : moeda === 'EUR' ? '€' : 'R$'
+  const symbol = moeda === 'USD' ? 'US$' : moeda === 'EUR' ? '€' : moeda === 'JPY' ? '¥' : 'R$'
 
   const rows = useMemo(() => {
     return items.map((item) => {

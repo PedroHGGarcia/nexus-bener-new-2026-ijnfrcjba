@@ -91,7 +91,7 @@ import { Badge } from '@/components/ui/badge'
 import { fetchProjetos, fetchProjetosForUser, insertProjeto } from '@/services/projetos'
 import { ProjetoWithRelations } from '@/types/projeto'
 import { useCurrencyRates } from '@/hooks/use-currency-rates'
-import { formatBrlEquivalent } from '@/services/currency-rates'
+import { formatBrlEquivalent, formatPtaxRate } from '@/services/currency-rates'
 import {
   calculateLineTotal,
   calculateSubtotal,
@@ -827,15 +827,18 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
         upd('data_cotacao_moeda', '')
       } else if (!moedaManualOverride && !isEditing) {
         if (form.moeda !== versaoMoedaNorm) {
+          const foreign = form.moeda !== 'BRL' ? form.moeda : versaoMoedaNorm
           const autoRate =
-            form.moeda === 'USD' || versaoMoedaNorm === 'USD'
+            foreign === 'USD'
               ? Number(rates?.usdRate ?? 5.4)
-              : Number(rates?.eurRate ?? 5.9)
+              : foreign === 'EUR'
+                ? Number(rates?.eurRate ?? 5.9)
+                : Number(rates?.jpyRate ?? 0.038)
           if (autoRate && !form.cotacao_moeda) {
             upd('cotacao_moeda', autoRate)
           }
           if (!form.data_cotacao_moeda) {
-            upd('data_cotacao_moeda', new Date().toISOString().split('T')[0])
+            upd('data_cotacao_moeda', rates?.refDate || new Date().toISOString().split('T')[0])
           }
         }
       }
@@ -1053,8 +1056,9 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       cotacaoMoeda: form.cotacao_moeda,
       usdRate: rates?.usdRate,
       eurRate: rates?.eurRate,
+      jpyRate: rates?.jpyRate,
     }),
-    [form.cotacao_moeda, rates?.usdRate, rates?.eurRate],
+    [form.cotacao_moeda, rates?.usdRate, rates?.eurRate, rates?.jpyRate],
   )
 
   // Helper para obter a moeda original de um item/versão
@@ -2245,15 +2249,21 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
               const firstVersaoMoeda = newMoedasMap[items[0].versao_id] || 'BRL'
               upd('moeda_original', firstVersaoMoeda)
               if (form.moeda !== firstVersaoMoeda) {
+                const foreign = form.moeda !== 'BRL' ? form.moeda : firstVersaoMoeda
                 const autoRate =
-                  firstVersaoMoeda === 'USD' || form.moeda === 'USD'
+                  foreign === 'USD'
                     ? Number(rates?.usdRate ?? 5.4)
-                    : Number(rates?.eurRate ?? 5.9)
+                    : foreign === 'EUR'
+                      ? Number(rates?.eurRate ?? 5.9)
+                      : Number(rates?.jpyRate ?? 0.038)
                 if (autoRate && !form.cotacao_moeda) {
                   upd('cotacao_moeda', autoRate)
                 }
                 if (!form.data_cotacao_moeda) {
-                  upd('data_cotacao_moeda', new Date().toISOString().split('T')[0])
+                  upd(
+                    'data_cotacao_moeda',
+                    rates?.refDate || new Date().toISOString().split('T')[0],
+                  )
                 }
               }
             }
@@ -2484,14 +2494,20 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                       const orig = normalizeMoedaCode(form.moeda_original)
                       const target = orig === 'BRL' ? 'USD' : 'BRL'
                       upd('moeda', target)
+                      const foreign = target !== 'BRL' ? target : orig
                       const defaultRate =
-                        target === 'USD' || orig === 'USD'
+                        foreign === 'USD'
                           ? Number(rates?.usdRate ?? 5.4)
-                          : orig === 'EUR'
+                          : foreign === 'EUR'
                             ? Number(rates?.eurRate ?? 5.9)
-                            : 1
+                            : foreign === 'JPY'
+                              ? Number(rates?.jpyRate ?? 0.038)
+                              : 1
                       upd('cotacao_moeda', defaultRate)
-                      upd('data_cotacao_moeda', new Date().toISOString().split('T')[0])
+                      upd(
+                        'data_cotacao_moeda',
+                        rates?.refDate || new Date().toISOString().split('T')[0],
+                      )
                     }
                   }}
                   disabled={isEditing}
@@ -2523,15 +2539,21 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                       upd('moeda', v)
                       const orig = normalizeMoedaCode(form.moeda_original)
                       if (v !== orig) {
+                        const foreign = v !== 'BRL' ? v : orig
                         const autoRate =
-                          v === 'USD' || orig === 'USD'
+                          foreign === 'USD'
                             ? Number(rates?.usdRate ?? 5.4)
-                            : v === 'EUR' || orig === 'EUR'
+                            : foreign === 'EUR'
                               ? Number(rates?.eurRate ?? 5.9)
-                              : 1
+                              : foreign === 'JPY'
+                                ? Number(rates?.jpyRate ?? 0.038)
+                                : 1
                         upd('cotacao_moeda', autoRate)
                         if (!form.data_cotacao_moeda) {
-                          upd('data_cotacao_moeda', new Date().toISOString().split('T')[0])
+                          upd(
+                            'data_cotacao_moeda',
+                            rates?.refDate || new Date().toISOString().split('T')[0],
+                          )
                         }
                       } else {
                         upd('cotacao_moeda', null)
@@ -2550,6 +2572,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                       <SelectItem value="BRL">Reais (R$)</SelectItem>
                       <SelectItem value="USD">Dólar (US$)</SelectItem>
                       <SelectItem value="EUR">Euro (€)</SelectItem>
+                      <SelectItem value="JPY">Iene (¥)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -2579,9 +2602,13 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                       R${' '}
                       {Number(
                         form.cotacao_moeda ??
-                          (form.moeda === 'USD' || form.moeda_original === 'USD'
-                            ? (rates?.usdRate ?? 5.4)
-                            : (rates?.eurRate ?? 5.9)),
+                          (() => {
+                            const foreign = form.moeda !== 'BRL' ? form.moeda : form.moeda_original
+                            if (foreign === 'USD') return rates?.usdRate ?? 5.4
+                            if (foreign === 'EUR') return rates?.eurRate ?? 5.9
+                            if (foreign === 'JPY') return rates?.jpyRate ?? 0.038
+                            return 1
+                          })(),
                       ).toFixed(4)}
                     </strong>
                     {(form.data_cotacao_moeda || rates?.refDate) && (
@@ -2608,7 +2635,11 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                         const r =
                           target === 'USD'
                             ? Number(rates?.usdRate ?? 5.4)
-                            : Number(rates?.eurRate ?? 5.9)
+                            : target === 'EUR'
+                              ? Number(rates?.eurRate ?? 5.9)
+                              : target === 'JPY'
+                                ? Number(rates?.jpyRate ?? 0.038)
+                                : 1
                         if (r) {
                           upd('cotacao_moeda', r)
                           upd(
@@ -2618,10 +2649,19 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                         }
                       }}
                     >
-                      Usar cotação do dia (R${' '}
-                      {form.moeda === 'USD' || form.moeda_original === 'USD'
-                        ? Number(rates?.usdRate ?? 5.4).toFixed(2)
-                        : Number(rates?.eurRate ?? 5.9).toFixed(2)}
+                      Usar cotação de fechamento (R${' '}
+                      {(() => {
+                        const target = form.moeda === 'BRL' ? form.moeda_original : form.moeda
+                        const r =
+                          target === 'USD'
+                            ? (rates?.usdRate ?? 5.4)
+                            : target === 'EUR'
+                              ? (rates?.eurRate ?? 5.9)
+                              : target === 'JPY'
+                                ? (rates?.jpyRate ?? 0.038)
+                                : 1
+                        return formatPtaxRate(r)
+                      })()}
                       )
                     </button>
                   </div>
@@ -2629,9 +2669,13 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     className="mt-1 bg-white dark:bg-slate-900"
                     value={
                       form.cotacao_moeda ??
-                      (form.moeda === 'USD' || form.moeda_original === 'USD'
-                        ? (rates?.usdRate ?? 5.4)
-                        : (rates?.eurRate ?? 5.9))
+                      (() => {
+                        const target = form.moeda === 'BRL' ? form.moeda_original : form.moeda
+                        if (target === 'USD') return rates?.usdRate ?? 5.4
+                        if (target === 'EUR') return rates?.eurRate ?? 5.9
+                        if (target === 'JPY') return rates?.jpyRate ?? 0.038
+                        return 1
+                      })()
                     }
                     onChange={(val) => upd('cotacao_moeda', val || null)}
                     prefix="R$"
@@ -2782,7 +2826,15 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                     className="mt-1 font-bold text-[#0b3c26] border-[#0b3c26]/30 focus-visible:ring-[#0b3c26]"
                     value={form.preco_especial || 0}
                     onChange={(v) => upd('preco_especial', v)}
-                    prefix={form.moeda === 'USD' ? 'US$' : form.moeda === 'EUR' ? '€' : 'R$'}
+                    prefix={
+                      form.moeda === 'USD'
+                        ? 'US$'
+                        : form.moeda === 'EUR'
+                          ? '€'
+                          : form.moeda === 'JPY'
+                            ? '¥'
+                            : 'R$'
+                    }
                   />
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Na proposta gerada, o valor cheio ({fmtCurrency(valorFinal)}) será mostrado

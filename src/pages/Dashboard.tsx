@@ -3,6 +3,8 @@ import { useAuth } from '@/hooks/use-auth'
 import { isVendedorRole } from '@/components/RoleGuard'
 import { fetchProjetos, fetchProjetosForUser } from '@/services/projetos'
 import { fetchProposalsWidgetData, type ProposalsWidgetData } from '@/services/dashboard'
+import { useCurrencyRates } from '@/hooks/use-currency-rates'
+import { formatPtaxRate, SAFE_DEFAULT_RATES } from '@/services/currency-rates'
 import { ProjetoWithRelations } from '@/types/projeto'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -19,16 +21,11 @@ import {
   RefreshCw,
   FileSpreadsheet,
   Plus,
+  Calendar,
+  AlertTriangle,
 } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { ProposalsEvolutionChart } from '@/components/dashboard/ProposalsEvolutionChart'
-
-interface CurrencyRate {
-  pair: string
-  name: string
-  rate: number
-  change: number
-}
 
 const DEFAULT_STATS: ProposalsWidgetData = {
   monthCount: 0,
@@ -50,11 +47,50 @@ export default function Dashboard() {
 
   const isVendedor = isVendedorRole(user?.role)
 
-  // Live Currency Mock Rates
-  const currencies: CurrencyRate[] = [
-    { pair: 'USD/BRL', name: 'Dólar Americano', rate: 5.48, change: +0.42 },
-    { pair: 'EUR/BRL', name: 'Euro', rate: 5.96, change: -0.15 },
-    { pair: 'JPY/BRL', name: 'Iene Japonês', rate: 0.035, change: +0.08 },
+  const {
+    rates,
+    loading: loadingRates,
+    isCached: isRatesCached,
+    reload: reloadRates,
+  } = useCurrencyRates()
+  const currentRates = rates || SAFE_DEFAULT_RATES
+
+  const isRatesOutdated =
+    Boolean(currentRates.isOutdated) ||
+    isRatesCached ||
+    currentRates.source?.includes('cache') ||
+    currentRates.source === 'offline-default' ||
+    currentRates.source === 'padrao-seguro'
+
+  const refDateText = currentRates.refDate
+    ? `Cotação de fechamento de ${currentRates.refDate}`
+    : 'Cotação de fechamento do dia útil anterior'
+
+  const currencyCards = [
+    {
+      pair: 'USD/BRL',
+      code: 'USD',
+      symbol: '$',
+      name: 'Dólar Americano',
+      rate: currentRates.usdRate,
+      change: currentRates.usdPctChange,
+    },
+    {
+      pair: 'EUR/BRL',
+      code: 'EUR',
+      symbol: '€',
+      name: 'Euro',
+      rate: currentRates.eurRate,
+      change: currentRates.eurPctChange,
+    },
+    {
+      pair: 'JPY/BRL',
+      code: 'JPY',
+      symbol: '¥',
+      name: 'Iene Japonês',
+      rate: currentRates.jpyRate,
+      change: currentRates.jpyPctChange,
+    },
   ]
 
   const loadData = useCallback(async () => {
@@ -219,35 +255,84 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Currency Widgets Tracker */}
+      {/* Currency Widgets Tracker — Cotações PTAX Fechamento do Dia Útil Anterior (USD, EUR, JPY) */}
       <div>
-        <h2 className="text-sm font-semibold mb-2">Cotação de Moedas</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold">Cotação de Moedas</h2>
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 px-2 py-0.5 rounded shadow-2xs">
+              <Calendar className="w-3 h-3 text-emerald-700 dark:text-emerald-400" />
+              {refDateText}
+            </span>
+            {isRatesOutdated && (
+              <Badge
+                variant="outline"
+                className="text-[10px] h-5 px-1.5 border-amber-400 bg-amber-50 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-700 inline-flex items-center gap-1 font-medium"
+                title={`Fonte: ${currentRates.source}. Esta cotação pode estar desatualizada em relação ao Banco Central.`}
+              >
+                <AlertTriangle className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400" />
+                cotação desatualizada (cache)
+              </Badge>
+            )}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => reloadRates(true)}
+            disabled={loadingRates}
+            title="Atualizar cotação PTAX junto ao Banco Central"
+            className="h-6 px-2 gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw
+              className={`h-3 w-3 ${loadingRates ? 'animate-spin text-emerald-600' : ''}`}
+            />
+            <span>Atualizar</span>
+          </Button>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {currencies.map((curr) => (
-            <Card key={curr.pair} className="shadow-sm border-border">
-              <CardContent className="pt-3 flex items-center justify-between">
-                <div>
-                  <div className="text-xs text-muted-foreground font-semibold">{curr.name}</div>
-                  <div className="text-sm font-bold tracking-tight mt-0.5">{curr.pair}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-bold">R$ {curr.rate.toFixed(2)}</div>
-                  <div
-                    className={`flex items-center justify-end text-xs font-semibold ${
-                      curr.change >= 0 ? 'text-emerald-600' : 'text-rose-600'
-                    }`}
-                  >
-                    {curr.change >= 0 ? (
-                      <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" />
-                    ) : (
-                      <ArrowDownRight className="w-3.5 h-3.5 mr-0.5" />
-                    )}
-                    {Math.abs(curr.change)}%
+          {currencyCards.map((curr) => {
+            const hasChange = typeof curr.change === 'number' && curr.change !== 0
+            const isUp = curr.change >= 0
+            return (
+              <Card key={curr.pair} className="shadow-sm border-border bg-card">
+                <CardContent className="pt-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs text-muted-foreground font-semibold flex items-center gap-1">
+                      <span>{curr.name}</span>
+                      <span className="text-[10px] text-muted-foreground/80">({curr.symbol})</span>
+                    </div>
+                    <div className="text-sm font-bold tracking-tight mt-0.5">{curr.pair}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5">{refDateText}</div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="text-right">
+                    <div className="text-sm font-bold tabular-nums">
+                      R$ {formatPtaxRate(curr.rate)}
+                    </div>
+                    {hasChange ? (
+                      <div
+                        className={`flex items-center justify-end text-xs font-semibold ${
+                          isUp ? 'text-emerald-600' : 'text-rose-600'
+                        }`}
+                      >
+                        {isUp ? (
+                          <ArrowUpRight className="w-3.5 h-3.5 mr-0.5" />
+                        ) : (
+                          <ArrowDownRight className="w-3.5 h-3.5 mr-0.5" />
+                        )}
+                        {Math.abs(curr.change).toFixed(2)}%
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-slate-500 font-medium mt-0.5">
+                        Fechamento PTAX
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       </div>
 
