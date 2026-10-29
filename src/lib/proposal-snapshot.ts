@@ -79,6 +79,12 @@ export interface PropostaSnapshotRoot {
     | null
   cotacao_moeda?: number | null
   data_cotacao_moeda?: string | null
+  // Ponto 20: Snapshot do contato do cliente
+  contato_id?: string | null
+  contato_nome?: string | null
+  contato_cargo?: string | null
+  contato_email?: string | null
+  contato_telefone?: string | null
 }
 /**
  * Normaliza um objeto de versão para o formato canônico de snapshot.
@@ -169,6 +175,12 @@ export async function buildPropostaSnapshot(params: {
   } | null
   cotacao_moeda?: number | null
   data_cotacao_moeda?: string | null
+  // Ponto 20: Contato do cliente
+  contato_id?: string | null
+  contato_nome?: string | null
+  contato_cargo?: string | null
+  contato_email?: string | null
+  contato_telefone?: string | null
   // Cache opcional de versões já carregadas em memória para evitar requests redundantes
   knownVersoes?: VersaoWithModelo[]
 }): Promise<{ itens_snapshot: PropostaItemSnapshot[]; dados_snapshot: PropostaSnapshotRoot }> {
@@ -185,6 +197,11 @@ export async function buildPropostaSnapshot(params: {
     comissao_servicos = null,
     cotacao_moeda = null,
     data_cotacao_moeda = null,
+    contato_id = null,
+    contato_nome = null,
+    contato_cargo = null,
+    contato_email = null,
+    contato_telefone = null,
     knownVersoes = [],
   } = params
 
@@ -318,6 +335,11 @@ export async function buildPropostaSnapshot(params: {
     base_comissao_modo: comissao_servicos?.base_comissao_modo ?? null,
     cotacao_moeda: cotacao_moeda ?? null,
     data_cotacao_moeda: data_cotacao_moeda ?? null,
+    contato_id: contato_id ?? null,
+    contato_nome: contato_nome ?? null,
+    contato_cargo: contato_cargo ?? null,
+    contato_email: contato_email ?? null,
+    contato_telefone: contato_telefone ?? null,
   }
 
   return { itens_snapshot: itensSnapshot, dados_snapshot: dadosSnapshot }

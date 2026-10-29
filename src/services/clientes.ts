@@ -132,6 +132,41 @@ export async function fetchContatosByCliente(clienteId: string): Promise<Cliente
   return (data ?? []) as ClienteContato[]
 }
 
+export async function insertClienteContato(
+  contato: ClienteContatoInput & { cliente_id: string },
+): Promise<ClienteContato> {
+  if (!contato.cliente_id) {
+    throw new Error('cliente_id é obrigatório para cadastrar contato.')
+  }
+
+  // Se for contato principal, remove a flag principal dos outros contatos deste cliente
+  if (contato.is_principal) {
+    await supabase
+      .from(TABLE_CONTATOS)
+      .update({ is_principal: false })
+      .eq('cliente_id', contato.cliente_id)
+  }
+
+  const { data, error } = await supabase
+    .from(TABLE_CONTATOS)
+    .insert({
+      cliente_id: contato.cliente_id,
+      nome: contato.nome.trim(),
+      cargo: contato.cargo?.trim() || null,
+      email: contato.email?.trim() || null,
+      telefone: contato.telefone?.trim() || null,
+      is_principal: !!contato.is_principal,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    throw new Error(`Erro ao cadastrar novo contato: ${error.message}`)
+  }
+
+  return data as ClienteContato
+}
+
 export async function syncClienteContatos(
   clienteId: string,
   contatos: ClienteContatoInput[],

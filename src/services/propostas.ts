@@ -98,6 +98,25 @@ export async function insertProposta(
     throw new Error('A associação a um projeto é obrigatória para emitir a proposta.')
   }
 
+  // Ponto 20: Validação de contato do cliente
+  if (payload.contato_id) {
+    if (!payload.cliente) {
+      throw new Error('Não é possível vincular um contato sem selecionar um cliente.')
+    }
+    const { data: contatoValido, error: contatoErr } = await supabase
+      .from('cliente_contatos')
+      .select('id, cliente_id')
+      .eq('id', payload.contato_id)
+      .maybeSingle()
+
+    if (contatoErr || !contatoValido) {
+      throw new Error('O contato informado não foi encontrado.')
+    }
+    if (contatoValido.cliente_id !== payload.cliente) {
+      throw new Error('O contato selecionado não pertence ao cliente informado.')
+    }
+  }
+
   // Ponto 18 & Ponto 4: Validação no salvamento — Pacote exige tipo de proposta definido na primeira máquina
   // e tipos de proposta do mesmo método de fornecimento em todas as máquinas.
   if (payload.is_pacote) {
@@ -242,6 +261,25 @@ export async function createPropostaVersion(
   const targetProjeto = payload.projeto ?? original.projeto
   if (!targetProjeto) {
     throw new Error('A associação a um projeto é obrigatória para emitir a proposta.')
+  }
+
+  // Ponto 20: Validação de contato do cliente na versão
+  const effectiveCliente = payload.cliente ?? original.cliente
+  const effectiveContatoId =
+    payload.contato_id !== undefined ? payload.contato_id : original.contato_id
+  if (effectiveContatoId && effectiveCliente) {
+    const { data: contatoValido, error: contatoErr } = await supabase
+      .from('cliente_contatos')
+      .select('id, cliente_id')
+      .eq('id', effectiveContatoId)
+      .maybeSingle()
+
+    if (contatoErr || !contatoValido) {
+      throw new Error('O contato informado não foi encontrado.')
+    }
+    if (contatoValido.cliente_id !== effectiveCliente) {
+      throw new Error('O contato selecionado não pertence ao cliente informado.')
+    }
   }
 
   // Ponto 18 & Ponto 4: Validação no salvamento — Pacote exige tipo de proposta definido na primeira máquina
@@ -413,6 +451,32 @@ export async function updateProposta(
   payload: Partial<PropostaInsert>,
   userName?: string,
 ): Promise<Proposta> {
+  // Ponto 20: Validação de contato do cliente na atualização
+  if (payload.contato_id !== undefined && payload.contato_id !== null) {
+    let clienteId = payload.cliente
+    if (!clienteId) {
+      const { data: currentProp } = await supabase
+        .from(TABLE)
+        .select('cliente')
+        .eq('id', id)
+        .maybeSingle()
+      clienteId = currentProp?.cliente ?? undefined
+    }
+    if (clienteId) {
+      const { data: contatoValido, error: contatoErr } = await supabase
+        .from('cliente_contatos')
+        .select('id, cliente_id')
+        .eq('id', payload.contato_id)
+        .maybeSingle()
+
+      if (contatoErr || !contatoValido) {
+        throw new Error('O contato informado não foi encontrado.')
+      }
+      if (contatoValido.cliente_id !== clienteId) {
+        throw new Error('O contato selecionado não pertence ao cliente informado.')
+      }
+    }
+  }
   if (payload.is_pacote) {
     const itens = Array.isArray(payload.itens_snapshot)
       ? (payload.itens_snapshot as Array<{ tipo_proposta?: string; nome?: string }>)
