@@ -49,6 +49,8 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ProposalDocument } from '@/components/propostas/ProposalDocument'
+import { EnviarWhatsAppDialog } from '@/components/propostas/EnviarWhatsAppDialog'
+import { MessageSquare } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ClienteFormDialog } from '@/components/clientes/ClienteFormDialog'
 import { toast } from '@/hooks/use-toast'
@@ -225,6 +227,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
   // with the currently-selected tipo name so the form picks up any updated values.
   const pendingTipoReapply = useRef(false)
   const [previewOpen, setPreviewOpen] = useState(false)
+  const [whatsAppDialogOpen, setWhatsAppDialogOpen] = useState(false)
   const [clienteCompleto, setClienteCompleto] = useState<any>(null)
   const [projetoMode, setProjetoMode] = useState<'new' | 'existing'>('existing')
   const [novoProjetoNome, setNovoProjetoNome] = useState('')
@@ -2881,6 +2884,24 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
               mudar.
             </p>
           </div>
+
+          <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold text-foreground">Envio via WhatsApp</p>
+              <p className="text-xs text-muted-foreground">
+                Envie a proposta diretamente para o WhatsApp do cliente com número e mensagem
+                editáveis.
+              </p>
+            </div>
+            <Button
+              type="button"
+              onClick={() => setWhatsAppDialogOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2 font-semibold shadow-sm cursor-pointer shrink-0"
+              title="Enviar proposta por WhatsApp"
+            >
+              <MessageSquare className="w-4 h-4 fill-white" /> Enviar por WhatsApp
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -3159,6 +3180,148 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
             upd('cliente', novoCliente.id)
           }
         }}
+      />
+
+      {/* Diálogo de Envio por WhatsApp */}
+      <EnviarWhatsAppDialog
+        open={whatsAppDialogOpen}
+        onOpenChange={setWhatsAppDialogOpen}
+        proposta={(() => {
+          const selectedTipo = tipos.find((t) => t.nome === form.tipo_proposta)
+          const primaryVersaoId = form.is_pacote
+            ? itensVersoes[0]?.versao_id || form.versao
+            : form.versao
+          const resolvedVersaoObj = versoes.find((v) => v.id === primaryVersaoId)
+
+          const tempProposalVersoes = form.is_pacote
+            ? itensVersoes.map((item, idx) => {
+                const itemVersao = versoes.find((v) => v.id === item.versao_id)
+                const unitVal = getItemValorUnitarioConverted(item)
+                const descVal = getItemDescontoValorConverted(item)
+                return {
+                  id: `temp-${idx}`,
+                  proposta_id: editProposta?.id || 'temp-whatsapp',
+                  versao_id: item.versao_id,
+                  quantidade: item.quantidade,
+                  valor_unitario: unitVal,
+                  desconto_percentual: item.desconto_percentual ?? 0,
+                  desconto_valor: descVal,
+                  ordem: idx,
+                  tipo_proposta: item.tipo_proposta ?? form.tipo_proposta ?? null,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString(),
+                  versoes: itemVersao || null,
+                }
+              })
+            : undefined
+
+          const selectedContatoObj = contatosCliente.find((c) => c.id === contatoId)
+
+          return {
+            id: editProposta?.id || 'temp-whatsapp',
+            numero_proposta: editProposta?.numero_proposta || 'NOVA-PROPOSTA',
+            revisao: editProposta?.revisao || 'A',
+            dt_cad: editProposta?.dt_cad || new Date().toISOString().split('T')[0],
+            status: editProposta?.status || 'Em Analise',
+            cliente: form.cliente,
+            clientes: clienteCompleto || {
+              id: form.cliente,
+              fantasia: 'Cliente Selecionado',
+              razao_social: 'Cliente Selecionado',
+              contato: selectedContatoObj?.nome || null,
+              telefone: selectedContatoObj?.telefone || null,
+              email: selectedContatoObj?.email || null,
+              documento: null,
+              cep: null,
+              estado: null,
+              cidade: null,
+              bairro: null,
+              logradouro: null,
+              numero: null,
+              complementos: null,
+            },
+            contato: selectedContatoObj?.nome || null,
+            telefone: selectedContatoObj?.telefone || clienteCompleto?.telefone || null,
+            email: selectedContatoObj?.email || clienteCompleto?.email || null,
+            contato_id: contatoId || null,
+            cliente_contatos: selectedContatoObj || null,
+            versao: primaryVersaoId,
+            versoes: resolvedVersaoObj || null,
+            proposta_versoes: tempProposalVersoes,
+            tipo_proposta: form.tipo_proposta,
+            tipo_proposta_override: tipoPropostaOverride || null,
+            tipo_proposta_detalhes: tipoPropostaOverride || selectedTipo || null,
+            moeda: converterMoeda ? form.moeda || 'BRL' : form.moeda_original || 'BRL',
+            moeda_original: form.moeda_original || 'BRL',
+            cotacao_moeda: form.cotacao_moeda || null,
+            data_cotacao_moeda: form.data_cotacao_moeda || null,
+            valor_sem_desconto: valorSemDesconto,
+            valor_atual: valorAtual,
+            valor_final: valorFinal,
+            percentual_desconto: 0,
+            preco_especial: form.tem_preco_especial ? form.preco_especial : null,
+            prazo_entrega: form.prazo_entrega || selectedTipo?.prazo_entrega || '',
+            condicoes_pagamento:
+              form.condicoes_pagamento || selectedTipo?.condicoes_pagamento || '',
+            validade_oferta: form.validade_oferta || selectedTipo?.validade_oferta || '30 dias',
+            transporte_seguro: form.transporte_seguro || selectedTipo?.transporte_seguro || '',
+            imposto_ipi:
+              form.imposto_ipi != null && String(form.imposto_ipi).trim() !== ''
+                ? form.imposto_ipi
+                : selectedTipo?.imposto_ipi != null &&
+                    String(selectedTipo.imposto_ipi).trim() !== ''
+                  ? selectedTipo.imposto_ipi
+                  : null,
+            imposto_icms:
+              form.imposto_icms != null && String(form.imposto_icms).trim() !== ''
+                ? form.imposto_icms
+                : selectedTipo?.imposto_icms != null &&
+                    String(selectedTipo.imposto_icms).trim() !== ''
+                  ? selectedTipo.imposto_icms
+                  : null,
+            garantia_acessorios: form.garantia_acessorios || selectedTipo?.garantia || '',
+            assistencia_tecnica_detalhada:
+              form.assistencia_tecnica_detalhada || selectedTipo?.assistencia_tecnica || '',
+            campos_adicionais: form.campos_adicionais || [],
+            acessorios_proposta: form.acessorios_proposta || [],
+            assinatura_representante: form.assinatura_representante || null,
+            assinatura_gerente_produto: form.assinatura_gerente_produto || null,
+            nome_representante_comercial:
+              form.nome_representante_comercial || userRepresentante?.fantasia || userName || '',
+            nome_gerente_produto:
+              form.nome_gerente_produto ||
+              resolvedGerenteLockedNome ||
+              selectedGerenteObj?.nome ||
+              '',
+            nome_assessor_tecnico: 'Jorge Polezi',
+            is_pacote: form.is_pacote,
+            public_token: editProposta?.public_token || null,
+            created_at: editProposta?.created_at || new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            representantes: selectedRepresentanteObj
+              ? {
+                  id: selectedRepresentanteObj.id,
+                  fantasia: selectedRepresentanteObj.fantasia,
+                  sigla: selectedRepresentanteObj.sigla || null,
+                }
+              : null,
+            gerentes: selectedGerenteObj
+              ? {
+                  id: selectedGerenteObj.id,
+                  nome: selectedGerenteObj.nome,
+                }
+              : null,
+            dados_snapshot: {
+              contato_nome: selectedContatoObj?.nome || null,
+              contato_telefone: selectedContatoObj?.telefone || clienteCompleto?.telefone || null,
+              valor_comissao_servicos: comissaoServicosInfo?.valorCalculado ?? null,
+              base_comissao_servicos: comissaoServicosInfo?.baseCalculo ?? null,
+              percentual_comissao_servicos: comissaoServicosInfo?.percentual ?? null,
+              comissao_servicos_aplicavel: Boolean(comissaoServicosInfo),
+              base_comissao_modo: baseComissaoModo,
+            },
+          } as unknown as PropostaWithRelations
+        })()}
       />
 
       {/* ============================================================
