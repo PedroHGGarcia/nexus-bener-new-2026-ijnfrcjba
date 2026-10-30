@@ -369,7 +369,28 @@ export async function replaceVersaoTiposProposta(
     if (insError) throw new Error(insError.message)
   }
 
+  // Reindexa no índice de atributos técnicos do chatbot
+  try {
+    await (supabase as any).rpc('fn_reindexar_versao_atributos', { p_versao_id: versaoId })
+  } catch (reindexErr) {
+    console.warn(
+      'Aviso: falha ao sincronizar índice do chatbot para tipos de proposta:',
+      reindexErr,
+    )
+  }
+
   clearVersoesCache()
+}
+
+/**
+ * Força a reindexação de uma versão específica no índice de atributos técnicos do chatbot Bener Tech I.A.
+ */
+export async function reindexarVersaoChatbot(versaoId: string): Promise<void> {
+  try {
+    await (supabase as any).rpc('fn_reindexar_versao_atributos', { p_versao_id: versaoId })
+  } catch (err) {
+    console.error('Erro ao reindexar versão no chatbot:', err)
+  }
 }
 
 /**
