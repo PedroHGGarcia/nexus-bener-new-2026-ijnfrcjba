@@ -568,20 +568,20 @@ export async function consultarIndiceAtributos(
   }
 
   if (potencia_w !== undefined && potencia_w !== null) {
+    // Busca potência tanto pelo atributo 'potencia' quanto em especificações/nomes com "30w", "30 w", etc.
     const { data: exactPowerRows } = await supabase
       .from('versao_atributos_indice')
       .select('versao_id, atributo, valor_texto, valor_numerico, unidade, forma_normalizada')
-      .eq('atributo', 'potencia')
-      .eq('valor_numerico', potencia_w)
+      .or(
+        `and(atributo.eq.potencia,valor_numerico.eq.${potencia_w}),forma_normalizada.ilike.%${potencia_w}w%,forma_normalizada.ilike.%${potencia_w} w%`,
+      )
       .limit(20)
 
-    if (!exactPowerRows || exactPowerRows.length === 0) {
-      if (exato_apenas) {
-        return {
-          candidatos: [],
-          total_candidatos: 0,
-          termo_buscado: `${potencia_w} W`,
-        }
+    if ((!exactPowerRows || exactPowerRows.length === 0) && exato_apenas) {
+      return {
+        candidatos: [],
+        total_candidatos: 0,
+        termo_buscado: `${potencia_w} W`,
       }
     }
   }
@@ -630,18 +630,20 @@ export async function consultarIndiceAtributos(
     }
   }
 
-  // B. Potência exata
+  // B. Potência exata ou textual (ex: 30W / 30 watts)
   if (potencia_w !== undefined && potencia_w !== null) {
     const { data: pRows } = await supabase
       .from('versao_atributos_indice')
       .select('versao_id, atributo, valor_texto, unidade')
-      .eq('atributo', 'potencia')
-      .eq('valor_numerico', potencia_w)
+      .or(
+        `and(atributo.eq.potencia,valor_numerico.eq.${potencia_w}),forma_normalizada.ilike.%${potencia_w}w%,forma_normalizada.ilike.%${potencia_w} w%`,
+      )
+      .limit(50)
     for (const r of pRows ?? []) {
-      addMatch(r.versao_id, 80, `Potência: ${r.valor_texto}`, {
-        atributo: 'potencia',
+      addMatch(r.versao_id, 85, `Potência: ${r.valor_texto}`, {
+        atributo: r.atributo || 'potencia',
         valor: r.valor_texto,
-        unidade: r.unidade,
+        unidade: r.unidade || 'W',
       })
     }
   }
@@ -1540,6 +1542,7 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({
           error:
             'Você está enviando muitas perguntas seguidas. Aguarde um instante e tente de novo.',
+          code: 'RATE_LIMIT_EXCEEDED',
         }),
         {
           status: 429,
@@ -1628,6 +1631,7 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({
           error:
             'A chave de integração com a inteligência artificial não está configurada no servidor. Por favor, contate o administrador.',
+          code: 'AI_KEY_MISSING',
         }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...cors } },
       )
@@ -1863,10 +1867,12 @@ ${documentContextSnippet}`
     )
   } catch (err) {
     console.error('Chatbot error:', err)
+    const errMessage = err instanceof Error ? err.message : String(err)
     return new Response(
       JSON.stringify({
         error:
-          'Tivemos uma pequena instabilidade momentânea ao consultar a Bener Tech I.A. Por favor, tente enviar sua pergunta novamente em alguns instantes.',
+          'Tivemos uma pequena instabilidade ao consultar a Bener Tech I.A. Por favor, tente enviar sua pergunta novamente em alguns instantes.',
+        details: errMessage,
       }),
       {
         status: 500,

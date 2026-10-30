@@ -633,19 +633,31 @@ export function VersoesChatbot() {
       ])
       // Em resposta com sucesso, garante que o status está online
       setAiStatus('online')
-    } catch {
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error && err.message
+          ? err.message
+          : 'Desculpe, ocorreu um erro ao consultar o catálogo. Tente novamente em instantes.'
+
       setMessages((prev) => [
         ...prev,
         {
           id: `err-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
           role: 'assistant',
-          content:
-            'Desculpe, ocorreu um erro ao consultar o catálogo. Tente novamente em instantes.',
+          content: errorMessage,
           isError: true,
         },
       ])
-      // Se deu falha de rede/erro inesperado, marca offline
-      setAiStatus('offline')
+
+      // Verifica a saúde real do backend antes de marcar offline
+      // Se a conexão ainda responder, mantém online para não bloquear a UI do usuário
+      checkChatbotHealth()
+        .then((healthy) => {
+          setAiStatus(healthy ? 'online' : 'offline')
+        })
+        .catch(() => {
+          setAiStatus('offline')
+        })
     } finally {
       setLoading(false)
       setReadingDocumentStatus(false)

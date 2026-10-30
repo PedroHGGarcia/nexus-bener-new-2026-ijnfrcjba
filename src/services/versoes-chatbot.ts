@@ -358,11 +358,23 @@ export function getDynamicSuggestions(currentMessages: ChatMessage[] = []): stri
  */
 export async function checkChatbotHealth(): Promise<boolean> {
   try {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    const headers: Record<string, string> = {}
+    if (session?.access_token) {
+      headers.Authorization = `Bearer ${session.access_token}`
+    }
+
     const { data, error } = await supabase.functions.invoke('versoes-chatbot', {
+      headers,
       body: { ping: true },
     })
 
     if (error) {
+      // Se não for erro de rede fatal, não desliga o chatbot
+      console.warn('Verificação de saúde do chatbot retornou erro:', error)
       return false
     }
 
@@ -376,7 +388,8 @@ export async function checkChatbotHealth(): Promise<boolean> {
     }
 
     return true
-  } catch {
+  } catch (err) {
+    console.warn('Falha na requisição de health check do chatbot:', err)
     return false
   }
 }
