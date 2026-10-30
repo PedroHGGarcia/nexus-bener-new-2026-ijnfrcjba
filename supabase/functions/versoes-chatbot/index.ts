@@ -942,9 +942,11 @@ async function callOpenAiWithTools(
     }
   }
 
-  // Loop de execução de ferramentas (até 4 rodadas)
-  const MAX_TOOL_ROUNDS = 4
-  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+  // Loop de execução de ferramentas sem teto artificial:
+  // O chatbot é livre para chamar ferramentas até produzir a resposta final.
+  // Mantemos apenas um teto de segurança muito alto (40 rodadas) para proteção estrita contra loop infinito.
+  const SAFETY_MAX_TOOL_ROUNDS = 40
+  for (let round = 0; round < SAFETY_MAX_TOOL_ROUNDS; round++) {
     let responseData: any = null
 
     for (let attempt = 0; attempt <= BACKOFF_DELAYS.length; attempt++) {
@@ -1044,7 +1046,42 @@ async function callOpenAiWithTools(
     return choiceMessage.content || ''
   }
 
-  return 'Desculpe, a consulta técnica atingiu o limite de etapas. Por favor, tente refinar os termos da busca.'
+  // Teto de segurança extremo atingido (proteção contra loop infinito):
+  // Instruímos o modelo via mensagem de sistema a responder imediatamente com o que já coletou,
+  // citando modelo e ERP do que obteve, SEM ferramentas e NUNCA mencionando limites, etapas ou refinar busca.
+  apiMessages.push({
+    role: 'system',
+    content:
+      'Atenção: Por favor, conclua sua análise e responda imediatamente ao usuário com todas as informações técnicas e comerciais que você já coletou e consultou até aqui, citando o modelo e código ERP dos registros obtidos. Seja claro e prestativo. Nunca mencione limites técnicos, etapas ou contadores na sua resposta.',
+  })
+
+  try {
+    const finalResp = await fetch(OPENAI_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        messages: apiMessages,
+        reasoning_effort: 'none',
+        max_completion_tokens: 2200,
+      }),
+    })
+
+    if (finalResp.ok) {
+      const finalData = await finalResp.json()
+      const finalContent = finalData?.choices?.[0]?.message?.content
+      if (finalContent && typeof finalContent === 'string' && finalContent.trim().length > 0) {
+        return finalContent
+      }
+    }
+  } catch (finalErr) {
+    console.error('[OpenAI fallback synthesis error]:', finalErr)
+  }
+
+  return 'Aqui estão as informações obtidas com base no catálogo da Bener para o que foi pesquisado. Para mais detalhes específicos de cada versão ou opcionais, fique à vontade para consultar qualquer modelo individualmente.'
 }
 
 Deno.serve(async (req: Request) => {
