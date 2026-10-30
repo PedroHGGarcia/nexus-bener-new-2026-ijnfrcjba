@@ -960,6 +960,7 @@ async function callOpenAiWithTools(
             messages: apiMessages,
             tools: TOOLS_DEFINITIONS,
             tool_choice: 'auto',
+            reasoning_effort: 'none',
             max_completion_tokens: 2200,
           }),
         })
@@ -971,6 +972,7 @@ async function callOpenAiWithTools(
 
         if (!resp.ok) {
           const errData = await resp.json().catch(() => ({}))
+          console.error(`[OpenAI Error ${resp.status}]:`, JSON.stringify(errData))
           if (resp.status === 401 || resp.status === 403) {
             throw new Error(
               'O serviço de IA não pôde ser autenticado no momento. Por favor, contate o administrador.',
