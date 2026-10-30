@@ -384,9 +384,9 @@ export async function checkChatbotHealth(): Promise<boolean> {
 export const SUGGESTED_QUESTIONS: string[] = [
   'Quais versões de injetora você tem?',
   'Tem a versão SA-1000?',
-  'Qual o volume de injeção da SA-1000 na configuração B?',
-  'Quais as dimensões da máquina SA-1000?',
-  'Quais máquinas têm estoque disponível para pronta entrega?',
+  'Quais acessórios essa máquina tem e quanto custam?',
+  'Qual o IPI, ICMS e comissão do tipo de proposta da FCS?',
+  'Quais as especificações técnicas da versão SA-350P?',
 ]
 
 export async function askVersoesChatbot(
