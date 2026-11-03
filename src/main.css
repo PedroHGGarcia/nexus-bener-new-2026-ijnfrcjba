@@ -299,13 +299,6 @@
    (ProposalDocument), sem contaminar impressões de outras páginas do sistema. */
 @page proposta {
   margin: 44mm 12mm 22mm 12mm;
-  @bottom-right {
-    content: 'Página ' counter(page) ' de ' counter(pages);
-    font-family: 'Courier New', Courier, monospace, 'Lucida Console';
-    font-size: 11px;
-    font-weight: 700;
-    color: #000;
-  }
 }
 
 @media print {
@@ -332,10 +325,6 @@
     z-index: 9999 !important;
     box-sizing: border-box !important;
   }
-}
-
-.print-page-num::after {
-  content: 'Página ' counter(page) ' de ' counter(pages);
 }
 
 @media print {

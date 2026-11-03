@@ -102,6 +102,7 @@ const App = () => (
             <Suspense fallback={<LoadingFallback />}>
               <Routes>
                 {/* Public Routes */}
+                <Route path="/" element={<Index />} />
                 <Route path="/seed-logos" element={<SeedLogosPage />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -120,7 +121,6 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 >
-                  <Route path="/" element={<Index />} />
                   <Route path="/dashboard" element={<Dashboard />} />
 
                   {/* Cadastros */}

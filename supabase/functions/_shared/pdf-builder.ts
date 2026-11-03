@@ -1157,7 +1157,7 @@ export function buildProposalPdfHtml(
       .proposal-running-header {
         display: block !important;
         position: fixed !important;
-        top: -38mm !important;
+        top: 0 !important;
         left: 0 !important;
         right: 0 !important;
         height: 34mm !important;
@@ -1168,7 +1168,7 @@ export function buildProposalPdfHtml(
       .proposal-running-footer {
         display: block !important;
         position: fixed !important;
-        bottom: -18mm !important;
+        bottom: 0 !important;
         left: 0 !important;
         right: 0 !important;
         height: 16mm !important;
@@ -1181,9 +1181,6 @@ export function buildProposalPdfHtml(
         font-size: 8.5px !important;
         line-height: 1.35 !important;
         color: #64748b !important;
-      }
-      .proposal-running-footer .print-page-num::after {
-        content: counter(page) " de " counter(pages);
       }
       body > :first-child,
       .header,
@@ -1224,7 +1221,7 @@ export function buildProposalPdfHtml(
     <p style="margin:0;">Rua Iracema Lucas, 450 (Antiga Rua Parsch) &ndash; Distrito Industrial</p>
     <p style="margin:0;">Vinhedo - SP - Brasil - CEP: 13280-172 - Fone: (0**19) 3826-7373</p>
     <p style="margin:0;">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
-    <p style="margin:2px 0 0 0;font-weight:bold;text-align:right;" class="print-page-num">Página </p>
+
   </div>
 
   <div class="page-sheet" data-sheet-index="0" data-page="1">

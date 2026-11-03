@@ -30,12 +30,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (!session) {
+    // Timeout de segurança para evitar loading infinito se a rede/auth travar no iframe do preview
+    const safetyTimer = setTimeout(() => {
+      setLoading(false)
+    }, 4000)
+
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSession(session)
+        if (!session) {
+          clearTimeout(safetyTimer)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.warn('[use-auth] getSession falhou:', err)
+        clearTimeout(safetyTimer)
         setLoading(false)
-      }
-    })
+      })
 
     const {
       data: { subscription },
@@ -47,16 +60,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(safetyTimer)
+      subscription.unsubscribe()
+    }
   }, [])
 
   useEffect(() => {
     if (!session?.user) return
     setLoading(true)
-    fetchProfile(session.user.id).then((profile) => {
-      setUser(profile)
-      setLoading(false)
-    })
+    let cancelled = false
+    const profileTimer = setTimeout(() => {
+      if (!cancelled) setLoading(false)
+    }, 4000)
+
+    fetchProfile(session.user.id)
+      .then((profile) => {
+        if (!cancelled) {
+          setUser(profile)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        console.warn('[use-auth] fetchProfile falhou:', err)
+        if (!cancelled) setLoading(false)
+      })
+      .finally(() => {
+        clearTimeout(profileTimer)
+      })
+
+    return () => {
+      cancelled = true
+      clearTimeout(profileTimer)
+    }
   }, [session?.user?.id])
 
   const signIn = useCallback(async (email: string, password: string) => {

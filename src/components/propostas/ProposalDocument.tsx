@@ -708,7 +708,6 @@ export function ProposalDocument({ proposal }: Props) {
           Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373
         </p>
         <p className="font-normal">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
-        <p className="text-right text-[8.5px] font-bold mt-0.5 text-black print-page-num" />
       </div>
 
       {/* ================= PAGE 1: COVER / RECEPTION ================= */}
