@@ -23,7 +23,9 @@ const PAGE_W = 595.28
 const PAGE_H = 841.89
 const M_LEFT = 42
 const M_RIGHT = 42
-const M_TOP = 42
+export const M_HEADER_TOP = 42
+export const HEADER_HEIGHT = 88 // Cabeçalho institucional: de y=42 até linha divisória (y=116) + 14pt respiro = 88pt
+export const M_TOP = M_HEADER_TOP + HEADER_HEIGHT // Margem superior exata (130pt) para o corpo nunca sobrepor o cabeçalho
 const M_BOTTOM = 60
 
 // Helvetica / Helvetica-Bold advance widths (per 1000 units), ASCII 32..126
@@ -124,18 +126,24 @@ interface TxtOpts {
   strike?: boolean
 }
 
-class PdfDoc {
+export class PdfDoc {
   pages: string[] = []
   ops: string[] = []
+  margins = { top: M_TOP, bottom: M_BOTTOM, left: M_LEFT, right: M_RIGHT }
   y = M_TOP
   images: PdfImage[] = []
   private imgCount = 0
+  private listeners: Record<string, Array<() => void>> = {}
+  private lastDrawnPageIndex = -1
 
   get contentW(): number {
-    return PAGE_W - M_LEFT - M_RIGHT
+    return PAGE_W - this.margins.left - this.margins.right
   }
   get bottomLimit(): number {
-    return PAGE_H - M_BOTTOM
+    return PAGE_H - this.margins.bottom
+  }
+  get currentPageIndex(): number {
+    return this.pages.length
   }
   private flushPage(): void {
     if (this.ops.length === 0) return
@@ -144,10 +152,38 @@ class PdfDoc {
   }
   newPage(): void {
     this.flushPage()
-    this.y = M_TOP
+    this.y = this.margins.top
+    this.emit('pageAdded')
+  }
+  addPage(): this {
+    this.newPage()
+    return this
   }
   get pageCount(): number {
     return this.pages.length + (this.ops.length ? 1 : 0)
+  }
+  bufferedPageRange(): { start: number; count: number } {
+    return { start: 0, count: this.pageCount }
+  }
+  on(event: string, fn: () => void): this {
+    if (!this.listeners[event]) this.listeners[event] = []
+    this.listeners[event].push(fn)
+    // Se registrando pageAdded e ainda na primeira página não desenhada, dispara imediatamente
+    if (event === 'pageAdded' && this.pages.length === 0 && this.lastDrawnPageIndex < 0) {
+      this.emit('pageAdded')
+    }
+    return this
+  }
+  emit(event: string): void {
+    if (event === 'pageAdded') {
+      const idx = this.currentPageIndex
+      if (this.lastDrawnPageIndex === idx) return
+      this.lastDrawnPageIndex = idx
+    }
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
   }
   ensure(h: number): void {
     if (this.y + h > this.bottomLimit) this.newPage()
@@ -726,7 +762,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   const logoImageName = input.logo ? doc.registerImage(input.logo) : null
 
   const drawHeader = (): void => {
-    const y0 = doc.y
+    const y0 = M_HEADER_TOP
     if (input.logo && logoImageName) {
       doc.drawImage(logoImageName, M_LEFT, y0, 150, 44, input.logo)
     } else {
@@ -782,15 +818,26 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       color: [0.2, 0.2, 0.2],
     })
 
-    doc.y = Math.max(y0 + 48, boxY + rowH * 2) + 10
-    doc.hline(M_LEFT, PAGE_W - M_RIGHT, doc.y, { lw: 1.1, color: [0.15, 0.15, 0.15] })
-    doc.y += 14
+    const headerLineY = Math.max(y0 + 48, boxY + rowH * 2) + 10
+    doc.hline(M_LEFT, PAGE_W - M_RIGHT, headerLineY, { lw: 1.1, color: [0.15, 0.15, 0.15] })
+    doc.y = M_TOP
   }
 
+  // Ponto 23: Cabeçalho nativo de página do PDFKit via evento pageAdded.
+  // Idempotente: guarda o índice da página desenhada e só desenha se for página nova.
+  let lastDrawnPageIndex = -1
+  const onPageAdded = (): void => {
+    const pageIndex = doc.currentPageIndex
+    if (pageIndex === lastDrawnPageIndex) return
+    lastDrawnPageIndex = pageIndex
+    drawHeader()
+  }
+  doc.on('pageAdded', onPageAdded)
+
+  // ensureSpace não manipula doc.y para abrir espaço de header — a margem superior (M_TOP) e o pageAdded já cobrem
   const ensureSpace = (h: number): void => {
     if (doc.y + h > doc.bottomLimit) {
       doc.newPage()
-      drawHeader()
     }
   }
 
@@ -802,9 +849,6 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.hline(M_LEFT, PAGE_W - M_RIGHT, doc.y, { lw: 0.5, color: [0.75, 0.78, 0.8] })
     doc.y += 6
   }
-
-  // ===== PAGE 1 =====
-  drawHeader()
 
   // Client block
   doc.txt(M_LEFT, doc.y, 'À', { font: 'F1', size: 10 })
@@ -873,7 +917,6 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
 
   if (hasAdditionalContent) {
     doc.newPage()
-    drawHeader()
   }
 
   // ===== TECHNICAL SECTIONS =====
@@ -1458,14 +1501,15 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   })
   doc.y += 26
 
-  // ===== FOOTERS (drawn per page at the end) =====
+  // ===== FOOTERS (drawn per page at the end via bufferedPageRange) =====
   // Flush any pending ops of the last page before counting/appending footers.
   if (doc.ops.length) {
     doc.pages.push(doc.ops.join('\n'))
     doc.ops = []
   }
-  const total = doc.pageCount
-  for (let i = 0; i < doc.pages.length; i++) {
+  const pageRange = doc.bufferedPageRange()
+  const totalPages = pageRange.count
+  for (let i = pageRange.start; i < pageRange.start + pageRange.count; i++) {
     const footerOps: string[] = []
     const savedOps = doc.ops
     doc.ops = footerOps
@@ -1491,7 +1535,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       align: 'center',
       w: doc.contentW,
     })
-    doc.txt(M_LEFT, fy - 12, `Página ${i + 1} de ${total}`, {
+    doc.txt(M_LEFT, fy - 12, `Página ${i + 1} de ${totalPages}`, {
       font: 'F2',
       size: 8,
       align: 'right',
