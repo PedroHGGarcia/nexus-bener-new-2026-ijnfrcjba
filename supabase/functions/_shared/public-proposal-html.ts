@@ -822,7 +822,14 @@ export function buildPublicProposalHtml(
 
     @page {
       size: A4 portrait;
-      margin: 10mm 12mm;
+      margin: 44mm 12mm 22mm 12mm;
+    }
+
+    .proposal-running-header {
+      display: none;
+    }
+    .proposal-running-footer {
+      display: none;
     }
 
     @media print {
@@ -845,6 +852,43 @@ export function buildPublicProposalHtml(
         min-height: auto !important;
         height: auto !important;
       }
+      .page-screen-header {
+        display: none !important;
+      }
+      .page-screen-footer {
+        display: none !important;
+      }
+      .proposal-running-header {
+        display: block !important;
+        position: fixed !important;
+        top: -38mm !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 34mm !important;
+        background: #ffffff !important;
+        z-index: 9999 !important;
+        box-sizing: border-box !important;
+      }
+      .proposal-running-footer {
+        display: block !important;
+        position: fixed !important;
+        bottom: -18mm !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 16mm !important;
+        background: #ffffff !important;
+        z-index: 9999 !important;
+        box-sizing: border-box !important;
+        border-top: 1px solid #000 !important;
+        padding-top: 4px !important;
+        text-align: center !important;
+        font-size: 8.5px !important;
+        line-height: 1.35 !important;
+        color: #000 !important;
+      }
+      .proposal-running-footer .print-page-num::after {
+        content: counter(page) " de " counter(pages);
+      }
       .page-container > :first-child,
       .page[data-page="1"],
       [data-page="1"],
@@ -859,10 +903,10 @@ export function buildPublicProposalHtml(
         box-sizing: border-box !important;
         width: 100% !important;
         max-width: 100% !important;
-        padding: 4mm 0 !important;
+        padding: 0 !important;
         margin: 0 !important;
-        page-break-inside: avoid;
-        break-inside: avoid;
+        page-break-inside: auto;
+        break-inside: auto;
       }
       .page:not(:last-child) {
         page-break-after: page;
@@ -892,13 +936,28 @@ export function buildPublicProposalHtml(
     <button class="print-btn" onclick="window.print()">Imprimir / Salvar PDF</button>
   </div>
 
+  <!-- Cabeçalho nativo repetido em TODAS as folhas na impressão (@media print via position fixed) -->
+  <div class="proposal-running-header">
+    ${renderInstitutionalHeaderHtml()}
+  </div>
+
+  <!-- Rodapé nativo com contador real "Página X de Y" repetido em TODAS as folhas na impressão -->
+  <div class="proposal-running-footer">
+    <p style="margin:0;">Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial</p>
+    <p style="margin:0;">Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373</p>
+    <p style="margin:0;">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+    <p style="margin:2px 0 0 0;font-weight:bold;text-align:right;" class="print-page-num">Página </p>
+  </div>
+
   <div class="page-container">
     <!-- PAGE 1: COVER -->
     <div class="page proposal-cover" data-sheet-index="0" data-page="1" style="break-before: avoid !important; page-break-before: avoid !important; margin-top: 0 !important; padding-top: 0 !important;">
       <div>
         <div style="page-break-inside:avoid;break-inside:avoid;">
-          <!-- Top Header: Logo + Institutional text + Sigla / Nº Oferta / Mês / Ano -->
-          ${renderInstitutionalHeaderHtml()}
+          <!-- Top Header na tela (oculto no print pelo .page-screen-header) -->
+          <div class="page-screen-header">
+            ${renderInstitutionalHeaderHtml()}
+          </div>
 
           <div class="client-header">
             <p>À</p>
@@ -956,7 +1015,7 @@ export function buildPublicProposalHtml(
         </div>
       </div>
 
-      <div class="footer">
+      <div class="footer page-screen-footer">
         <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial</p>
         <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373</p>
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
@@ -964,13 +1023,15 @@ export function buildPublicProposalHtml(
       </div>
     </div>
 
-    <!-- PAGE 2: DETAILS -->
+    <!-- PAGE 2+: DETAILS -->
     ${
       hasPage2Content
         ? `<div class="page page-divider" data-sheet-index="1" data-page="2">
       <div>
-        <!-- Institutional header repeated on Page 2 -->
-        ${renderInstitutionalHeaderHtml()}
+        <!-- Institutional header on screen (Page 2) -->
+        <div class="page-screen-header">
+          ${renderInstitutionalHeaderHtml()}
+        </div>
 
         <div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
@@ -1488,7 +1549,7 @@ export function buildPublicProposalHtml(
         </div>
       </div>
 
-      <div class="footer">
+      <div class="footer page-screen-footer">
         <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial</p>
         <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373</p>
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>

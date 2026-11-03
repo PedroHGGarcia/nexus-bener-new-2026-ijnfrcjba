@@ -865,8 +865,8 @@ export function buildProposalPdfHtml(
     }
     .proposal-page-header {
       border-bottom: 1px solid #000;
-      padding-bottom: 12px;
-      margin-bottom: 20px;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
       page-break-inside: avoid;
       break-inside: avoid;
       page-break-after: avoid;
@@ -1122,16 +1122,59 @@ export function buildProposalPdfHtml(
     .page-footer p {
       margin: 0;
     }
+    .proposal-running-header {
+      display: none;
+    }
+    .proposal-running-footer {
+      display: none;
+    }
     @media print {
       html, body {
         width: 186mm !important;
         max-width: 186mm !important;
         margin: 0 auto !important;
-        padding: 0 0 40px 0 !important;
+        padding: 0 !important;
         min-height: auto !important;
         height: auto !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+      }
+      .page-screen-header {
+        display: none !important;
+      }
+      .page-footer {
+        display: none !important;
+      }
+      .proposal-running-header {
+        display: block !important;
+        position: fixed !important;
+        top: -38mm !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 34mm !important;
+        background: #ffffff !important;
+        z-index: 9999 !important;
+        box-sizing: border-box !important;
+      }
+      .proposal-running-footer {
+        display: block !important;
+        position: fixed !important;
+        bottom: -18mm !important;
+        left: 0 !important;
+        right: 0 !important;
+        height: 16mm !important;
+        background: #ffffff !important;
+        z-index: 9999 !important;
+        box-sizing: border-box !important;
+        border-top: 1px solid #cbd5e1 !important;
+        padding-top: 4px !important;
+        text-align: center !important;
+        font-size: 8.5px !important;
+        line-height: 1.35 !important;
+        color: #64748b !important;
+      }
+      .proposal-running-footer .print-page-num::after {
+        content: counter(page) " de " counter(pages);
       }
       body > :first-child,
       .header,
@@ -1143,28 +1186,12 @@ export function buildProposalPdfHtml(
         margin-top: 0 !important;
         padding-top: 0 !important;
       }
-      [data-page="2"],
-      [data-sheet-index="1"] {
-        break-before: page !important;
-        page-break-before: always !important;
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-      }
       .page-sheet {
-        page-break-inside: avoid;
-        break-inside: avoid;
+        page-break-inside: auto;
+        break-inside: auto;
       }
       .creator-info {
         display: none !important;
-      }
-      .page-footer {
-        position: static;
-        margin-top: 24px;
-        border-top: 1px solid #cbd5e1;
-        padding-top: 10px;
-        display: block;
-        page-break-inside: avoid;
-        break-inside: avoid;
       }
       table {
         table-layout: fixed !important;
@@ -1173,13 +1200,29 @@ export function buildProposalPdfHtml(
     }
     @page {
       size: A4 portrait;
-      margin: 10mm 12mm;
+      margin: 44mm 12mm 22mm 12mm;
     }
   </style>
 </head>
 <body>
-  <div class="page-sheet" data-sheet-index="0" data-page="1">
+  <!-- Cabeçalho nativo repetido em TODAS as folhas na impressão (@media print via position fixed) -->
+  <div class="proposal-running-header">
     ${renderInstitutionalHeader()}
+  </div>
+
+  <!-- Rodapé nativo com contador real "Página X de Y" repetido em TODAS as folhas na impressão -->
+  <div class="proposal-running-footer">
+    <p style="margin:0;">Rua Iracema Lucas, 450 (Antiga Rua Parsch) &ndash; Distrito Industrial</p>
+    <p style="margin:0;">Vinhedo - SP - Brasil - CEP: 13280-172 - Fone: (0**19) 3826-7373</p>
+    <p style="margin:0;">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+    <p style="margin:2px 0 0 0;font-weight:bold;text-align:right;" class="print-page-num">Página </p>
+  </div>
+
+  <div class="page-sheet" data-sheet-index="0" data-page="1">
+    <!-- Cabeçalho visível apenas na visualização em tela (oculto no print para evitar duplicação) -->
+    <div class="page-screen-header">
+      ${renderInstitutionalHeader()}
+    </div>
 
   ${creatorSection}
 
@@ -1457,7 +1500,7 @@ export function buildProposalPdfHtml(
     </p>
   </div>
 
-  <div class="page-footer">
+  <div class="page-footer page-screen-footer">
     <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) &ndash; Distrito Industrial</p>
     <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone: (0**19) 3826-7373</p>
     <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
