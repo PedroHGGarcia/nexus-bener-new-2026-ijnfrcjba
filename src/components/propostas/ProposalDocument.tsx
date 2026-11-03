@@ -620,24 +620,59 @@ export function ProposalDocument({ proposal }: Props) {
   // PONTO 3: Garantir linha da máquina limpa (sem comissão)
   // Se o valor_final gravado embute comissão (rawFinal ~= base + comissao), subtrair comissão na linha da máquina!
   const rawValorFinalGravado = Number(proposal?.valor_final || 0)
+  const qtdProposta = Number(proposal?.quantidade || 1) > 0 ? Number(proposal?.quantidade || 1) : 1
+
   const valorMaquinaLimpoLinha = useMemo(() => {
+    if (proposal?.preco_especial != null && Number(proposal.preco_especial) > 0) {
+      return Number(proposal.preco_especial)
+    }
     if (!isComissaoAtiva) return valorEfetivoFinal
     // Se temos subtotalMaquinasLimpo confiável > 0, usa-o
-    if (subtotalMaquinasLimpo > 0) {
+    if (
+      subtotalMaquinasLimpo > 0 &&
+      (Math.abs(rawValorFinalGravado - (subtotalMaquinasLimpo + valorComissaoCalculada)) < 0.1 ||
+        rawValorFinalGravado === subtotalMaquinasLimpo)
+    ) {
       return subtotalMaquinasLimpo
     }
     // Se rawValorFinalGravado tem comissão embutida, remove
     if (rawValorFinalGravado > valorComissaoCalculada) {
       return rawValorFinalGravado - valorComissaoCalculada
     }
+    if (subtotalMaquinasLimpo > 0) {
+      return subtotalMaquinasLimpo
+    }
     return valorEfetivoFinal
   }, [
+    proposal?.preco_especial,
     isComissaoAtiva,
     subtotalMaquinasLimpo,
     rawValorFinalGravado,
     valorComissaoCalculada,
     valorEfetivoFinal,
   ])
+
+  // Valor original da tabela da máquina limpo de comissão
+  const valorOriginalMaquinaLimpo = useMemo(() => {
+    let orig = valorOriginalTabela > 0 ? valorOriginalTabela : valorMaquinaLimpoLinha
+    if (isComissaoAtiva && valorComissaoCalculada > 0 && orig > valorComissaoCalculada) {
+      if (
+        Math.abs(orig - (valorMaquinaLimpoLinha + valorComissaoCalculada)) < 0.1 ||
+        orig >= valorMaquinaLimpoLinha + valorComissaoCalculada - 0.05
+      ) {
+        orig = orig - valorComissaoCalculada
+      }
+    }
+    return Math.max(orig, valorMaquinaLimpoLinha)
+  }, [valorOriginalTabela, valorMaquinaLimpoLinha, isComissaoAtiva, valorComissaoCalculada])
+
+  const valorUnitarioMaquinaEfetivo = useMemo(() => {
+    return qtdProposta > 0 ? valorMaquinaLimpoLinha / qtdProposta : valorMaquinaLimpoLinha
+  }, [valorMaquinaLimpoLinha, qtdProposta])
+
+  const valorUnitarioMaquinaOrig = useMemo(() => {
+    return qtdProposta > 0 ? valorOriginalMaquinaLimpo / qtdProposta : valorOriginalMaquinaLimpo
+  }, [valorOriginalMaquinaLimpo, qtdProposta])
 
   // PONTO 3: VALOR TOTAL DO FORNECIMENTO = subtotal da máquina limpo + comissão (sem soma dupla)
   const valorTotalFornecimentoExibido = useMemo(() => {
@@ -1625,9 +1660,25 @@ export function ProposalDocument({ proposal }: Props) {
                                 <td className="text-left font-bold text-slate-900 break-words leading-tight">
                                   {machineTitle}
                                 </td>
-                                <td className="text-center font-medium text-slate-800">1</td>
+                                <td className="text-center font-medium text-slate-800">
+                                  {qtdProposta}
+                                </td>
                                 <td className="text-right font-semibold text-slate-900 whitespace-nowrap">
-                                  {fmtCurrency(valorOriginalTabela, proposal.moeda)}
+                                  {hasItemDiscount ||
+                                  valorUnitarioMaquinaOrig > valorUnitarioMaquinaEfetivo ? (
+                                    <div className="space-y-0.5">
+                                      <span className="line-through text-slate-400 text-[9px] block whitespace-nowrap">
+                                        {fmtCurrency(valorUnitarioMaquinaOrig, proposal.moeda)}
+                                      </span>
+                                      <span className="text-slate-900 block whitespace-nowrap font-bold">
+                                        {fmtCurrency(valorUnitarioMaquinaEfetivo, proposal.moeda)}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span>
+                                      {fmtCurrency(valorUnitarioMaquinaOrig, proposal.moeda)}
+                                    </span>
+                                  )}
                                 </td>
                                 <td className="text-right font-medium text-slate-700 whitespace-nowrap">
                                   {effectiveDiscountPercent > 0
@@ -1635,12 +1686,13 @@ export function ProposalDocument({ proposal }: Props) {
                                     : '—'}
                                 </td>
                                 <td className="text-right font-bold text-slate-950 whitespace-nowrap">
-                                  {hasItemDiscount ? (
+                                  {hasItemDiscount ||
+                                  valorOriginalMaquinaLimpo > valorMaquinaLimpoLinha ? (
                                     <div className="space-y-0.5">
                                       <span className="line-through text-slate-400 text-[9px] block whitespace-nowrap">
-                                        {fmtCurrency(valorOriginalTabela, proposal.moeda)}
+                                        {fmtCurrency(valorOriginalMaquinaLimpo, proposal.moeda)}
                                       </span>
-                                      <span className="text-slate-900 block whitespace-nowrap">
+                                      <span className="text-slate-900 block whitespace-nowrap font-extrabold">
                                         {fmtCurrency(valorMaquinaLimpoLinha, proposal.moeda)}
                                       </span>
                                     </div>

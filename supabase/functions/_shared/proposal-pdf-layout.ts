@@ -1044,75 +1044,8 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     total: number
     hasDisc: boolean
   }
-  const rows: Row[] = []
-  if (p.is_pacote && equipmentItems.length > 0) {
-    equipmentItems.forEach((item: any, idx: number) => {
-      const v = item.versoes || {}
-      const qtd = item.quantidade || 1
-      const unit = Number(item.valor_unitario || 0)
-      const subtotal = qtd * unit
-      const descVal = Number(item.desconto_valor || 0)
-      const descPct = Number(item.desconto_percentual || 0)
-      const total = descVal > 0 ? Math.max(0, subtotal - descVal) : subtotal * (1 - descPct / 100)
-      const hasDisc = descPct > 0 || descVal > 0
-      rows.push({
-        nome: v?.nome || v?.nome_abreviado || `Item ${idx + 1}`,
-        tipo: item.tipo_proposta || (idx === 0 ? p.tipo_proposta : null) || null,
-        qtd,
-        moeda: v?.moeda || moeda,
-        valOrig: unit,
-        valUnitEfetivo: qtd > 0 ? total / qtd : total,
-        descTxt:
-          descPct > 0 ? `${descPct}%` : descVal > 0 ? fmtMoney(descVal, v?.moeda || moeda) : '—',
-        total,
-        hasDisc,
-      })
-    })
-  } else {
-    // PONTO 3: A linha da máquina deve exibir VALOR UNITÁRIO e SUBTOTAL somente com o valor da máquina (com seus opcionais inclusos) — sem comissão embutida
-    const rawSem =
-      Number(p.valor_sem_desconto) > 0 ? Number(p.valor_sem_desconto) : Number(p.valor_final || 0)
-    const precoEsp =
-      p.preco_especial != null && Number(p.preco_especial) > 0 ? Number(p.preco_especial) : null
-    const rawFinalGravado = Number(p.valor_final || 0)
-
-    let valEfetivo = precoEsp != null ? precoEsp : rawFinalGravado
-    let valOrig = rawSem > 0 ? rawSem : valEfetivo
-
-    // Se houver comissão gravada e ela estiver embutida no valor_final, limpamos a linha da máquina
-    const valComissaoPrevia = Number(
-      p.valor_comissao_servicos || dadosSnapshot?.valor_comissao_servicos || 0,
-    )
-    if (valComissaoPrevia > 0 && rawFinalGravado > valComissaoPrevia) {
-      valEfetivo = precoEsp != null ? precoEsp : rawFinalGravado - valComissaoPrevia
-      valOrig = Math.max(
-        valEfetivo,
-        rawSem > valComissaoPrevia ? rawSem - valComissaoPrevia : valEfetivo,
-      )
-    }
-
-    const pct = Number(p.percentual_desconto || 0)
-    const hasDisc = pct > 0 || (precoEsp != null && precoEsp > 0) || valOrig > valEfetivo
-    const descPct =
-      pct > 0
-        ? pct
-        : precoEsp != null && valOrig > 0 && precoEsp < valOrig
-          ? Math.round(((valOrig - precoEsp) / valOrig) * 1000) / 10
-          : 0
-    rows.push({
-      nome: machineTitle,
-      tipo: p.tipo_proposta || null,
-      qtd: 1,
-      moeda,
-      valOrig,
-      valUnitEfetivo: valEfetivo,
-      descTxt: descPct > 0 ? `${descPct}%` : '—',
-      total: valEfetivo,
-      hasDisc,
-    })
-  }
-
-  // Ponto 13: Comissão de Admissão Temporária / Importação Direta no PDF binário
+  // Ponto 13 & Ponto 3: Resolver comissão ANTES de montar as linhas comerciais,
+  // para que o VALOR UNITÁRIO e SUBTOTAL da máquina sejam SEMPRE limpos (sem comissão Bener embutida).
   const tpOverrideLayout =
     (p.tipo_proposta_override as Record<string, any> | null) ||
     (dadosSnapshot?.tipo_proposta_override as Record<string, any> | null) ||
@@ -1134,12 +1067,27 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
           ? Number(p.percentual_comissao_servicos)
           : (dadosSnapshot?.percentual_comissao_servicos as number) || 0
 
-  let baseCalculoLayout = 0
   const valorFinalLayoutComPrecoEspecial =
     p.preco_especial != null && Number(p.preco_especial) > 0
       ? Number(p.preco_especial)
       : Number(p.valor_final ?? p.valor_atual ?? 0)
 
+  // Subtotal limpo dos equipamentos a partir dos itens ou versão
+  let subtotalMaquinasBase = 0
+  if (p.is_pacote && equipmentItems.length > 0) {
+    subtotalMaquinasBase = equipmentItems.reduce((acc: number, it: any) => {
+      const q = Number(it.quantidade || 1)
+      const u = Number(it.valor_unitario || 0)
+      const dv = Number(it.desconto_valor || 0)
+      const dp = Number(it.desconto_percentual || 0)
+      const sub = q * u
+      return acc + (dv > 0 ? Math.max(0, sub - dv) : sub * (1 - dp / 100))
+    }, 0)
+  } else if (primaryVersao?.valor && Number(primaryVersao.valor) > 0) {
+    subtotalMaquinasBase = Number(primaryVersao.valor)
+  }
+
+  let baseCalculoLayout = 0
   if (p.base_comissao_servicos != null && Number(p.base_comissao_servicos) > 0) {
     baseCalculoLayout = Number(p.base_comissao_servicos)
   } else if (
@@ -1147,10 +1095,8 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     Number(dadosSnapshot.base_comissao_servicos) > 0
   ) {
     baseCalculoLayout = Number(dadosSnapshot.base_comissao_servicos)
-  } else if (valorFinalLayoutComPrecoEspecial > 0) {
-    baseCalculoLayout = valorFinalLayoutComPrecoEspecial
-  } else if (rows.length > 0) {
-    baseCalculoLayout = rows.reduce((acc, r) => acc + r.total, 0)
+  } else if (subtotalMaquinasBase > 0) {
+    baseCalculoLayout = subtotalMaquinasBase
     inclusos.forEach((a: any) => {
       const q = Number(a.quantidade || 1)
       const v = Number(a.valor || 0)
@@ -1160,6 +1106,15 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       const tot = d > 0 ? Math.max(0, sub - d) : sub * (1 - pct / 100)
       baseCalculoLayout += tot
     })
+  } else if (valorFinalLayoutComPrecoEspecial > 0) {
+    const rawValComissaoPrevia = Number(
+      p.valor_comissao_servicos || dadosSnapshot?.valor_comissao_servicos || 0,
+    )
+    if (rawValComissaoPrevia > 0 && valorFinalLayoutComPrecoEspecial > rawValComissaoPrevia) {
+      baseCalculoLayout = valorFinalLayoutComPrecoEspecial - rawValComissaoPrevia
+    } else {
+      baseCalculoLayout = valorFinalLayoutComPrecoEspecial
+    }
   } else {
     baseCalculoLayout = Number(p.valor_sem_desconto || p.valor_final || 0)
   }
@@ -1186,6 +1141,97 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       valorComissaoLayout = calcRes.valorCalculado
       comissaoAplicavelLayout = true
     }
+  }
+
+  const rows: Row[] = []
+  if (p.is_pacote && equipmentItems.length > 0) {
+    equipmentItems.forEach((item: any, idx: number) => {
+      const v = item.versoes || {}
+      const qtd = Number(item.quantidade) || 1
+      const unit = Number(item.valor_unitario || 0)
+      const subtotal = qtd * unit
+      const descVal = Number(item.desconto_valor || 0)
+      const descPct = Number(item.desconto_percentual || 0)
+      const total = descVal > 0 ? Math.max(0, subtotal - descVal) : subtotal * (1 - descPct / 100)
+      const hasDisc = descPct > 0 || descVal > 0
+      rows.push({
+        nome: v?.nome || v?.nome_abreviado || `Item ${idx + 1}`,
+        tipo: item.tipo_proposta || (idx === 0 ? p.tipo_proposta : null) || null,
+        qtd,
+        moeda: v?.moeda || moeda,
+        valOrig: unit,
+        valUnitEfetivo: qtd > 0 ? total / qtd : total,
+        descTxt:
+          descPct > 0 ? `${descPct}%` : descVal > 0 ? fmtMoney(descVal, v?.moeda || moeda) : '—',
+        total,
+        hasDisc,
+      })
+    })
+  } else {
+    // PONTO 3: A linha da máquina deve exibir VALOR UNITÁRIO e SUBTOTAL somente com o valor da máquina — SEM comissão Bener embutida.
+    const qtd = Number(p.quantidade || 1) > 0 ? Number(p.quantidade || 1) : 1
+    const rawSem =
+      Number(p.valor_sem_desconto) > 0 ? Number(p.valor_sem_desconto) : Number(p.valor_final || 0)
+    const precoEsp =
+      p.preco_especial != null && Number(p.preco_especial) > 0 ? Number(p.preco_especial) : null
+    const rawFinalGravado = Number(p.valor_final || 0)
+
+    // Reconstrução do subtotal limpo da máquina (sem comissão embutida)
+    let subtotalMaquinaLimpo = rawFinalGravado
+    if (precoEsp != null && precoEsp > 0) {
+      subtotalMaquinaLimpo = precoEsp
+    } else if (
+      baseCalculoLayout > 0 &&
+      (!comissaoAplicavelLayout ||
+        Math.abs(rawFinalGravado - (baseCalculoLayout + valorComissaoLayout)) < 0.1 ||
+        rawFinalGravado === baseCalculoLayout)
+    ) {
+      subtotalMaquinaLimpo = baseCalculoLayout
+    } else if (
+      comissaoAplicavelLayout &&
+      valorComissaoLayout > 0 &&
+      rawFinalGravado > valorComissaoLayout
+    ) {
+      subtotalMaquinaLimpo = rawFinalGravado - valorComissaoLayout
+    }
+
+    // Valor original limpo da máquina (sem comissão embutida)
+    let valOrigLimpo = rawSem > 0 ? rawSem : subtotalMaquinaLimpo
+    if (comissaoAplicavelLayout && valorComissaoLayout > 0 && valOrigLimpo > valorComissaoLayout) {
+      if (
+        Math.abs(valOrigLimpo - (subtotalMaquinaLimpo + valorComissaoLayout)) < 0.1 ||
+        valOrigLimpo >= subtotalMaquinaLimpo + valorComissaoLayout - 0.05
+      ) {
+        valOrigLimpo = valOrigLimpo - valorComissaoLayout
+      }
+    }
+    if (valOrigLimpo < subtotalMaquinaLimpo) {
+      valOrigLimpo = subtotalMaquinaLimpo
+    }
+
+    const valUnitEfetivo = qtd > 0 ? subtotalMaquinaLimpo / qtd : subtotalMaquinaLimpo
+    const valUnitOrig = qtd > 0 ? valOrigLimpo / qtd : valOrigLimpo
+
+    const pct = Number(p.percentual_desconto || 0)
+    const hasDisc = pct > 0 || (precoEsp != null && precoEsp > 0) || valUnitOrig > valUnitEfetivo
+    const descPct =
+      pct > 0
+        ? pct
+        : valUnitOrig > valUnitEfetivo && valUnitOrig > 0
+          ? Math.round(((valUnitOrig - valUnitEfetivo) / valUnitOrig) * 1000) / 10
+          : 0
+
+    rows.push({
+      nome: machineTitle,
+      tipo: p.tipo_proposta || null,
+      qtd,
+      moeda,
+      valOrig: valUnitOrig,
+      valUnitEfetivo: valUnitEfetivo,
+      descTxt: descPct > 0 ? `${descPct}%` : '—',
+      total: subtotalMaquinaLimpo,
+      hasDisc,
+    })
   }
 
   if (comissaoAplicavelLayout && valorComissaoLayout > 0) {

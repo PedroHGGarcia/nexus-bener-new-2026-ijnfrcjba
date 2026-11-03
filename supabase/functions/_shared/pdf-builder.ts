@@ -1367,36 +1367,44 @@ export function buildProposalPdfHtml(
               ? Number(proposta.valor_sem_desconto)
               : rawFinalGravado
 
-          let valEfetivoLimpo = pEsp != null && pEsp > 0 ? pEsp : rawFinalGravado
-          let valOrigLimpo = rawSemDesc > 0 ? rawSemDesc : valEfetivoLimpo
+          // PONTO 3: A linha da máquina deve exibir VALOR UNITÁRIO e SUBTOTAL somente com o valor da máquina — SEM comissão Bener embutida.
+          const qtdUnitaria =
+            Number(proposta.quantidade || 1) > 0 ? Number(proposta.quantidade || 1) : 1
+
+          let subtotalMaquinaLimpo = pEsp != null && pEsp > 0 ? pEsp : rawFinalGravado
+          let valOrigLimpo = rawSemDesc > 0 ? rawSemDesc : subtotalMaquinaLimpo
 
           if (comissaoAplicavel && valorComissaoCalculada > 0) {
             if (
               baseCalculoItens > 0 &&
-              Math.abs(rawFinalGravado - (baseCalculoItens + valorComissaoCalculada)) < 0.1
+              (Math.abs(rawFinalGravado - (baseCalculoItens + valorComissaoCalculada)) < 0.1 ||
+                rawFinalGravado === baseCalculoItens)
             ) {
-              valEfetivoLimpo = pEsp != null && pEsp > 0 ? pEsp : baseCalculoItens
-              valOrigLimpo = Math.max(valEfetivoLimpo, rawSemDesc - valorComissaoCalculada)
-            } else if (
-              rawFinalGravado > valorComissaoCalculada &&
-              Math.abs(rawFinalGravado - (valEfetivoLimpo + valorComissaoCalculada)) < 0.1
-            ) {
-              valEfetivoLimpo = rawFinalGravado - valorComissaoCalculada
-              valOrigLimpo = Math.max(valEfetivoLimpo, rawSemDesc - valorComissaoCalculada)
-            } else if (rawFinalGravado > valorComissaoCalculada && baseCalculoItens > 0) {
-              valEfetivoLimpo = pEsp != null && pEsp > 0 ? pEsp : baseCalculoItens
-              valOrigLimpo = Math.max(
-                valEfetivoLimpo,
-                rawSemDesc > valorComissaoCalculada
-                  ? rawSemDesc - valorComissaoCalculada
-                  : baseCalculoItens,
-              )
+              subtotalMaquinaLimpo = pEsp != null && pEsp > 0 ? pEsp : baseCalculoItens
+            } else if (rawFinalGravado > valorComissaoCalculada) {
+              subtotalMaquinaLimpo =
+                pEsp != null && pEsp > 0 ? pEsp : rawFinalGravado - valorComissaoCalculada
+            }
+
+            if (valOrigLimpo > valorComissaoCalculada) {
+              if (
+                Math.abs(valOrigLimpo - (subtotalMaquinaLimpo + valorComissaoCalculada)) < 0.1 ||
+                valOrigLimpo >= subtotalMaquinaLimpo + valorComissaoCalculada - 0.05
+              ) {
+                valOrigLimpo = valOrigLimpo - valorComissaoCalculada
+              }
+            }
+            if (valOrigLimpo < subtotalMaquinaLimpo) {
+              valOrigLimpo = subtotalMaquinaLimpo
             }
           }
 
+          const valUnitEfetivo =
+            qtdUnitaria > 0 ? subtotalMaquinaLimpo / qtdUnitaria : subtotalMaquinaLimpo
+          const valUnitOrig = qtdUnitaria > 0 ? valOrigLimpo / qtdUnitaria : valOrigLimpo
+
           const dPerc = Number(proposta.percentual_desconto || 0)
-          const hasDisc = dPerc > 0 || (pEsp != null && pEsp > 0) || valOrigLimpo > valEfetivoLimpo
-          const valUnitEfetivo = valEfetivoLimpo
+          const hasDisc = dPerc > 0 || (pEsp != null && pEsp > 0) || valUnitOrig > valUnitEfetivo
           const fmtM = (n: number) =>
             n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -1420,15 +1428,15 @@ export function buildProposalPdfHtml(
               <tr>
                 <td style="padding:8px 10px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">1</td>
                 <td style="padding:8px 10px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;">${escapeHtml(mTitle)}</td>
-                <td style="padding:8px 10px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">1 un.</td>
+                <td style="padding:8px 10px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">${qtdUnitaria} un.</td>
                 <td style="padding:8px 10px;text-align:right;border-bottom:1px solid #e2e8f0;">
                   ${
                     hasDisc
                       ? `<div style="display:flex;flex-direction:column;align-items:flex-end;">
-                          <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;">${moedaProp} ${fmtM(valOrigLimpo)}</span>
+                          <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;">${moedaProp} ${fmtM(valUnitOrig)}</span>
                           <span style="font-weight:bold;color:#0f172a;">${moedaProp} ${fmtM(valUnitEfetivo)}</span>
                          </div>`
-                      : `<span style="font-weight:bold;color:#0f172a;">${moedaProp} ${fmtM(valOrigLimpo)}</span>`
+                      : `<span style="font-weight:bold;color:#0f172a;">${moedaProp} ${fmtM(valUnitOrig)}</span>`
                   }
                 </td>
                 <td style="padding:8px 10px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${dPerc > 0 ? `${dPerc}%` : '—'}</td>
@@ -1437,9 +1445,9 @@ export function buildProposalPdfHtml(
                     hasDisc
                       ? `<div style="display:flex;flex-direction:column;align-items:flex-end;">
                           <span style="text-decoration:line-through;color:#94a3b8;font-size:10px;">${moedaProp} ${fmtM(valOrigLimpo)}</span>
-                          <span style="font-weight:bold;color:#0f172a;font-size:12px;">${moedaProp} ${fmtM(valEfetivoLimpo)}</span>
+                          <span style="font-weight:bold;color:#0f172a;font-size:12px;">${moedaProp} ${fmtM(subtotalMaquinaLimpo)}</span>
                          </div>`
-                      : `<span style="font-weight:bold;color:#0f172a;font-size:12px;">${moedaProp} ${fmtM(valEfetivoLimpo)}</span>`
+                      : `<span style="font-weight:bold;color:#0f172a;font-size:12px;">${moedaProp} ${fmtM(subtotalMaquinaLimpo)}</span>`
                   }
                 </td>
               </tr>

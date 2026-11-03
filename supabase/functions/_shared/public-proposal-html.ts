@@ -1342,94 +1342,85 @@ export function buildPublicProposalHtml(
                         </tr>`
                       })
                       .join('')
-                  : `<tr>
-                      <td style="padding:6px 8px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">1</td>
-                      <td style="padding:6px 8px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;">${esc(machineTitle)}</td>
-                      <td style="padding:6px 8px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">1</td>
-                      <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;">
-                        ${(() => {
-                          // PONTO 3: Subtotal da máquina LIMPO (sem comissão embutida)
-                          let vEfetivoLimpo = valorEfetivoFinal
-                          let vOrigLimpo = valorOriginalTabela
-                          if (comissaoAplicavel && valorComissaoCalculada > 0) {
-                            if (
-                              baseCalculoItens > 0 &&
-                              Math.abs(
-                                valorEfetivoFinal - (baseCalculoItens + valorComissaoCalculada),
-                              ) < 0.1
-                            ) {
-                              vEfetivoLimpo =
-                                precoEspecial != null && precoEspecial > 0
-                                  ? precoEspecial
-                                  : baseCalculoItens
-                              vOrigLimpo = Math.max(
-                                vEfetivoLimpo,
-                                valorOriginalTabela - valorComissaoCalculada,
-                              )
-                            } else if (
-                              valorEfetivoFinal > valorComissaoCalculada &&
-                              Math.abs(
-                                valorEfetivoFinal - (vEfetivoLimpo + valorComissaoCalculada),
-                              ) < 0.1
-                            ) {
-                              vEfetivoLimpo = valorEfetivoFinal - valorComissaoCalculada
-                              vOrigLimpo = Math.max(
-                                vEfetivoLimpo,
-                                valorOriginalTabela - valorComissaoCalculada,
-                              )
-                            }
+                  : (() => {
+                      // PONTO 3: A linha da máquina deve exibir VALOR UNITÁRIO e SUBTOTAL somente com o valor da máquina — SEM comissão Bener embutida.
+                      const qtdUnitaria =
+                        Number(proposta.quantidade || 1) > 0 ? Number(proposta.quantidade || 1) : 1
+
+                      let subtotalMaquinaLimpo =
+                        precoEspecial != null && precoEspecial > 0 ? precoEspecial : valorFinal
+                      let valOrigLimpo =
+                        valorOriginalTabela > 0 ? valorOriginalTabela : subtotalMaquinaLimpo
+
+                      if (comissaoAplicavel && valorComissaoCalculada > 0) {
+                        if (
+                          baseCalculoItens > 0 &&
+                          (Math.abs(valorFinal - (baseCalculoItens + valorComissaoCalculada)) <
+                            0.1 ||
+                            valorFinal === baseCalculoItens)
+                        ) {
+                          subtotalMaquinaLimpo =
+                            precoEspecial != null && precoEspecial > 0
+                              ? precoEspecial
+                              : baseCalculoItens
+                        } else if (valorFinal > valorComissaoCalculada) {
+                          subtotalMaquinaLimpo =
+                            precoEspecial != null && precoEspecial > 0
+                              ? precoEspecial
+                              : valorFinal - valorComissaoCalculada
+                        }
+
+                        if (valOrigLimpo > valorComissaoCalculada) {
+                          if (
+                            Math.abs(
+                              valOrigLimpo - (subtotalMaquinaLimpo + valorComissaoCalculada),
+                            ) < 0.1 ||
+                            valOrigLimpo >= subtotalMaquinaLimpo + valorComissaoCalculada - 0.05
+                          ) {
+                            valOrigLimpo = valOrigLimpo - valorComissaoCalculada
                           }
-                          return hasItemDiscount
-                            ? `<div>
-                                <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(vOrigLimpo, moedaProp)}</span>
-                                <span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(vEfetivoLimpo, moedaProp)}</span>
-                              </div>`
-                            : `<span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(vOrigLimpo, moedaProp)}</span>`
-                        })()}
-                      </td>
-                      <td style="padding:6px 8px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${effectiveDiscountPercent > 0 ? `${effectiveDiscountPercent}%` : '—'}</td>
-                      <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:bold;">
-                        ${(() => {
-                          // PONTO 3: Subtotal da máquina LIMPO (sem comissão embutida)
-                          let vEfetivoLimpo = valorEfetivoFinal
-                          let vOrigLimpo = valorOriginalTabela
-                          if (comissaoAplicavel && valorComissaoCalculada > 0) {
-                            if (
-                              baseCalculoItens > 0 &&
-                              Math.abs(
-                                valorEfetivoFinal - (baseCalculoItens + valorComissaoCalculada),
-                              ) < 0.1
-                            ) {
-                              vEfetivoLimpo =
-                                precoEspecial != null && precoEspecial > 0
-                                  ? precoEspecial
-                                  : baseCalculoItens
-                              vOrigLimpo = Math.max(
-                                vEfetivoLimpo,
-                                valorOriginalTabela - valorComissaoCalculada,
-                              )
-                            } else if (
-                              valorEfetivoFinal > valorComissaoCalculada &&
-                              Math.abs(
-                                valorEfetivoFinal - (vEfetivoLimpo + valorComissaoCalculada),
-                              ) < 0.1
-                            ) {
-                              vEfetivoLimpo = valorEfetivoFinal - valorComissaoCalculada
-                              vOrigLimpo = Math.max(
-                                vEfetivoLimpo,
-                                valorOriginalTabela - valorComissaoCalculada,
-                              )
-                            }
+                        }
+                        if (valOrigLimpo < subtotalMaquinaLimpo) {
+                          valOrigLimpo = subtotalMaquinaLimpo
+                        }
+                      }
+
+                      const valUnitEfetivo =
+                        qtdUnitaria > 0 ? subtotalMaquinaLimpo / qtdUnitaria : subtotalMaquinaLimpo
+                      const valUnitOrig =
+                        qtdUnitaria > 0 ? valOrigLimpo / qtdUnitaria : valOrigLimpo
+                      const hasLineDiscount =
+                        effectiveDiscountPercent > 0 ||
+                        (precoEspecial != null && precoEspecial > 0) ||
+                        valUnitOrig > valUnitEfetivo
+
+                      return `<tr>
+                        <td style="padding:6px 8px;text-align:center;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">1</td>
+                        <td style="padding:6px 8px;font-weight:bold;color:#0f172a;border-bottom:1px solid #e2e8f0;">${esc(machineTitle)}</td>
+                        <td style="padding:6px 8px;text-align:center;color:#1e293b;border-bottom:1px solid #e2e8f0;">${qtdUnitaria}</td>
+                        <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;">
+                          ${
+                            hasLineDiscount
+                              ? `<div>
+                                  <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valUnitOrig, moedaProp)}</span>
+                                  <span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valUnitEfetivo, moedaProp)}</span>
+                                 </div>`
+                              : `<span style="font-weight:bold;color:#0f172a;">${formatCurrencyByMoeda(valUnitOrig, moedaProp)}</span>`
                           }
-                          return hasItemDiscount
-                            ? `<div>
-                                <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(vOrigLimpo, moedaProp)}</span>
-                                <span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(vEfetivoLimpo, moedaProp)}</span>
-                              </div>`
-                            : `<span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(vEfetivoLimpo, moedaProp)}</span>`
-                        })()}
-                      </td>
-                    </tr>`
+                        </td>
+                        <td style="padding:6px 8px;text-align:right;color:#334155;border-bottom:1px solid #e2e8f0;">${effectiveDiscountPercent > 0 ? `${effectiveDiscountPercent}%` : '—'}</td>
+                        <td style="padding:6px 8px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:bold;">
+                          ${
+                            hasLineDiscount
+                              ? `<div>
+                                  <span style="text-decoration:line-through;color:#94a3b8;font-size:9px;display:block;">${formatCurrencyByMoeda(valOrigLimpo, moedaProp)}</span>
+                                  <span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(subtotalMaquinaLimpo, moedaProp)}</span>
+                                 </div>`
+                              : `<span style="font-weight:900;color:#0f172a;">${formatCurrencyByMoeda(subtotalMaquinaLimpo, moedaProp)}</span>`
+                          }
+                        </td>
+                      </tr>`
+                    })()
               }
               ${comissaoRowHtml}
             </tbody>
