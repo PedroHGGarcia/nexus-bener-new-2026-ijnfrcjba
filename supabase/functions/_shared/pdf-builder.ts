@@ -1,4 +1,13 @@
 import { escapeHtml } from './escape-html.ts'
+export {
+  buildProposalPdfBytes,
+  PdfDoc,
+  loadImage,
+  type LoadedImg,
+  M_TOP,
+  HEADER_HEIGHT,
+  M_HEADER_TOP,
+} from './proposal-pdf-layout.ts'
 
 export const TEXTO_COMISSAO_BENER_VERBATIM =
   'Pagamento Brasil: Serviços e Comissão Bener. Itens considerados p/ base de cálculo: Máquina; Opcionais Inclusos e Impostos sobre serviços Bener'
@@ -800,7 +809,7 @@ export function buildProposalPdfHtml(
           <thead>
             <tr>
               <th style="width:55px;">Sigla</th>
-              <th style="min-width:130px;">N° Oferta</th>
+              <th style="min-width:130px;width:130px;">N° Oferta</th>
               <th style="width:40px;">Mês</th>
               <th style="width:45px;">Ano</th>
             </tr>
@@ -808,7 +817,7 @@ export function buildProposalPdfHtml(
           <tbody>
             <tr>
               <td>${escapeHtml(siglaRepr)}</td>
-              <td class="offer-num">${escapeHtml(numeroCompleto)}</td>
+              <td class="offer-num" style="min-width:130px;white-space:nowrap;font-size:${numeroCompleto.length > 18 ? '7.5px' : numeroCompleto.length > 13 ? '8.5px' : '9.5px'};">${escapeHtml(numeroCompleto)}</td>
               <td>${escapeHtml(mesOferta)}</td>
               <td>${escapeHtml(anoOferta)}</td>
             </tr>

@@ -564,7 +564,7 @@ export function buildPublicProposalHtml(
           <thead>
             <tr style="background:#fff;border-bottom:1px solid #000;">
               <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:55px;">Sigla</th>
-              <th style="padding:2px 8px;text-align:center;font-weight:bold;border:1px solid #000;min-width:130px;">N° Oferta</th>
+              <th style="padding:2px 8px;text-align:center;font-weight:bold;border:1px solid #000;min-width:130px;width:130px;">N° Oferta</th>
               <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:40px;">Mês</th>
               <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:45px;">Ano</th>
             </tr>
@@ -572,7 +572,7 @@ export function buildPublicProposalHtml(
           <tbody>
             <tr>
               <td style="padding:3px 6px;text-align:center;border:1px solid #000;">${esc(siglaRepr)}</td>
-              <td style="padding:3px 8px;text-align:center;font-weight:bold;border:1px solid #000;white-space:nowrap;">${esc(numeroCompleto)}</td>
+              <td style="padding:3px 8px;text-align:center;font-weight:bold;border:1px solid #000;white-space:nowrap;min-width:130px;font-size:${numeroCompleto.length > 18 ? '7.5px' : numeroCompleto.length > 13 ? '8.5px' : '9.5px'};">${esc(numeroCompleto)}</td>
               <td style="padding:3px 6px;text-align:center;border:1px solid #000;">${esc(mesOferta)}</td>
               <td style="padding:3px 6px;text-align:center;border:1px solid #000;">${esc(anoOferta)}</td>
             </tr>
@@ -1026,9 +1026,9 @@ export function buildPublicProposalHtml(
     <!-- PAGE 2+: DETAILS -->
     ${
       hasPage2Content
-        ? `<div class="page page-divider" data-sheet-index="1" data-page="2">
+        ? `<div class="page page-divider" data-sheet-index="1" data-page="2" style="margin-top:0 !important;padding-top:0 !important;">
       <div>
-        <!-- Institutional header on screen (Page 2) -->
+        <!-- Institutional header on screen (Page 2 — oculto no print para o cabeçalho nativo @media print atuar de forma contínua em todas as páginas) -->
         <div class="page-screen-header">
           ${renderInstitutionalHeaderHtml()}
         </div>

@@ -362,27 +362,41 @@ export function ProposalDocument({ proposal }: Props) {
     ? dataPorExtenso.charAt(0).toUpperCase() + dataPorExtenso.slice(1)
     : ''
   const siglaBox = (
-    <div className="border border-black text-[9px] leading-tight text-black shrink-0 break-inside-avoid min-w-[280px] max-w-[340px] w-auto">
-      <div className="grid grid-cols-[auto_1fr_auto_auto] divide-x divide-black items-stretch">
-        <div className="px-1.5 py-0.5 text-center min-w-[50px]">
-          <p className="font-bold">Sigla</p>
-          <p className="whitespace-nowrap">{repPrimeiroNome}</p>
-        </div>
-        <div className="px-1.5 py-0.5 text-center min-w-[110px] flex flex-col justify-center">
-          <p className="font-bold">N° Oferta</p>
-          <p className="break-all font-semibold leading-tight text-[8px] sm:text-[8.5px]">
-            {numeroOferta}
-          </p>
-        </div>
-        <div className="px-1.5 py-0.5 text-center min-w-[36px]">
-          <p className="font-bold">Mês</p>
-          <p className="whitespace-nowrap">{mesOferta}</p>
-        </div>
-        <div className="px-1.5 py-0.5 text-center min-w-[42px]">
-          <p className="font-bold">Ano</p>
-          <p className="whitespace-nowrap">{anoOferta}</p>
-        </div>
-      </div>
+    <div className="border border-black text-[9.5px] leading-tight text-black shrink-0 break-inside-avoid min-w-[280px] max-w-[340px] w-auto">
+      <table className="w-full border-collapse m-0 text-[9.5px] leading-tight bg-white">
+        <thead>
+          <tr className="border-b border-black">
+            <th className="p-0.5 px-1.5 text-center font-bold border-r border-black w-[55px]">
+              Sigla
+            </th>
+            <th className="p-0.5 px-2 text-center font-bold border-r border-black min-w-[130px] w-[130px]">
+              N° Oferta
+            </th>
+            <th className="p-0.5 px-1.5 text-center font-bold border-r border-black w-[40px]">
+              Mês
+            </th>
+            <th className="p-0.5 px-1.5 text-center font-bold w-[45px]">Ano</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td className="p-1 text-center border-r border-black whitespace-nowrap">
+              {repPrimeiroNome}
+            </td>
+            <td
+              className="p-1 text-center font-bold border-r border-black whitespace-nowrap min-w-[130px]"
+              style={{
+                fontSize:
+                  numeroOferta.length > 18 ? '7.5px' : numeroOferta.length > 13 ? '8.5px' : '9.5px',
+              }}
+            >
+              {numeroOferta}
+            </td>
+            <td className="p-1 text-center border-r border-black whitespace-nowrap">{mesOferta}</td>
+            <td className="p-1 text-center whitespace-nowrap">{anoOferta}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   )
   const headerInstitucional = (
@@ -684,14 +698,38 @@ export function ProposalDocument({ proposal }: Props) {
         data-sheet-index="0"
         data-page="1"
         className="proposal-page proposal-sheet proposal-cover relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:h-auto print:border-none"
-        style={{ boxSizing: 'border-box', breakBefore: 'avoid', pageBreakBefore: 'avoid' }}
+        style={{
+          boxSizing: 'border-box',
+          breakBefore: 'avoid',
+          pageBreakBefore: 'avoid',
+          marginTop: 0,
+          paddingTop: 0,
+        }}
       >
+        {/* Running Header Nativo para @media print (aparece no topo de TODAS as páginas impressas via fixed header) */}
+        <div className="proposal-running-header hidden print:block print:fixed print:top-[-38mm] print:left-0 print:right-0 print:h-[34mm] print:bg-white print:z-[9999] border-b border-black pb-2">
+          {headerInstitucional}
+          <div className="flex justify-end mt-2">{siglaBox}</div>
+        </div>
+
+        {/* Running Footer Nativo para @media print (aparece no rodapé de TODAS as páginas impressas via fixed footer) */}
+        <div className="proposal-running-footer hidden print:block print:fixed print:bottom-[-18mm] print:left-0 print:right-0 print:h-[16mm] print:bg-white print:z-[9999] border-t border-black pt-1 text-center text-[8.5px] leading-tight text-black">
+          <p className="font-normal">
+            Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial
+          </p>
+          <p className="font-normal">
+            Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373
+          </p>
+          <p className="font-normal">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+          <p className="text-right text-[8.5px] font-bold mt-0.5 text-black print-page-num" />
+        </div>
+
         {/* Top & Main Body */}
         <div>
           {/* Header + Client + Reception wrapped to avoid breaking apart */}
           <div className="break-inside-avoid">
-            {/* Section 0: Top Header — old-system style: logo + razão social + data + Sigla/N° Oferta/Mês/Ano */}
-            <div className="border-b border-black pb-3 mb-5">
+            {/* Section 0: Top Header (exibido na tela; no print fica a cargo do header nativo repetido) */}
+            <div className="border-b border-black pb-3 mb-5 print:hidden">
               {headerInstitucional}
               <div className="flex justify-end mt-2.5">{siglaBox}</div>
             </div>
@@ -825,8 +863,8 @@ export function ProposalDocument({ proposal }: Props) {
           )}
         </div>
 
-        {/* Section 5: Institutional Footer (Fixed at the bottom of the page) */}
-        <div className="pt-4 border-t border-black text-center text-[10px] sm:text-[11px] leading-tight text-black mt-auto">
+        {/* Section 5: Institutional Footer (Fixed at the bottom of the page on screen; hidden in print in favor of running-footer) */}
+        <div className="pt-4 border-t border-black text-center text-[10px] sm:text-[11px] leading-tight text-black mt-auto print:hidden">
           <p className="font-normal">
             Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial
           </p>
@@ -848,8 +886,8 @@ export function ProposalDocument({ proposal }: Props) {
           className="proposal-page proposal-sheet relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:h-auto border-t-2 border-dashed border-slate-300 print:border-none"
           style={{ boxSizing: 'border-box', breakBefore: 'page', pageBreakBefore: 'always' }}
         >
-          {/* Institutional header repeated on Page 2 (Ponto 22) */}
-          <div className="border-b border-black pb-3 mb-5 break-inside-avoid">
+          {/* Institutional header repeated on Page 2 on screen; in print, handled by proposal-running-header */}
+          <div className="border-b border-black pb-3 mb-5 break-inside-avoid print:hidden">
             {headerInstitucional}
             <div className="flex justify-end mt-2.5">{siglaBox}</div>
           </div>
@@ -1780,8 +1818,8 @@ export function ProposalDocument({ proposal }: Props) {
             </section>
           </div>
 
-          {/* Page 2 Footer */}
-          <div className="pt-4 border-t border-black text-center text-[10px] sm:text-[11px] leading-tight text-black mt-auto">
+          {/* Page 2 Footer on screen; in print, handled by proposal-running-footer */}
+          <div className="pt-4 border-t border-black text-center text-[10px] sm:text-[11px] leading-tight text-black mt-auto print:hidden">
             <p className="font-normal">
               Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial
             </p>
