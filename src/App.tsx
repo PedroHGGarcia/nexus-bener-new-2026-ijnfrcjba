@@ -21,7 +21,7 @@ const VisualizarProposta = lazy(() => import('./pages/VisualizarProposta'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 // Lazy loaded protected pages
-const Index = lazy(() => import('./pages/Dashboard'))
+const Index = lazy(() => import('./pages/Index'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 
 // Cadastros
