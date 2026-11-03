@@ -693,6 +693,24 @@ export function ProposalDocument({ proposal }: Props) {
         page: 'proposta',
       }}
     >
+      {/* Running Header Nativo para @media print (aparece no topo de TODAS as páginas impressas via fixed header) */}
+      <div className="proposal-running-header hidden print:block border-b border-black pb-2">
+        {headerInstitucional}
+        <div className="flex justify-end mt-2">{siglaBox}</div>
+      </div>
+
+      {/* Running Footer Nativo para @media print (aparece no rodapé de TODAS as páginas impressas via fixed footer) */}
+      <div className="proposal-running-footer hidden print:block border-t border-black pt-1 text-center text-[8.5px] leading-tight text-black">
+        <p className="font-normal">
+          Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial
+        </p>
+        <p className="font-normal">
+          Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373
+        </p>
+        <p className="font-normal">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+        <p className="text-right text-[8.5px] font-bold mt-0.5 text-black print-page-num" />
+      </div>
+
       {/* ================= PAGE 1: COVER / RECEPTION ================= */}
       <div
         data-sheet-index="0"
@@ -706,24 +724,6 @@ export function ProposalDocument({ proposal }: Props) {
           paddingTop: 0,
         }}
       >
-        {/* Running Header Nativo para @media print (aparece no topo de TODAS as páginas impressas via fixed header) */}
-        <div className="proposal-running-header hidden print:block print:fixed print:top-[-38mm] print:left-0 print:right-0 print:h-[34mm] print:bg-white print:z-[9999] border-b border-black pb-2">
-          {headerInstitucional}
-          <div className="flex justify-end mt-2">{siglaBox}</div>
-        </div>
-
-        {/* Running Footer Nativo para @media print (aparece no rodapé de TODAS as páginas impressas via fixed footer) */}
-        <div className="proposal-running-footer hidden print:block print:fixed print:bottom-[-18mm] print:left-0 print:right-0 print:h-[16mm] print:bg-white print:z-[9999] border-t border-black pt-1 text-center text-[8.5px] leading-tight text-black">
-          <p className="font-normal">
-            Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial
-          </p>
-          <p className="font-normal">
-            Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373
-          </p>
-          <p className="font-normal">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
-          <p className="text-right text-[8.5px] font-bold mt-0.5 text-black print-page-num" />
-        </div>
-
         {/* Top & Main Body */}
         <div>
           {/* Header + Client + Reception wrapped to avoid breaking apart */}

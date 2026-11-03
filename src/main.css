@@ -308,6 +308,32 @@
   }
 }
 
+@media print {
+  .proposal-running-header {
+    display: block !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 34mm !important;
+    background: #fff !important;
+    z-index: 9999 !important;
+    box-sizing: border-box !important;
+  }
+
+  .proposal-running-footer {
+    display: block !important;
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 16mm !important;
+    background: #fff !important;
+    z-index: 9999 !important;
+    box-sizing: border-box !important;
+  }
+}
+
 .print-page-num::after {
   content: 'Página ' counter(page) ' de ' counter(pages);
 }
