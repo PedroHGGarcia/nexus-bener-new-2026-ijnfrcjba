@@ -133,8 +133,9 @@ export class PdfDoc {
   y = M_TOP
   images: PdfImage[] = []
   private imgCount = 0
-  private listeners: Record<string, Array<() => void>> = {}
-  private lastDrawnPageIndex = -1
+  // drawPageHeader: desenhado em TODA página criada (inclusive a primeira),
+  // registrado no construtor via beginPage() — não depende do evento pageAdded.
+  private drawPageHeader: ((pageIndex: number) => void) | null = null
 
   get contentW(): number {
     return PAGE_W - this.margins.left - this.margins.right
@@ -150,41 +151,748 @@ export class PdfDoc {
     this.pages.push(this.ops.join('\n'))
     this.ops = []
   }
-  newPage(): void {
-    this.flushPage()
-    this.y = this.margins.top
-    this.emit('pageAdded')
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
   }
-  addPage(): this {
-    this.newPage()
-    return this
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
   }
-  get pageCount(): number {
-    return this.pages.length + (this.ops.length ? 1 : 0)
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
   }
-  bufferedPageRange(): { start: number; count: number } {
-    return { start: 0, count: this.pageCount }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
   }
-  on(event: string, fn: () => void): this {
-    if (!this.listeners[event]) this.listeners[event] = []
-    this.listeners[event].push(fn)
-    // Se registrando pageAdded e ainda na primeira página não desenhada, dispara imediatamente
-    if (event === 'pageAdded' && this.pages.length === 0 && this.lastDrawnPageIndex < 0) {
-      this.emit('pageAdded')
-    }
-    return this
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+    if (this.y + h > this.bottomLimit) this.newPage()
   }
+=======
+  ensure(h: number): void {
+=======
   emit(event: string): void {
-    if (event === 'pageAdded') {
-      const idx = this.currentPageIndex
-      if (this.lastDrawnPageIndex === idx) return
-      this.lastDrawnPageIndex = idx
-    }
     const cbs = this.listeners[event] || []
     for (const cb of cbs) {
       cb()
     }
   }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+    const size = o.size ?? 10
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+    const size = o.size ?? 10
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+    if (!s) return
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+
+  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+    if (this.y + h > this.bottomLimit) this.newPage()
+  }
+=======
+  ensure(h: number): void {
+=======
+  emit(event: string): void {
+    const cbs = this.listeners[event] || []
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
+    for (const cb of cbs) {
+      cb()
+    }
+  }
+  ensure(h: number): void {
+=======
   ensure(h: number): void {
     if (this.y + h > this.bottomLimit) this.newPage()
   }
