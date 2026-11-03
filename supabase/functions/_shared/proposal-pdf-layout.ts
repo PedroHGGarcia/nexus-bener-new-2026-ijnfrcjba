@@ -291,15 +291,18 @@ export class PdfDoc {
   newPage(): void {
     this.flushPage()
     this.y = this.margins.top
-    // Desenha o cabeçalho institucional em TODA página criada (inclusive a
-    // primeira). O painter só é invocado com o buffer de ops vazio — logo após
-    // o flush — garantindo que o cabeçalho fique no início do content stream
-    // da página nova, sob o corpo.
-    if (this.pageHeader && this.ops.length === 0) this.pageHeader(this.currentPageIndex)
+    // Desenha o cabeçalho institucional no topo de cada nova página criada
+    if (this.pageHeader) {
+      this.pageHeader(this.currentPageIndex)
+    }
   }
 
   setPageHeaderPainter(fn: ((pageIndex: number) => void) | null): void {
     this.pageHeader = fn
+    // Garante que a primeira página receba o cabeçalho institucional imediatamente se estiver ativa
+    if (fn && this.pages.length === 0 && this.ops.length === 0) {
+      fn(0)
+    }
   }
 
   bufferedPageRange(): { start: number; count: number } {
@@ -568,8 +571,9 @@ function assemblePdf(pages: string[], images: PdfImage[]): Uint8Array {
     const pageId = firstPageObj + i * 2
     const pageDict = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PAGE_W.toFixed(2)} ${PAGE_H.toFixed(2)}] /Contents ${pageId + 1} 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R /F3 5 0 R >>${xobjDict} >> >>`
     objects.push(pageDict)
+    const contentBytes = enc.encode(content)
     objects.push({
-      bytes: enc.encode(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`),
+      bytes: enc.encode(`<< /Length ${contentBytes.length} >>\nstream\n${content}\nendstream`),
     })
   })
 
@@ -1499,7 +1503,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.ops = []
   }
   const pageRange = doc.bufferedPageRange()
-  const totalPages = pageRange.count
+  const totalPages = Math.max(1, pageRange.count)
   for (let i = pageRange.start; i < pageRange.start + pageRange.count; i++) {
     const footerOps: string[] = []
     const savedOps = doc.ops
