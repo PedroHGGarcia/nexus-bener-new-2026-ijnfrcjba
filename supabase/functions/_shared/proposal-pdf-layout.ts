@@ -134,8 +134,10 @@ export class PdfDoc {
   images: PdfImage[] = []
   private imgCount = 0
   // drawPageHeader: desenhado em TODA página criada (inclusive a primeira),
-  // registrado no construtor via beginPage() — não depende do evento pageAdded.
-  private drawPageHeader: ((pageIndex: number) => void) | null = null
+  // registrado no construtor via setPageHeaderPainter() — newPage() invoca o
+  // painter após o flush da página anterior; não depende do evento pageAdded,
+  // que não cobre todos os caminhos de criação de página.
+  private pageHeader: ((pageIndex: number) => void) | null = null
 
   get contentW(): number {
     return PAGE_W - this.margins.left - this.margins.right
@@ -151,748 +153,6 @@ export class PdfDoc {
     this.pages.push(this.ops.join('\n'))
     this.ops = []
   }
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-    const size = o.size ?? 10
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-    const size = o.size ?? 10
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-    if (!s) return
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-
-  txt(x: number, yTop: number, s: string, o: TxtOpts = {}): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-    if (this.y + h > this.bottomLimit) this.newPage()
-  }
-=======
-  ensure(h: number): void {
-=======
-  emit(event: string): void {
-    const cbs = this.listeners[event] || []
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
-    for (const cb of cbs) {
-      cb()
-    }
-  }
-  ensure(h: number): void {
-=======
   ensure(h: number): void {
     if (this.y + h > this.bottomLimit) this.newPage()
   }
@@ -1027,6 +287,24 @@ export class PdfDoc {
       this.y += lineH
     }
   }
+
+  newPage(): void {
+    this.flushPage()
+    this.y = this.margins.top
+    // Desenha o cabeçalho institucional em TODA página criada (inclusive a
+    // primeira). O painter só é invocado com o buffer de ops vazio — logo após
+    // o flush — garantindo que o cabeçalho fique no início do content stream
+    // da página nova, sob o corpo.
+    if (this.pageHeader && this.ops.length === 0) this.pageHeader(this.currentPageIndex)
+  }
+
+  setPageHeaderPainter(fn: ((pageIndex: number) => void) | null): void {
+    this.pageHeader = fn
+  }
+
+  bufferedPageRange(): { start: number; count: number } {
+    return { start: 0, count: this.pages.length }
+  }
 }
 
 // ---------- image decoding ----------
@@ -1037,6 +315,7 @@ function concatBytes(parts: Uint8Array[]): Uint8Array {
   let off = 0
   for (const p of parts) {
     out.set(p, off)
+    off += p.length
   }
   return out
 }
@@ -1372,6 +651,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     (dadosSnapshot?.tipo_proposta_detalhes as Record<string, any>) ||
     (tpInput as Record<string, any>) ||
     null
+  const tpSnapshot = tp
 
   const numero = p.numero_proposta || '-'
   const revisao = p.revisao || ''
@@ -1531,18 +811,18 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.y = M_TOP
   }
 
-  // Ponto 23: Cabeçalho nativo de página do PDFKit via evento pageAdded.
-  // Idempotente: guarda o índice da página desenhada e só desenha se for página nova.
-  let lastDrawnPageIndex = -1
-  const onPageAdded = (): void => {
-    const pageIndex = doc.currentPageIndex
-    if (pageIndex === lastDrawnPageIndex) return
-    lastDrawnPageIndex = pageIndex
+  // Ponto 23 (revisado): o cabeçalho institucional é desenhado em TODA página
+  // criada — inclusive a primeira — pelo próprio construtor: newPage() invoca o
+  // painter registrado via setPageHeaderPainter imediatamente após o flush da
+  // página anterior. Nada depende do evento pageAdded, que não cobre todos os
+  // caminhos de criação de página. A área do cabeçalho fica reservada porque
+  // toda página nasce com doc.y = M_TOP (= M_HEADER_TOP + HEADER_HEIGHT).
+  doc.setPageHeaderPainter(() => {
     drawHeader()
-  }
-  doc.on('pageAdded', onPageAdded)
+  })
 
-  // ensureSpace não manipula doc.y para abrir espaço de header — a margem superior (M_TOP) e o pageAdded já cobrem
+  // ensureSpace não manipula doc.y para abrir espaço de header — a margem
+  // superior (M_TOP) e o painter de newPage já cobrem o cabeçalho em cada página
   const ensureSpace = (h: number): void => {
     if (doc.y + h > doc.bottomLimit) {
       doc.newPage()
@@ -1921,9 +1201,9 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   for (const row of rows) {
     const descLines = doc.wrap(row.nome, colW[1] - 8, 8.5, true)
     const rowH = Math.max(16, descLines.length * 10 + 6)
-    const before = doc.pageCount
+    const before = doc.currentPageIndex
     ensureSpace(rowH + 4)
-    if (doc.pageCount !== before) drawThead()
+    if (doc.currentPageIndex !== before) drawThead()
     const yTop = doc.y
     doc.rect(tblX, yTop, totalW, rowH, { stroke: [0.75, 0.77, 0.8], lw: 0.5 })
     let x = tblX
@@ -2210,6 +1490,9 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   doc.y += 26
 
   // ===== FOOTERS (drawn per page at the end via bufferedPageRange) =====
+  // ÚNICA origem de rodapé/paginação: este fechamento. "Página X de Y" só é
+  // emitido aqui, quando o total de páginas já é conhecido — nunca durante o
+  // fluxo de conteúdo (nada desenha "Página 0 de 0").
   // Flush any pending ops of the last page before counting/appending footers.
   if (doc.ops.length) {
     doc.pages.push(doc.ops.join('\n'))
