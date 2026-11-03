@@ -694,13 +694,13 @@ export function ProposalDocument({ proposal }: Props) {
       }}
     >
       {/* Running Header Nativo para @media print (aparece no topo de TODAS as páginas impressas via fixed header) */}
-      <div className="proposal-running-header hidden print:block border-b border-black pb-2">
+      <div className="proposal-running-header hidden print:block print:fixed print:top-0 print:left-0 print:right-0 print:h-[34mm] print:bg-white print:z-[9999] border-b border-black pb-2">
         {headerInstitucional}
         <div className="flex justify-end mt-2">{siglaBox}</div>
       </div>
 
       {/* Running Footer Nativo para @media print (aparece no rodapé de TODAS as páginas impressas via fixed footer) */}
-      <div className="proposal-running-footer hidden print:block border-t border-black pt-1 text-center text-[8.5px] leading-tight text-black">
+      <div className="proposal-running-footer hidden print:block print:fixed print:bottom-0 print:left-0 print:right-0 print:h-[16mm] print:bg-white print:z-[9999] border-t border-black pt-1 text-center text-[8.5px] leading-tight text-black">
         <p className="font-normal">
           Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial
         </p>
