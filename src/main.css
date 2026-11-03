@@ -295,10 +295,9 @@
   margin: 10mm 12mm;
 }
 
-/* Página nomeada: o rodapé "Página X/Y" só vale para o documento de proposta
-   (ProposalDocument), sem contaminar impressões de outras páginas do sistema. */
 @page proposta {
-  margin: 44mm 12mm 22mm 12mm;
+  size: A4 portrait;
+  margin: 10mm 12mm;
 }
 
 @media print {
@@ -324,6 +323,59 @@
     background: #fff !important;
     z-index: 9999 !important;
     box-sizing: border-box !important;
+  }
+
+  /* Tabela de paginação para impressão: thead/tfoot repetem em todas as páginas
+     reservando o espaço exato do cabeçalho fixo (36mm) e rodapé fixo (18mm),
+     impedindo que o conteúdo do corpo sobreponha o cabeçalho institucional em qualquer folha. */
+  .proposal-print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border-spacing: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  .proposal-print-table > thead {
+    display: table-header-group !important;
+  }
+
+  .proposal-print-table > tfoot {
+    display: table-footer-group !important;
+  }
+
+  .proposal-print-table > tbody {
+    display: table-row-group !important;
+  }
+
+  .proposal-print-table,
+  .proposal-print-table > tbody,
+  .proposal-print-table > tbody > tr,
+  .proposal-print-table > tbody > tr > td {
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  .proposal-print-header-space {
+    height: 36mm !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    visibility: hidden !important;
+  }
+
+  .proposal-print-footer-space {
+    height: 18mm !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    visibility: hidden !important;
   }
 }
 
@@ -499,6 +551,14 @@
   }
   .proposal-document thead {
     display: table-header-group;
+  }
+
+  .proposal-print-table,
+  .proposal-print-table > tbody > tr > td {
+    display: table-cell !important;
+  }
+  .proposal-print-table {
+    display: table !important;
   }
 
   /* Guarda-corpo: nenhum ancestral do documento pode gerar página em branco */
