@@ -722,11 +722,13 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     terms.length > 0 ||
     p.valor_final != null
 
+  // Pre-register logo so the same XObject is reused on all pages without inflating PDF size
+  const logoImageName = input.logo ? doc.registerImage(input.logo) : null
+
   const drawHeader = (): void => {
     const y0 = doc.y
-    if (input.logo) {
-      const name = doc.registerImage(input.logo)
-      doc.drawImage(name, M_LEFT, y0, 150, 44, input.logo)
+    if (input.logo && logoImageName) {
+      doc.drawImage(logoImageName, M_LEFT, y0, 150, 44, input.logo)
     } else {
       doc.txt(M_LEFT, y0, 'BENER', { font: 'F2', size: 22, color: GREEN })
       doc.txt(M_LEFT, y0 + 24, 'MÁQUINAS QUE TRANSFORMAM', { font: 'F1', size: 6.5, color: GRAY })
@@ -745,14 +747,16 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     })
 
     // Sigla | N° Oferta | Mês | Ano box (right-aligned)
-    const boxW = 250
-    const colW = [45, 115, 45, 45]
+    // Box width accommodates full offer number (ex.: PROP-2026-142-A) without truncating
+    const boxW = 270
+    const colW = [50, 130, 45, 45]
     const boxX = PAGE_W - M_RIGHT - boxW
     const boxY = y0 + 34
     const rowH = 15
     doc.rect(boxX, boxY, boxW, rowH * 2, { stroke: INK, lw: 0.9 })
     const heads = ['Sigla', 'N° Oferta', 'Mês', 'Ano']
-    const vals = [sigla || '—', numero, mes, ano]
+    const fullNumero = revisao ? `${numero} (Rev. ${revisao})` : numero
+    const vals = [sigla || '—', fullNumero, mes, ano]
     let curX = boxX
     for (let i = 0; i < 4; i++) {
       if (i > 0) doc.vline(curX, boxY, boxY + rowH * 2)
@@ -763,7 +767,8 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
         w: colW[i],
       })
       const isOffer = i === 1
-      const offerFontSize = isOffer && String(vals[i]).length > 10 ? 7.5 : 9
+      const offerLen = String(vals[i]).length
+      const offerFontSize = isOffer ? (offerLen > 18 ? 7 : offerLen > 13 ? 8 : 9) : 9
       doc.txt(curX, boxY + rowH + 3, vals[i], {
         font: 'F1',
         size: offerFontSize,
@@ -782,28 +787,10 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.y += 14
   }
 
-  const drawCompactHeader = (): void => {
-    doc.txt(
-      M_LEFT,
-      doc.y,
-      `Proposta ${numero}${revisao ? ` — Rev. ${revisao}` : ''} (continuação)`,
-      { font: 'F2', size: 9, color: GRAY },
-    )
-    doc.txt(PAGE_W - M_RIGHT, doc.y, 'Bener Comercial Importadora Exportadora Ltda.', {
-      font: 'F1',
-      size: 9,
-      align: 'right',
-      w: 0,
-    })
-    doc.y += 10
-    doc.hline(M_LEFT, PAGE_W - M_RIGHT, doc.y, { lw: 0.8 })
-    doc.y += 12
-  }
-
   const ensureSpace = (h: number): void => {
     if (doc.y + h > doc.bottomLimit) {
       doc.newPage()
-      drawCompactHeader()
+      drawHeader()
     }
   }
 
@@ -886,6 +873,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
 
   if (hasAdditionalContent) {
     doc.newPage()
+    drawHeader()
   }
 
   // ===== TECHNICAL SECTIONS =====
@@ -1503,7 +1491,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       align: 'center',
       w: doc.contentW,
     })
-    doc.txt(M_LEFT, fy - 12, `Página ${i + 1}/${total}`, {
+    doc.txt(M_LEFT, fy - 12, `Página ${i + 1} de ${total}`, {
       font: 'F2',
       size: 8,
       align: 'right',

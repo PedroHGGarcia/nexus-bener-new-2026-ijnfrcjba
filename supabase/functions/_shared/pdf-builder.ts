@@ -748,6 +748,76 @@ export function buildProposalPdfHtml(
   const fmtPtax4 = (n: number | null | undefined) =>
     (Number(n) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
 
+  // Derivação de dados do cabeçalho institucional (Ponto 22: repetido em todas as páginas)
+  const rawRepNome =
+    proposta.representantes?.fantasia ||
+    proposta.representantes?.sigla ||
+    proposta.nome_representante_comercial ||
+    proposta.representante_original ||
+    proposta.user ||
+    ''
+  const firstWord = rawRepNome.trim().split(/\s+/)[0] || ''
+  const siglaRepr = firstWord
+    ? firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase()
+    : '—'
+
+  const dCad = proposta.dt_cad
+    ? new Date(proposta.dt_cad + (String(proposta.dt_cad).includes('T') ? '' : 'T12:00:00'))
+    : new Date()
+  const mesOferta = String(dCad.getMonth() + 1).padStart(2, '0')
+  const anoOferta = String(dCad.getFullYear())
+  const dataExtensoFmt = dCad.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
+  const cidadeDataFmt = `Vinhedo, ${dataExtensoFmt}`
+
+  const numeroBase = (proposta.numero_proposta || '').trim() || '—'
+  const numeroCompleto = proposta.revisao ? `${numeroBase} (Rev. ${proposta.revisao})` : numeroBase
+
+  const renderInstitutionalHeader = () => `
+    <div class="proposal-page-header">
+      <div class="proposal-page-header-top">
+        <div>
+          ${
+            logoUrl
+              ? `<img src="${logoUrl}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block'" />`
+              : ''
+          }
+          <div style="${logoUrl ? 'display:none;' : ''}font-size:24px;font-weight:800;color:#0b3c26;letter-spacing:2px;line-height:1;">
+            BENER
+            <div style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</div>
+          </div>
+        </div>
+        <div class="header-company-info">
+          <div class="company-name">Bener Comercial Importadora Exportadora Ltda.</div>
+          <div style="margin-top:2px;">${escapeHtml(cidadeDataFmt)}</div>
+        </div>
+      </div>
+      <div class="header-offer-table-wrapper">
+        <table class="header-offer-table">
+          <thead>
+            <tr>
+              <th style="width:55px;">Sigla</th>
+              <th style="min-width:130px;">N° Oferta</th>
+              <th style="width:40px;">Mês</th>
+              <th style="width:45px;">Ano</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>${escapeHtml(siglaRepr)}</td>
+              <td class="offer-num">${escapeHtml(numeroCompleto)}</td>
+              <td>${escapeHtml(mesOferta)}</td>
+              <td>${escapeHtml(anoOferta)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `
+
   // Formatação segura de data DD/MM/AAAA para cotação
   const formatPtaxDataCotacao = (dt: string | null | undefined): string => {
     if (!dt) return ''
@@ -793,36 +863,67 @@ export function buildProposalPdfHtml(
       font-size: 12px;
       line-height: 1.5;
     }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      border-bottom: 3px solid #0b3c26;
-      padding-bottom: 20px;
+    .proposal-page-header {
+      border-bottom: 1px solid #000;
+      padding-bottom: 12px;
       margin-bottom: 20px;
       page-break-inside: avoid;
       break-inside: avoid;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+    .proposal-page-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
     }
     .logo-img {
-      height: 52px;
+      height: 46px;
       width: auto;
-      max-width: 240px;
+      max-width: 220px;
       object-fit: contain;
     }
-    .proposal-title {
+    .header-company-info {
       text-align: right;
-      max-width: 320px;
-      white-space: normal;
-      word-break: break-word;
+      color: #000;
+      font-size: 11px;
+      line-height: 1.35;
+      flex-shrink: 0;
     }
-    .proposal-title h1 {
-      font-size: 20px;
-      color: #0b3c26;
-      margin: 0 0 5px 0;
+    .header-company-info .company-name {
+      font-weight: bold;
+      font-size: 12px;
     }
-    .proposal-number-text {
-      white-space: normal;
-      word-break: break-word;
+    .header-offer-table-wrapper {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 10px;
+    }
+    .header-offer-table {
+      width: auto !important;
+      min-width: 280px;
+      max-width: 340px;
+      border-collapse: collapse;
+      border: 1px solid #000;
+      margin: 0 !important;
+      font-size: 9.5px;
+      line-height: 1.2;
+      background: #fff;
+    }
+    .header-offer-table th, .header-offer-table td {
+      border: 1px solid #000 !important;
+      padding: 2px 6px !important;
+      text-align: center !important;
+    }
+    .header-offer-table th {
+      background: #fff !important;
+      font-weight: bold !important;
+    }
+    .header-offer-table td.offer-num {
+      font-weight: bold;
+      white-space: nowrap;
+      padding: 3px 8px !important;
     }
     .creator-info {
       display: none !important;
@@ -1049,6 +1150,10 @@ export function buildProposalPdfHtml(
         margin-top: 0 !important;
         padding-top: 0 !important;
       }
+      .page-sheet {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
       .creator-info {
         display: none !important;
       }
@@ -1073,21 +1178,8 @@ export function buildProposalPdfHtml(
   </style>
 </head>
 <body>
-  <div class="header">
-    <div>
-      ${
-        logoUrl
-          ? `<img src="${logoUrl}" alt="BENER - MAQUINAS QUE TRANSFORMAM" class="logo-img" onerror="this.style.display='none';document.getElementById('pdf-logo-fallback').style.display='block'" />`
-          : `<span style="font-size:28px;font-weight:800;color:#0b3c26;letter-spacing:3px;">BENER</span>`
-      }
-      <span id="pdf-logo-fallback" style="display:none;font-size:28px;font-weight:800;color:#0b3c26;letter-spacing:3px;">BENER</span>
-    </div>
-    <div class="proposal-title">
-      <h1>${proposta.modelo_licitacao ? 'PROPOSTA DE LICITAÇÃO' : 'PROPOSTA COMERCIAL'}</h1>
-      <div class="proposal-number-text">Nº <strong>${escapeHtml(proposta.numero_proposta || 'N/A')}</strong> (Rev. ${escapeHtml(proposta.revisao || '0')})</div>
-      <div>${formatLongDate(proposta.dt_cad)}</div>
-    </div>
-  </div>
+  <div class="page-sheet" data-sheet-index="0" data-page="1">
+    ${renderInstitutionalHeader()}
 
   ${creatorSection}
 
@@ -1369,6 +1461,7 @@ export function buildProposalPdfHtml(
     <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) &ndash; Distrito Industrial</p>
     <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone: (0**19) 3826-7373</p>
     <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+    <p style="margin-top:4px;font-weight:bold;">Página 1 de 1</p>
   </div>
 
   <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #cbd5e1; page-break-inside:avoid; break-inside:avoid;">
@@ -1408,6 +1501,7 @@ export function buildProposalPdfHtml(
     Bener Maquinas S.A. &bull; Nexus - Gestao Comercial &bull; Validacao disponivel em ${publicAppUrl}/validar-proposta/${proposta.id || ''}
   </div>
   ${footerCreator}
+  </div>
 </body>
 </html>
 `

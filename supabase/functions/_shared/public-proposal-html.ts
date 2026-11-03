@@ -512,17 +512,75 @@ export function buildPublicProposalHtml(
         ? Math.round(((valorOriginalTabela - precoEspecial) / valorOriginalTabela) * 100 * 10) / 10
         : 0
 
+  // Derivação de dados para o cabeçalho institucional unificado
+  const rawRepNome =
+    proposta.representantes?.fantasia ||
+    proposta.representantes?.sigla ||
+    proposta.nome_representante_comercial ||
+    proposta.representante_original ||
+    proposta.user ||
+    ''
+  const firstWord = rawRepNome.trim().split(/\s+/)[0] || ''
+  const siglaRepr = firstWord
+    ? firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase()
+    : '—'
+
+  const dCad = proposta.dt_cad
+    ? new Date(proposta.dt_cad + (String(proposta.dt_cad).includes('T') ? '' : 'T12:00:00'))
+    : new Date()
+  const mesOferta = String(dCad.getMonth() + 1).padStart(2, '0')
+  const anoOferta = String(dCad.getFullYear())
+
   // Formatação de data com cidade: "Vinhedo, 22 de outubro de 2026" (Regra 5)
   const formattedDateWithCity = (() => {
-    const raw = proposta.dt_cad
-    const d = raw ? new Date(raw + (raw.includes('T') ? '' : 'T12:00:00')) : new Date()
-    const dtStr = d.toLocaleDateString('pt-BR', {
+    const dtStr = dCad.toLocaleDateString('pt-BR', {
       day: '2-digit',
       month: 'long',
       year: 'numeric',
     })
     return `Vinhedo, ${dtStr}`
   })()
+
+  const numeroBase = (proposta.numero_proposta || '').trim() || '—'
+  const numeroCompleto = proposta.revisao ? `${numeroBase} (Rev. ${proposta.revisao})` : numeroBase
+
+  const renderInstitutionalHeaderHtml = () => `
+    <div class="proposal-institutional-header" style="border-bottom:1px solid #000;padding-bottom:14px;margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+        <div style="display:flex;flex-direction:column;align-items:flex-start;">
+          ${
+            logoUrlOverride
+              ? `<img src="${esc(logoUrlOverride)}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:46px;width:auto;max-width:220px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
+              : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:46px;width:auto;max-width:220px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
+          }
+        </div>
+        <div style="text-align:right;color:#000;font-size:11px;line-height:1.35;flex-shrink:0;">
+          <div style="font-weight:bold;font-size:12px;">Bener Comercial Importadora Exportadora Ltda.</div>
+          <div style="margin-top:2px;">${esc(formattedDateWithCity)}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+        <table style="width:auto;min-width:280px;max-width:340px;border-collapse:collapse;border:1px solid #000;margin:0;font-size:9.5px;line-height:1.2;background:#fff;">
+          <thead>
+            <tr style="background:#fff;border-bottom:1px solid #000;">
+              <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:55px;">Sigla</th>
+              <th style="padding:2px 8px;text-align:center;font-weight:bold;border:1px solid #000;min-width:130px;">N° Oferta</th>
+              <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:40px;">Mês</th>
+              <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:45px;">Ano</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:3px 6px;text-align:center;border:1px solid #000;">${esc(siglaRepr)}</td>
+              <td style="padding:3px 8px;text-align:center;font-weight:bold;border:1px solid #000;white-space:nowrap;">${esc(numeroCompleto)}</td>
+              <td style="padding:3px 6px;text-align:center;border:1px solid #000;">${esc(mesOferta)}</td>
+              <td style="padding:3px 6px;text-align:center;border:1px solid #000;">${esc(anoOferta)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `
 
   // Regra 6: Paginação adaptativa sem gerar páginas em branco
   const hasPage2Content =
@@ -538,7 +596,9 @@ export function buildPublicProposalHtml(
     validCamposAdicionais.length > 0 ||
     Boolean(proposta.is_pacote && equipmentItems && equipmentItems.length > 0)
 
-  const page1Number = hasPage2Content ? 'Página 1/2' : 'Página 1/1'
+  const totalPaginas = hasPage2Content ? 2 : 1
+  const page1Number = `Página 1 de ${totalPaginas}`
+  const page2Number = `Página 2 de 2`
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -837,24 +897,8 @@ export function buildPublicProposalHtml(
     <div class="page proposal-cover" data-sheet-index="0" data-page="1" style="break-before: avoid !important; page-break-before: avoid !important; margin-top: 0 !important; padding-top: 0 !important;">
       <div>
         <div style="page-break-inside:avoid;break-inside:avoid;">
-          <!-- Top Header: Logo + Proposal Number -->
-          <div class="proposal-top-header">
-            <div style="display:flex;align-items:center;gap:8px;">
-              ${
-                logoUrlOverride
-                  ? `<img src="${esc(logoUrlOverride)}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" /><span class="bener-logo-text" style="display:none;">BENER</span>`
-                  : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" onerror="this.style.display='none';this.nextElementSibling.style.display='block';" /><div style="display:none;flex-direction:column;"><span class="bener-logo-text">BENER</span><span style="font-size:10px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;">Máquinas que Transformam</span></div>`
-              }
-            </div>
-            <div class="proposal-number-box">
-              <!-- Regra 4: Nº Oferta completo sem ellipsis -->
-              <p class="prop-title">${proposta.numero_proposta ? `Proposta Nº ${esc(proposta.numero_proposta)}` : 'Proposta Comercial'}</p>
-              ${proposta.revisao ? `<p>Revisão: ${esc(proposta.revisao)}</p>` : ''}
-              <!-- Regra 5: Cidade + data na mesma linha -->
-              <p>${esc(formattedDateWithCity)}</p>
-              <p>Modalidade: ${proposta.modelo_licitacao ? 'Licitação' : 'Proposta Comercial'}</p>
-            </div>
-          </div>
+          <!-- Top Header: Logo + Institutional text + Sigla / Nº Oferta / Mês / Ano -->
+          ${renderInstitutionalHeaderHtml()}
 
           <div class="client-header">
             <p>À</p>
@@ -916,6 +960,7 @@ export function buildPublicProposalHtml(
         <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial</p>
         <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373</p>
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+        <div class="page-number">${page1Number}</div>
       </div>
     </div>
 
@@ -924,6 +969,8 @@ export function buildPublicProposalHtml(
       hasPage2Content
         ? `<div class="page page-divider" data-sheet-index="1" data-page="2">
       <div>
+        <!-- Institutional header repeated on Page 2 -->
+        ${renderInstitutionalHeaderHtml()}
 
         <div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
@@ -1445,6 +1492,7 @@ export function buildPublicProposalHtml(
         <p>Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial</p>
         <p>Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373</p>
         <p>E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+        <div class="page-number">${page2Number}</div>
       </div>
     </div>`
         : ''

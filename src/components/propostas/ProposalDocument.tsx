@@ -691,9 +691,9 @@ export function ProposalDocument({ proposal }: Props) {
           {/* Header + Client + Reception wrapped to avoid breaking apart */}
           <div className="break-inside-avoid">
             {/* Section 0: Top Header — old-system style: logo + razão social + data + Sigla/N° Oferta/Mês/Ano */}
-            <div className="border-b border-black pb-4 mb-6">
+            <div className="border-b border-black pb-3 mb-5">
               {headerInstitucional}
-              <div className="flex justify-end mt-3">{siglaBox}</div>
+              <div className="flex justify-end mt-2.5">{siglaBox}</div>
             </div>
 
             {/* Section 1: Client Header (Top Left) */}
@@ -834,6 +834,9 @@ export function ProposalDocument({ proposal }: Props) {
             Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373
           </p>
           <p className="font-normal">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+          <p className="text-right text-[10px] font-bold mt-1 text-black">
+            Página 1 de {showAdditionalPages ? 2 : 1}
+          </p>
         </div>
       </div>
 
@@ -845,6 +848,12 @@ export function ProposalDocument({ proposal }: Props) {
           className="proposal-page proposal-sheet relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:h-auto border-t-2 border-dashed border-slate-300 print:border-none"
           style={{ boxSizing: 'border-box', breakBefore: 'page', pageBreakBefore: 'always' }}
         >
+          {/* Institutional header repeated on Page 2 (Ponto 22) */}
+          <div className="border-b border-black pb-3 mb-5 break-inside-avoid">
+            {headerInstitucional}
+            <div className="flex justify-end mt-2.5">{siglaBox}</div>
+          </div>
+
           <div>
             {/* Modo Pacote: Bloco estruturado por Máquina com Foto, Título e Acessórios vinculados */}
             {proposal.is_pacote && equipmentItems.length > 0 ? (
@@ -1780,6 +1789,7 @@ export function ProposalDocument({ proposal }: Props) {
               Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373
             </p>
             <p className="font-normal">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+            <p className="text-right text-[10px] font-bold mt-1 text-black">Página 2 de 2</p>
           </div>
         </div>
       )}
