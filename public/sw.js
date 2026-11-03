@@ -10,7 +10,7 @@
  * 4. Atualização: skipWaiting no install e clients.claim no activate para nova versão disponível.
  */
 
-const CACHE_NAME = 'bener-nexus-v1'
+const CACHE_NAME = 'bener-nexus-v2'
 
 const PRECACHE_ASSETS = [
   '/',

@@ -8,4 +8,13 @@ import { registerServiceWorker } from './lib/register-sw'
 
 registerServiceWorker()
 
+if ('serviceWorker' in navigator) {
+  const refreshed = sessionStorage.getItem('sw-refreshed')
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshed) return
+    sessionStorage.setItem('sw-refreshed', '1')
+    window.location.reload()
+  })
+}
+
 createRoot(document.getElementById('root')!).render(<App />)

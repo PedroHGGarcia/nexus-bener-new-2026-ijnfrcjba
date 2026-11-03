@@ -6,6 +6,12 @@ export function registerServiceWorker() {
     return
   }
 
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    for (const r of regs) {
+      if (!r.active || !r.active.scriptURL.endsWith('/sw.js')) r.unregister()
+    }
+  })
+
   // Registrar após o carregamento da página para não disputar banda com a renderização inicial
   window.addEventListener('load', () => {
     navigator.serviceWorker
@@ -20,6 +26,7 @@ export function registerServiceWorker() {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
               // Notificar opcionalmente que há nova versão
               window.dispatchEvent(new CustomEvent('pwa-update-available'))
+              registration.waiting?.postMessage({ type: 'SKIP_WAITING' })
             }
           })
         })
