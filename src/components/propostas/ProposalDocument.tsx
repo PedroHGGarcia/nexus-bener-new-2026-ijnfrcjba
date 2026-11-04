@@ -739,7 +739,7 @@ export function ProposalDocument({ proposal }: Props) {
       {/* Running Header Nativo para @media print (aparece no topo de TODAS as páginas impressas via fixed header) */}
       <div className="proposal-running-header hidden print:block print:fixed print:top-0 print:left-0 print:right-0 print:h-[34mm] print:bg-white print:z-[9999] border-b border-black pb-2">
         {headerInstitucional}
-        <div className="flex justify-end mt-2">{siglaBox}</div>
+        <div className="flex justify-end mt-[3px]">{siglaBox}</div>
       </div>
 
       {/* Running Footer Nativo para @media print (aparece no rodapé de TODAS as páginas impressas via fixed footer) */}
@@ -786,7 +786,7 @@ export function ProposalDocument({ proposal }: Props) {
                     {/* Section 0: Top Header (exibido na tela; no print fica a cargo do header nativo repetido) */}
                     <div className="border-b border-black pb-3 mb-5 print:hidden">
                       {headerInstitucional}
-                      <div className="flex justify-end mt-2.5">{siglaBox}</div>
+                      <div className="flex justify-end mt-[3px]">{siglaBox}</div>
                     </div>
 
                     {/* Section 1: Client Header (Top Left) */}
@@ -950,7 +950,7 @@ export function ProposalDocument({ proposal }: Props) {
                   {/* Institutional header repeated on Page 2 on screen; in print, handled by proposal-running-header */}
                   <div className="border-b border-black pb-3 mb-5 break-inside-avoid print:hidden">
                     {headerInstitucional}
-                    <div className="flex justify-end mt-2.5">{siglaBox}</div>
+                    <div className="flex justify-end mt-[3px]">{siglaBox}</div>
                   </div>
 
                   <div>
@@ -1756,9 +1756,9 @@ export function ProposalDocument({ proposal }: Props) {
                       </div>
                     </section>
 
-                    {/* Terms and conditions - Ficha Técnica layout */}
+                    {/* Terms and conditions - layout vertical */}
                     {filteredTerms.length > 0 && (
-                      <section className="proposal-section mb-5 print:mt-4 text-xs break-inside-avoid print:break-inside-auto">
+                      <section className="proposal-section mb-5 print:mt-4 text-xs">
                         <div className="bg-[#0b3c26] text-white px-3 py-1.5 rounded-sm flex items-center justify-between mb-3 shadow-sm break-after-avoid">
                           <span className="font-bold tracking-wider uppercase text-[11px] sm:text-xs">
                             Termos de Fornecimento
@@ -1767,24 +1767,16 @@ export function ProposalDocument({ proposal }: Props) {
                             Condições Gerais & Garantias
                           </span>
                         </div>
-                        <div className="border border-slate-200 rounded-sm divide-y divide-slate-100 bg-white">
+                        <div className="terms-section w-full block mb-4 space-y-3">
                           {filteredTerms.map(([label, value]) => (
                             <div
                               key={label}
-                              className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 p-2 sm:px-3 hover:bg-slate-50/60 transition-colors items-baseline text-[11px] break-inside-avoid"
+                              className="term-item block w-full mb-3 break-inside-avoid"
                             >
-                              <div
-                                className="sm:col-span-4 font-bold text-slate-900 uppercase tracking-wide text-[10px] bg-slate-100/90 px-2 py-1 rounded-xs border-l-2 border-slate-300"
-                                style={{
-                                  WebkitPrintColorAdjust: 'exact',
-                                  printColorAdjust: 'exact',
-                                  fontWeight: 700,
-                                  backgroundColor: '#f1f5f9',
-                                }}
-                              >
+                              <div className="term-title block font-bold text-[#0b3c26] uppercase tracking-wide text-[11px] mb-1 break-after-avoid">
                                 {label}
                               </div>
-                              <div className="sm:col-span-8 text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words font-sans">
+                              <div className="term-content block w-full text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words text-[11px] font-sans">
                                 {renderMultilinhaParagraphs(value)}
                               </div>
                             </div>
@@ -1802,11 +1794,16 @@ export function ProposalDocument({ proposal }: Props) {
                             (f.chave && f.chave.trim() !== '')) &&
                           !isCommercialFieldEmpty(f.conteudo != null ? f.conteudo : f.valor),
                       ).length > 0 && (
-                        <section className="proposal-section mb-4 text-xs break-inside-avoid print:break-inside-auto">
-                          <h2 className="font-bold uppercase tracking-wider text-black border-b border-black/40 pb-1 mb-2 break-after-avoid">
-                            Informações Adicionais
-                          </h2>
-                          <div className="border border-slate-200 rounded-sm divide-y divide-slate-100 bg-white">
+                        <section className="proposal-section mb-4 text-xs">
+                          <div className="bg-[#0b3c26] text-white px-3 py-1.5 rounded-sm flex items-center justify-between mb-3 shadow-sm break-after-avoid">
+                            <span className="font-bold tracking-wider uppercase text-[11px] sm:text-xs">
+                              Informações Adicionais
+                            </span>
+                            <span className="text-[10px] text-emerald-100 font-medium">
+                              Campos Específicos da Proposta
+                            </span>
+                          </div>
+                          <div className="terms-section w-full block mb-4 space-y-3">
                             {(proposal.campos_adicionais as any[])
                               .filter(
                                 (f) =>
@@ -1826,20 +1823,12 @@ export function ProposalDocument({ proposal }: Props) {
                                 return (
                                   <div
                                     key={i}
-                                    className="grid grid-cols-1 sm:grid-cols-12 gap-1 sm:gap-4 p-2 sm:px-3 items-baseline text-[11px] break-inside-avoid"
+                                    className="term-item block w-full mb-3 break-inside-avoid"
                                   >
-                                    <div
-                                      className="sm:col-span-4 font-bold text-slate-900 uppercase tracking-wide text-[10px] bg-slate-100/90 px-2 py-1 rounded-xs border-l-2 border-slate-300"
-                                      style={{
-                                        WebkitPrintColorAdjust: 'exact',
-                                        printColorAdjust: 'exact',
-                                        fontWeight: 700,
-                                        backgroundColor: '#f1f5f9',
-                                      }}
-                                    >
+                                    <div className="term-title block font-bold text-[#0b3c26] uppercase tracking-wide text-[11px] mb-1 break-after-avoid">
                                       {fieldTitle}
                                     </div>
-                                    <div className="sm:col-span-8 text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words font-sans">
+                                    <div className="term-content block w-full text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words text-[11px] font-sans">
                                       {renderMultilinhaParagraphs(fieldVal)}
                                     </div>
                                   </div>

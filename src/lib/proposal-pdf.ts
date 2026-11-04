@@ -852,17 +852,17 @@ export function generatePropostaHtml(
 
         ${
           filteredTerms.length > 0
-            ? `<div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
+            ? `<div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
                  <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">Termos de Fornecimento</span>
                  <span style="font-size:10px;opacity:0.9;">Condições Gerais & Garantias</span>
                </div>
-               <div style="border:1px solid #e2e8f0;border-radius:3px;background:#ffffff;margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;">
+               <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
                  ${filteredTerms
                    .map(
-                     ([lbl, val], idx) => `
-                   <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:6px 10px;font-size:11px;align-items:baseline;${idx > 0 ? 'border-top:1px solid #f1f5f9;' : ''};page-break-inside:avoid;break-inside:avoid;">
-                     <div style="font-size:10px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;background:#f1f5f9;padding:3px 6px;border-radius:2px;border-left:2px solid #cbd5e1;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${esc(lbl)}</div>
-                     <div class="term-value" style="color:#0f172a;font-weight:500;white-space:pre-wrap;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(val)}</div>
+                     ([lbl, val]) => `
+                   <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
+                     <div class="term-title" style="display:block;font-size:11px;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(lbl)}</div>
+                     <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:11px;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(val)}</div>
                    </div>`,
                    )
                    .join('')}
@@ -872,20 +872,20 @@ export function generatePropostaHtml(
 
         ${
           validCamposAdicionais.length > 0
-            ? `<div style="margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;">
-                 <div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
+            ? `<div style="margin-bottom:16px;">
+                 <div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
                    <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">Informações Adicionais</span>
                    <span style="font-size:10px;opacity:0.9;">Campos Específicos da Proposta</span>
                  </div>
-                 <div style="border:1px solid #e2e8f0;border-radius:3px;background:#ffffff;page-break-inside:avoid;break-inside:avoid;">
+                 <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
                    ${validCamposAdicionais
-                     .map((field, idx) => {
+                     .map((field) => {
                        const fieldTitle = String(field.titulo || field.chave || '').trim()
                        const fieldVal = field.conteudo != null ? field.conteudo : field.valor
                        return `
-                     <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:6px 10px;font-size:11px;align-items:baseline;${idx > 0 ? 'border-top:1px solid #f1f5f9;' : ''};page-break-inside:avoid;break-inside:avoid;">
-                       <div style="font-size:10px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;background:#f1f5f9;padding:3px 6px;border-radius:2px;border-left:2px solid #cbd5e1;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${esc(fieldTitle)}</div>
-                       <div class="term-value" style="color:#0f172a;font-weight:500;white-space:pre-wrap;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(fieldVal)}</div>
+                     <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
+                       <div class="term-title" style="display:block;font-size:11px;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(fieldTitle)}</div>
+                       <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:11px;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(fieldVal)}</div>
                      </div>`
                      })
                      .join('')}

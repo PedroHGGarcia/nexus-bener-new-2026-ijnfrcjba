@@ -555,13 +555,13 @@ export function buildProposalPdfHtml(
     <div style="background:#0b3c26;color:#ffffff;padding:6px 12px;border-radius:4px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
       Termos de Fornecimento & Informações Comerciais
     </div>
-    <div style="border:1px solid #e2e8f0;border-radius:4px;background:#ffffff;margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;">
+    <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
       ${filteredTerms
         .map(
-          ([lbl, val], idx) => `
-        <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:6px 12px;font-size:11px;align-items:baseline;${idx > 0 ? 'border-top:1px solid #f1f5f9;' : ''};page-break-inside:avoid;break-inside:avoid;">
-          <div style="font-size:10px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;background:#f1f5f9;padding:3px 6px;border-radius:2px;border-left:2px solid #cbd5e1;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${escapeHtml(lbl)}</div>
-          <div style="color:#0f172a;font-weight:500;line-height:1.4;">${renderCommercialFieldHtml(val)}</div>
+          ([lbl, val]) => `
+        <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
+          <div class="term-title" style="display:block;font-size:11px;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(lbl)}</div>
+          <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:11px;font-weight:500;line-height:1.45;word-break:break-word;">${renderCommercialFieldHtml(val)}</div>
         </div>`,
         )
         .join('')}
@@ -595,13 +595,13 @@ export function buildProposalPdfHtml(
       <div style="background:#0b3c26;color:#ffffff;padding:6px 12px;border-radius:4px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
         Informações Adicionais
       </div>
-      <div style="border:1px solid #e2e8f0;border-radius:4px;background:#ffffff;margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;">
+      <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
         ${validCampos
           .map(
-            (c: any, idx: number) => `
-          <div style="display:grid;grid-template-columns:180px 1fr;gap:12px;padding:6px 12px;font-size:11px;align-items:baseline;${idx > 0 ? 'border-top:1px solid #f1f5f9;' : ''};page-break-inside:avoid;break-inside:avoid;">
-            <div style="font-size:10px;font-weight:700;color:#0f172a;text-transform:uppercase;letter-spacing:0.5px;background:#f1f5f9;padding:3px 6px;border-radius:2px;border-left:2px solid #cbd5e1;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${escapeHtml(String(c.titulo || c.chave || '').trim())}</div>
-            <div style="color:#0f172a;font-weight:500;line-height:1.4;">${renderCommercialFieldHtml(c.conteudo != null ? c.conteudo : c.valor)}</div>
+            (c: any) => `
+          <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
+            <div class="term-title" style="display:block;font-size:11px;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(String(c.titulo || c.chave || '').trim())}</div>
+            <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:11px;font-weight:500;line-height:1.45;word-break:break-word;">${renderCommercialFieldHtml(c.conteudo != null ? c.conteudo : c.valor)}</div>
           </div>`,
           )
           .join('')}
@@ -908,7 +908,7 @@ export function buildProposalPdfHtml(
     .header-offer-table-wrapper {
       display: flex;
       justify-content: flex-end;
-      margin-top: 10px;
+      margin-top: 3px;
     }
     .header-offer-table {
       width: auto !important;
