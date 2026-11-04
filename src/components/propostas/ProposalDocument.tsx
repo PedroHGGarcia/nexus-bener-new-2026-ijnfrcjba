@@ -405,7 +405,8 @@ export function ProposalDocument({ proposal }: Props) {
         <img
           src={benerLogo}
           alt="BENER - MÁQUINAS QUE TRANSFORMAM"
-          className="h-12 w-auto object-contain max-w-[240px]"
+          className="h-14 w-auto object-contain max-w-[250px]"
+          style={{ maxHeight: '56px' }}
           loading="eager"
         />
       </div>
@@ -878,36 +879,36 @@ export function ProposalDocument({ proposal }: Props) {
                       </p>
                     </div>
                   ) : (
-                    /* Modo Normal (máquina única): Título e Foto grandes centralizados */
-                    <>
+                    /* Modo Normal (máquina única): Título e Foto grandes centralizados — bloco indivisível para nunca separar título na pág 1 e imagem na pág 2 */
+                    <div className="break-inside-avoid print:break-inside-avoid">
                       {/* Section 3: Machine Title (Bold, Uppercase, Centered) */}
-                      <div className="my-8 sm:my-10 text-center px-4">
+                      <div className="my-4 sm:my-5 text-center px-4 break-after-avoid">
                         <h1 className="text-sm sm:text-base md:text-[15px] font-bold text-black tracking-wide uppercase leading-snug">
                           {machineTitle}
                         </h1>
                       </div>
 
                       {/* Section 4: Machine Image (Large centered image with small caption below) */}
-                      <div className="flex flex-col items-center justify-center my-6">
+                      <div className="flex flex-col items-center justify-center my-3 break-before-avoid break-inside-avoid">
                         {machineImage ? (
-                          <div className="w-full max-w-md max-h-[380px] flex items-center justify-center">
+                          <div className="w-full max-w-md max-h-[240px] flex items-center justify-center">
                             <img
                               src={machineImage}
                               alt={machineTitle}
-                              className="max-h-[340px] w-auto max-w-full object-contain"
+                              className="max-h-[220px] w-auto max-w-full object-contain"
                               loading="eager"
                             />
                           </div>
                         ) : (
-                          <div className="w-72 h-72 border border-dashed border-gray-300 rounded flex items-center justify-center text-xs text-gray-400">
+                          <div className="w-60 h-48 border border-dashed border-gray-300 rounded flex items-center justify-center text-xs text-gray-400">
                             Foto do equipamento indisponível no catálogo
                           </div>
                         )}
-                        <p className="text-[10px] sm:text-[11px] text-black/70 italic text-center mt-3">
+                        <p className="text-[10px] sm:text-[11px] text-black/70 italic text-center mt-2">
                           Imagem meramente ilustrativa
                         </p>
                       </div>
-                    </>
+                    </div>
                   )}
                 </div>
 

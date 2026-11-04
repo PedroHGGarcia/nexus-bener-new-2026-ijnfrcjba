@@ -756,7 +756,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   const drawHeader = (): void => {
     const y0 = M_HEADER_TOP
     if (input.logo && logoImageName) {
-      doc.drawImage(logoImageName, M_LEFT, y0, 150, 44, input.logo)
+      doc.drawImage(logoImageName, M_LEFT, y0, 170, 50, input.logo)
     } else {
       doc.txt(M_LEFT, y0, 'BENER', { font: 'F2', size: 22, color: GREEN })
       doc.txt(M_LEFT, y0 + 24, 'MÁQUINAS QUE TRANSFORMAM', { font: 'F1', size: 6.5, color: GRAY })
@@ -893,7 +893,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   // Machine image (fits in the remaining cover space)
   const remaining = doc.bottomLimit - 24 - doc.y
   if (input.machineImage && remaining > 110) {
-    const boxH = Math.min(320, remaining - 20)
+    const boxH = Math.min(220, remaining - 20)
     const name = doc.registerImage(input.machineImage)
     doc.drawImage(name, M_LEFT + 60, doc.y, doc.contentW - 120, boxH, input.machineImage)
     doc.y += boxH + 6

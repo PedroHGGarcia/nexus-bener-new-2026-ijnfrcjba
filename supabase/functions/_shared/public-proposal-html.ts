@@ -550,8 +550,8 @@ export function buildPublicProposalHtml(
         <div style="display:flex;flex-direction:column;align-items:flex-start;">
           ${
             logoUrlOverride
-              ? `<img src="${esc(logoUrlOverride)}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:46px;width:auto;max-width:220px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
-              : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:46px;width:auto;max-width:220px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
+              ? `<img src="${esc(logoUrlOverride)}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:56px;width:auto;max-width:250px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
+              : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:56px;width:auto;max-width:250px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
           }
         </div>
         <div style="text-align:right;color:#000;font-size:11px;line-height:1.35;flex-shrink:0;">
@@ -678,9 +678,9 @@ export function buildPublicProposalHtml(
       color: #0b3c26;
     }
     .bener-logo-img {
-      height: 48px;
+      height: 56px;
       width: auto;
-      max-width: 240px;
+      max-width: 250px;
       object-fit: contain;
     }
     .proposal-number-box {
@@ -714,29 +714,37 @@ export function buildPublicProposalHtml(
     .client-header p { margin: 2px 0; }
     .client-name { font-weight: bold; font-size: 14px; }
     .reception-text {
-      margin-top: 36px;
+      margin-top: 18px;
       text-align: justify;
       page-break-inside: avoid;
       break-inside: avoid;
     }
-    .reception-text p { margin: 12px 0; }
+    .reception-text p { margin: 8px 0; }
+    .machine-presentation-block {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
     .machine-title {
       text-align: center;
-      margin: 36px 0;
+      margin: 18px 0 12px;
       font-size: 15px;
       font-weight: bold;
       letter-spacing: 0.5px;
       page-break-inside: avoid;
       break-inside: avoid;
+      page-break-after: avoid;
+      break-after: avoid;
     }
     .image-container {
       text-align: center;
-      margin: 24px 0;
+      margin: 10px 0;
+      page-break-before: avoid;
       page-break-inside: avoid;
+      break-before: avoid;
       break-inside: avoid;
     }
     .machine-img {
-      max-height: 340px;
+      max-height: 220px;
       max-width: 100%;
       object-fit: contain;
     }
@@ -744,7 +752,7 @@ export function buildPublicProposalHtml(
       font-size: 11px;
       font-style: italic;
       color: #444;
-      margin-top: 8px;
+      margin-top: 6px;
     }
     .footer {
       border-top: 1px solid #000;
@@ -998,17 +1006,19 @@ export function buildPublicProposalHtml(
           </div>
         </div>
 
-        <div class="machine-title">
-          ${esc(machineTitle)}
-        </div>
+        <div class="machine-presentation-block" style="page-break-inside: avoid !important; break-inside: avoid !important;">
+          <div class="machine-title">
+            ${esc(machineTitle)}
+          </div>
 
-        <div class="image-container">
-          ${
-            machineImage
-              ? `<img src="${esc(machineImage)}" alt="${esc(machineTitle)}" class="machine-img" onerror="this.style.display='none'" />`
-              : `<div style="height:200px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;color:#888;">Imagem do equipamento</div>`
-          }
-          <p class="image-caption">Imagem meramente ilustrativa</p>
+          <div class="image-container">
+            ${
+              machineImage
+                ? `<img src="${esc(machineImage)}" alt="${esc(machineTitle)}" class="machine-img" onerror="this.style.display='none'" />`
+                : `<div style="height:180px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;color:#888;">Imagem do equipamento</div>`
+            }
+            <p class="image-caption">Imagem meramente ilustrativa</p>
+          </div>
         </div>
       </div>
 

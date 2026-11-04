@@ -55,9 +55,9 @@ export const A4_PRINT_STYLES = `
     break-after: avoid;
   }
   .bener-logo-img {
-    height: 44px;
+    height: 56px;
     width: auto;
-    max-width: 220px;
+    max-width: 250px;
     object-fit: contain;
   }
   .proposal-number-box {
@@ -87,6 +87,10 @@ export const A4_PRINT_STYLES = `
     break-inside: avoid;
   }
   .reception-text p { margin: 6px 0; }
+  .machine-presentation-block {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
   .machine-title {
     text-align: center;
     margin: 18px 0 12px 0;
@@ -94,15 +98,19 @@ export const A4_PRINT_STYLES = `
     font-weight: bold;
     page-break-inside: avoid;
     break-inside: avoid;
+    page-break-after: avoid;
+    break-after: avoid;
   }
   .image-container {
     text-align: center;
-    margin: 12px 0;
+    margin: 10px 0;
+    page-break-before: avoid;
     page-break-inside: avoid;
+    break-before: avoid;
     break-inside: avoid;
   }
   .machine-img {
-    max-height: 280px;
+    max-height: 220px;
     max-width: 100%;
     object-fit: contain;
   }

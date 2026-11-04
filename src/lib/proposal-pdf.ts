@@ -360,17 +360,19 @@ export function generatePropostaHtml(
           </div>
         </div>
 
-        <div class="machine-title">
-          ${esc(machineTitle)}
-        </div>
+        <div class="machine-presentation-block" style="page-break-inside: avoid !important; break-inside: avoid !important;">
+          <div class="machine-title">
+            ${esc(machineTitle)}
+          </div>
 
-        <div class="image-container">
-          ${
-            machineImage
-              ? `<img src="${esc(machineImage)}" alt="${esc(machineTitle)}" class="machine-img" onerror="this.style.display='none'" />`
-              : `<div style="height:200px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;color:#888;">Imagem do equipamento</div>`
-          }
-          <p class="image-caption">Imagem meramente ilustrativa</p>
+          <div class="image-container">
+            ${
+              machineImage
+                ? `<img src="${esc(machineImage)}" alt="${esc(machineTitle)}" class="machine-img" onerror="this.style.display='none'" />`
+                : `<div style="height:180px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;color:#888;">Imagem do equipamento</div>`
+            }
+            <p class="image-caption">Imagem meramente ilustrativa</p>
+          </div>
         </div>
       </div>
 
