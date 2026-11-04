@@ -824,7 +824,10 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
 
     const headerLineY = Math.max(y0 + 77, boxY + rowH * 2) + 10
     doc.hline(M_LEFT, PAGE_W - M_RIGHT, headerLineY, { lw: 1.1, color: [0.15, 0.15, 0.15] })
-    doc.y = M_TOP
+    // Ponto 26: gap compacto e uniforme cabeçalho→corpo em TODAS as páginas
+    // (14pt ≈ 0,49 cm, dentro da faixa 0,4–0,6 cm pedida). O corpo nunca invade
+    // o cabeçalho: doc.y é sempre a linha divisória + o gap reservado.
+    doc.y = headerLineY + 14
   }
 
   // Ponto 23 (revisado): o cabeçalho institucional é desenhado em TODA página
@@ -846,12 +849,16 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   }
 
   const sectionHeading = (title: string): void => {
-    ensureSpace(26)
-    doc.rect(M_LEFT, doc.y, 3, 12, { fill: GREEN })
-    doc.txt(M_LEFT + 8, doc.y + 1, title.toUpperCase(), { font: 'F2', size: 10, color: GREEN })
-    doc.y += 16
+    // Ponto 24: hierarquia tipográfica — título de seção 12.5pt bold uppercase
+    // (corpo 8.5–10pt), respiro maior antes (10pt) e menor depois (5pt) e
+    // keep-with-next: o título nunca fica sozinho no fim da página.
+    ensureSpace(44)
+    doc.y += 10
+    doc.rect(M_LEFT, doc.y, 3.5, 14, { fill: GREEN })
+    doc.txt(M_LEFT + 9, doc.y + 2, title.toUpperCase(), { font: 'F2', size: 12.5, color: GREEN })
+    doc.y += 19
     doc.hline(M_LEFT, PAGE_W - M_RIGHT, doc.y, { lw: 0.5, color: [0.75, 0.78, 0.8] })
-    doc.y += 6
+    doc.y += 5
   }
 
   // Client block
@@ -895,10 +902,11 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   doc.y += 8
 
   // Machine title
-  const titleLines = doc.wrap(machineTitle, doc.contentW - 40, 12, true)
+  // Ponto 24: título principal do objeto (nome do equipamento) em destaque — 14.5pt bold
+  const titleLines = doc.wrap(machineTitle, doc.contentW - 40, 14.5, true)
   for (const line of titleLines) {
-    doc.txt(M_LEFT, doc.y, line, { font: 'F2', size: 12, align: 'center', w: doc.contentW })
-    doc.y += 14
+    doc.txt(M_LEFT, doc.y, line, { font: 'F2', size: 14.5, align: 'center', w: doc.contentW })
+    doc.y += 17
   }
   doc.y += 6
 
@@ -988,7 +996,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   // ===== COMMERCIAL TABLE =====
   ensureSpace(120)
   doc.rect(M_LEFT, doc.y, 3, 12, { fill: INK })
-  doc.txt(M_LEFT + 8, doc.y + 1, 'CONDIÇÕES COMERCIAIS', { font: 'F2', size: 10.5 })
+  doc.txt(M_LEFT + 8, doc.y + 2, 'CONDIÇÕES COMERCIAIS', { font: 'F2', size: 12.5 })
   doc.txt(
     PAGE_W - M_RIGHT,
     doc.y + 3,
@@ -1451,14 +1459,14 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
 
   // ===== TERMS =====
   if (terms.length > 0) {
-    ensureSpace(60)
-    doc.rect(M_LEFT, doc.y, doc.contentW, 16, { fill: GREEN })
-    doc.txt(M_LEFT + 8, doc.y + 4, 'TERMOS DE FORNECIMENTO & INFORMAÇÕES COMERCIAIS', {
+    ensureSpace(70)
+    doc.rect(M_LEFT, doc.y, doc.contentW, 20, { fill: GREEN })
+    doc.txt(M_LEFT + 8, doc.y + 5, 'TERMOS DE FORNECIMENTO & INFORMAÇÕES COMERCIAIS', {
       font: 'F2',
-      size: 9,
+      size: 12,
       color: [1, 1, 1],
     })
-    doc.y += 16
+    doc.y += 20
     const labelW = 170
     for (const [label, value] of terms) {
       const valLines = doc.wrap(value, doc.contentW - labelW - 12, 8.5)
@@ -1478,7 +1486,11 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.y += 10
   }
 
-  // Regra 9: Campos do Tipo de Proposta e Informações Adicionais da Proposta
+  // Regra 9 / Ponto 25: Campos do Tipo de Proposta e Informações Adicionais.
+  // Deduplicação defensiva por identificador normalizado do campo: cada campo
+  // é renderizado UMA única vez. Campos cujo identificador já apareceu no
+  // bloco de Termos de Fornecimento são ignorados aqui (causa raiz do bug do
+  // campo duplicado), e um campo repetido na própria lista também não repete.
   const snapshotCampos = dadosSnapshot?.campos_adicionais
   let campos: any =
     Array.isArray(snapshotCampos) && snapshotCampos.length > 0
@@ -1491,12 +1503,27 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       campos = null
     }
   }
+  const normCampoKey = (s: unknown): string =>
+    String(s ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+  const renderedCampoKeys = new Set<string>()
+  for (const [termLabel] of terms) {
+    const k = normCampoKey(termLabel)
+    if (k) renderedCampoKeys.add(k)
+  }
   if (Array.isArray(campos) && campos.length > 0) {
     for (const f of campos) {
+      const fKey = normCampoKey(f?.chave || f?.id || f?.titulo)
       const fTitle = String(f?.titulo || f?.chave || '').trim()
       const fContent = f?.conteudo != null ? f.conteudo : f?.valor
       if (!fTitle && !fContent) continue
-      ensureSpace(30)
+      if (fKey && renderedCampoKeys.has(fKey)) continue
+      if (fKey) renderedCampoKeys.add(fKey)
+      ensureSpace(36)
       if (fTitle) {
         sectionHeading(fTitle)
       }
@@ -1507,7 +1534,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
 
   // ===== CLOSING TEXT & SIGNATURES =====
   // Keep closing text and signatures together to avoid pushing only signatures onto an extra page
-  ensureSpace(140)
+  ensureSpace(150)
   doc.y += 8
   doc.para(
     M_LEFT,
@@ -1521,10 +1548,12 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   doc.y += 12
 
   // ===== SIGNATURES =====
-  doc.txt(M_LEFT, doc.y, 'DE ACORDO E ASSINATURAS', { font: 'F2', size: 9.5, color: GREEN })
-  doc.y += 6
+  // Ponto 24: título de seção no mesmo padrão dos demais (12.5pt bold uppercase)
+  doc.y += 10
+  doc.txt(M_LEFT, doc.y, 'DE ACORDO E ASSINATURAS', { font: 'F2', size: 12.5, color: GREEN })
+  doc.y += 7
   doc.hline(M_LEFT, PAGE_W - M_RIGHT, doc.y, { lw: 0.5, color: [0.75, 0.78, 0.8] })
-  doc.y += 32
+  doc.y += 30
   const sigW = doc.contentW / 3
   const sigs: Array<[string, string | null | undefined]> = [
     ['Gerente de Produto', p.nome_gerente_produto || p.gerentes?.nome || p.gerente_original],

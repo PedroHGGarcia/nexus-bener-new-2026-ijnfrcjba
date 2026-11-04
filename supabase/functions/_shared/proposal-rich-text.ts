@@ -317,16 +317,17 @@ export function renderRichContent(
     const block = blocks[i]
 
     if (block.type === 'subheading') {
-      // Keep with next: ensure there is room for the subheading + at least the first 2-3 items (~42pt)
-      ensureSpace(42)
-      doc.y += 4
+      // Ponto 24: subtítulo 11.5pt bold (corpo 8.5pt), respiro antes/depois e
+      // keep-with-next: o subtítulo nunca fica sozinho no fim da página.
+      ensureSpace(52)
+      doc.y += 9
       const title = block.text.toUpperCase()
       doc.txt(M_LEFT + 10, doc.y, title, {
         font: 'F2',
-        size: 9.5,
+        size: 11.5,
         color: GREEN,
       })
-      doc.y += 12.5
+      doc.y += 15
       continue
     }
 
