@@ -545,13 +545,13 @@ export function buildPublicProposalHtml(
   const numeroCompleto = proposta.revisao ? `${numeroBase} (Rev. ${proposta.revisao})` : numeroBase
 
   const renderInstitutionalHeaderHtml = () => `
-    <div class="proposal-institutional-header" style="border-bottom:1px solid #000;padding-bottom:14px;margin-bottom:20px;page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;">
+    <div class="proposal-institutional-header" style="border-bottom:1px solid #000;padding-bottom:10px;margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
         <div style="display:flex;flex-direction:column;align-items:flex-start;">
           ${
             logoUrlOverride
-              ? `<img src="${esc(logoUrlOverride)}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:64px;width:auto;max-width:280px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
-              : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:64px;width:auto;max-width:280px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
+              ? `<img src="${esc(logoUrlOverride)}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:60px;width:auto;max-width:270px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
+              : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:60px;width:auto;max-width:270px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
           }
         </div>
         <div style="text-align:right;color:#000;font-size:11px;line-height:1.35;flex-shrink:0;">
@@ -664,8 +664,8 @@ export function buildPublicProposalHtml(
       justify-content: space-between;
       align-items: flex-start;
       border-bottom: 1px solid #000;
-      padding-bottom: 16px;
-      margin-bottom: 24px;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
       page-break-inside: avoid;
       break-inside: avoid;
       page-break-after: avoid;
@@ -678,16 +678,16 @@ export function buildPublicProposalHtml(
       color: #0b3c26;
     }
     .bener-logo-img {
-      height: 64px;
+      height: 60px;
       width: auto;
-      max-width: 280px;
+      max-width: 270px;
       object-fit: contain;
     }
     .proposal-number-box {
       border: 1px solid #000;
-      padding: 8px 12px;
+      padding: 6px 10px;
       text-align: right;
-      font-size: 11px;
+      font-size: 10.5px;
       color: #000;
       min-width: 190px;
       max-width: 320px;
@@ -698,73 +698,73 @@ export function buildPublicProposalHtml(
     }
     .proposal-number-box p {
       margin: 1px 0;
-      font-size: 11px;
+      font-size: 10.5px;
       white-space: normal;
       word-break: break-word;
     }
     .proposal-number-box .prop-title {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
     .client-header {
       page-break-inside: avoid;
       break-inside: avoid;
     }
-    .client-header p { margin: 2px 0; }
-    .client-name { font-weight: bold; font-size: 14px; }
+    .client-header p { margin: 1.5px 0; }
+    .client-name { font-weight: bold; font-size: 13.5px; }
     .reception-text {
-      margin-top: 18px;
+      margin-top: 12px !important;
       text-align: justify;
       page-break-inside: avoid;
       break-inside: avoid;
     }
-    .reception-text p { margin: 8px 0; }
+    .reception-text p { margin: 6px 0 !important; }
     .machine-presentation-block {
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }
     .machine-title {
       text-align: center;
-      margin: 18px 0 12px;
-      font-size: 15px;
+      margin: 10px 0 8px !important;
+      font-size: 14px !important;
       font-weight: bold;
       letter-spacing: 0.5px;
       page-break-inside: avoid;
       break-inside: avoid;
-      page-break-after: avoid;
-      break-after: avoid;
+      page-break-after: avoid !important;
+      break-after: avoid !important;
     }
     .image-container {
       text-align: center;
-      margin: 10px 0;
-      page-break-before: avoid;
-      page-break-inside: avoid;
-      break-before: avoid;
-      break-inside: avoid;
+      margin: 6px 0 !important;
+      page-break-before: avoid !important;
+      page-break-inside: avoid !important;
+      break-before: avoid !important;
+      break-inside: avoid !important;
     }
     .machine-img {
-      max-height: 220px;
-      max-width: 100%;
-      object-fit: contain;
+      max-height: 170px !important;
+      max-width: 100% !important;
+      object-fit: contain !important;
     }
     .image-caption {
-      font-size: 11px;
+      font-size: 10px;
       font-style: italic;
       color: #444;
-      margin-top: 6px;
+      margin-top: 4px;
     }
     .footer {
       border-top: 1px solid #000;
-      padding-top: 10px;
+      padding-top: 6px;
       text-align: center;
-      font-size: 10.5px;
+      font-size: 9.5px;
       line-height: 1.35;
       margin-top: auto;
       page-break-inside: avoid;
       break-inside: avoid;
     }
-    .footer p { margin: 2px 0; }
+    .footer p { margin: 1px 0; }
     .page-number {
       text-align: right;
       font-size: 11px;
@@ -834,7 +834,7 @@ export function buildPublicProposalHtml(
 
     @page {
       size: A4 portrait;
-      margin: 50mm 12mm 22mm 12mm;
+      margin: 46mm 12mm 20mm 12mm;
     }
 
     .proposal-running-header {
@@ -876,7 +876,7 @@ export function buildPublicProposalHtml(
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        height: 44mm !important;
+        height: 40mm !important;
         background: #ffffff !important;
         z-index: 9999 !important;
         box-sizing: border-box !important;
@@ -1013,7 +1013,7 @@ export function buildPublicProposalHtml(
                   })()
                 : ''
             }
-            <p style="padding-top: 10px;">A/C: <strong>${esc(contactName || 'Diretor / Gerente de Compras')}</strong></p>
+            <p style="padding-top: 6px;">A/C: <strong>${esc(contactName || 'Diretor / Gerente de Compras')}</strong></p>
           </div>
 
           <div class="reception-text">
@@ -1031,7 +1031,7 @@ export function buildPublicProposalHtml(
             ${
               machineImage
                 ? `<img src="${esc(machineImage)}" alt="${esc(machineTitle)}" class="machine-img" onerror="this.style.display='none'" />`
-                : `<div style="height:180px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;color:#888;">Imagem do equipamento</div>`
+                : `<div style="height:140px;border:1px dashed #ccc;display:flex;align-items:center;justify-content:center;color:#888;">Imagem do equipamento</div>`
             }
             <p class="image-caption">Imagem meramente ilustrativa</p>
           </div>

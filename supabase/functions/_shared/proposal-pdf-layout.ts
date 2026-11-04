@@ -756,7 +756,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   const drawHeader = (): void => {
     const y0 = M_HEADER_TOP
     if (input.logo && logoImageName) {
-      doc.drawImage(logoImageName, M_LEFT, y0, 170, 50, input.logo)
+      doc.drawImage(logoImageName, M_LEFT, y0, 180, 48, input.logo)
     } else {
       doc.txt(M_LEFT, y0, 'BENER', { font: 'F2', size: 22, color: GREEN })
       doc.txt(M_LEFT, y0 + 24, 'MÁQUINAS QUE TRANSFORMAM', { font: 'F1', size: 6.5, color: GRAY })
@@ -872,31 +872,31 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
 
   // Reception text
   doc.txt(M_LEFT, doc.y, 'Prezados Senhores,', { font: 'F1', size: 10 })
-  doc.y += 14
+  doc.y += 12
   doc.para(
     M_LEFT,
     doc.contentW,
     'Atendendo a sua prezada consulta, temos o prazer de submeter a vossa devida apreciação nossa proposta acima citada, para o fornecimento de:',
     { size: 10 },
-    13,
+    12,
   )
-  doc.y += 10
+  doc.y += 8
 
   // Machine title
   const titleLines = doc.wrap(machineTitle, doc.contentW - 40, 12, true)
   for (const line of titleLines) {
     doc.txt(M_LEFT, doc.y, line, { font: 'F2', size: 12, align: 'center', w: doc.contentW })
-    doc.y += 15
+    doc.y += 14
   }
-  doc.y += 8
+  doc.y += 6
 
   // Machine image (fits in the remaining cover space)
-  const remaining = doc.bottomLimit - 24 - doc.y
-  if (input.machineImage && remaining > 110) {
-    const boxH = Math.min(220, remaining - 20)
+  const remaining = doc.bottomLimit - 20 - doc.y
+  if (input.machineImage && remaining > 90) {
+    const boxH = Math.min(170, remaining - 18)
     const name = doc.registerImage(input.machineImage)
     doc.drawImage(name, M_LEFT + 60, doc.y, doc.contentW - 120, boxH, input.machineImage)
-    doc.y += boxH + 6
+    doc.y += boxH + 4
     doc.txt(M_LEFT, doc.y, 'Imagem meramente ilustrativa', {
       font: 'F3',
       size: 8,
@@ -904,7 +904,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       align: 'center',
       w: doc.contentW,
     })
-    doc.y += 12
+    doc.y += 10
   }
 
   if (hasAdditionalContent) {

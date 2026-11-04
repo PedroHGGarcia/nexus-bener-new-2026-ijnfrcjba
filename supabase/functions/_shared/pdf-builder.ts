@@ -888,9 +888,9 @@ export function buildProposalPdfHtml(
       gap: 16px;
     }
     .logo-img {
-      height: 64px;
+      height: 60px;
       width: auto;
-      max-width: 280px;
+      max-width: 270px;
       object-fit: contain;
     }
     .header-company-info {

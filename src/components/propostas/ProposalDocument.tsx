@@ -405,8 +405,8 @@ export function ProposalDocument({ proposal }: Props) {
         <img
           src={benerLogo}
           alt="BENER - MÁQUINAS QUE TRANSFORMAM"
-          className="h-16 w-auto object-contain max-w-[280px]"
-          style={{ maxHeight: '64px', height: '64px' }}
+          className="h-[60px] w-auto object-contain max-w-[270px]"
+          style={{ maxHeight: '60px', height: '60px' }}
           loading="eager"
         />
       </div>
@@ -801,7 +801,7 @@ export function ProposalDocument({ proposal }: Props) {
                     </div>
 
                     {/* Section 2: Reception Text */}
-                    <div className="mt-6 sm:mt-8 text-xs sm:text-[13px] leading-relaxed text-black space-y-2 text-justify">
+                    <div className="mt-3 sm:mt-3 text-xs sm:text-[13px] leading-relaxed text-black space-y-1.5 text-justify reception-text">
                       <p className="font-normal">Prezados Senhores,</p>
                       <p className="font-normal indent-0">
                         Atendendo a sua prezada consulta, temos o prazer de submeter a vossa devida
@@ -880,31 +880,31 @@ export function ProposalDocument({ proposal }: Props) {
                     </div>
                   ) : (
                     /* Modo Normal (máquina única): Título e Foto grandes centralizados — bloco indivisível para nunca separar título na pág 1 e imagem na pág 2 */
-                    <div className="break-inside-avoid print:break-inside-avoid">
+                    <div className="break-inside-avoid print:break-inside-avoid machine-presentation-block">
                       {/* Section 3: Machine Title (Bold, Uppercase, Centered) */}
-                      <div className="my-4 sm:my-5 text-center px-4 break-after-avoid">
-                        <h1 className="text-sm sm:text-base md:text-[15px] font-bold text-black tracking-wide uppercase leading-snug">
+                      <div className="my-2.5 sm:my-2.5 text-center px-4 break-after-avoid machine-title">
+                        <h1 className="text-sm md:text-[14px] font-bold text-black tracking-wide uppercase leading-snug">
                           {machineTitle}
                         </h1>
                       </div>
 
                       {/* Section 4: Machine Image (Large centered image with small caption below) */}
-                      <div className="flex flex-col items-center justify-center my-3 break-before-avoid break-inside-avoid">
+                      <div className="flex flex-col items-center justify-center my-1.5 break-before-avoid break-inside-avoid image-container">
                         {machineImage ? (
-                          <div className="w-full max-w-md max-h-[240px] flex items-center justify-center">
+                          <div className="w-full max-w-md max-h-[180px] flex items-center justify-center">
                             <img
                               src={machineImage}
                               alt={machineTitle}
-                              className="max-h-[220px] w-auto max-w-full object-contain"
+                              className="max-h-[170px] w-auto max-w-full object-contain machine-img"
                               loading="eager"
                             />
                           </div>
                         ) : (
-                          <div className="w-60 h-48 border border-dashed border-gray-300 rounded flex items-center justify-center text-xs text-gray-400">
+                          <div className="w-60 h-36 border border-dashed border-gray-300 rounded flex items-center justify-center text-xs text-gray-400">
                             Foto do equipamento indisponível no catálogo
                           </div>
                         )}
-                        <p className="text-[10px] sm:text-[11px] text-black/70 italic text-center mt-2">
+                        <p className="text-[10px] sm:text-[11px] text-black/70 italic text-center mt-1 image-caption">
                           Imagem meramente ilustrativa
                         </p>
                       </div>

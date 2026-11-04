@@ -55,9 +55,9 @@ export const A4_PRINT_STYLES = `
     break-after: avoid;
   }
   .bener-logo-img {
-    height: 56px;
+    height: 60px;
     width: auto;
-    max-width: 250px;
+    max-width: 270px;
     object-fit: contain;
   }
   .proposal-number-box {
@@ -80,51 +80,51 @@ export const A4_PRINT_STYLES = `
     margin-bottom: 2px;
   }
   .reception-text {
-    margin-top: 14px;
+    margin-top: 12px !important;
     text-align: justify;
     font-size: 11px;
     page-break-inside: avoid;
     break-inside: avoid;
   }
-  .reception-text p { margin: 6px 0; }
+  .reception-text p { margin: 6px 0 !important; }
   .machine-presentation-block {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
   .machine-title {
     text-align: center;
-    margin: 18px 0 12px 0;
-    font-size: 14px;
+    margin: 10px 0 8px !important;
+    font-size: 14px !important;
     font-weight: bold;
     page-break-inside: avoid;
     break-inside: avoid;
-    page-break-after: avoid;
-    break-after: avoid;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
   }
   .image-container {
     text-align: center;
-    margin: 10px 0;
-    page-break-before: avoid;
-    page-break-inside: avoid;
-    break-before: avoid;
-    break-inside: avoid;
+    margin: 6px 0 !important;
+    page-break-before: avoid !important;
+    page-break-inside: avoid !important;
+    break-before: avoid !important;
+    break-inside: avoid !important;
   }
   .machine-img {
-    max-height: 220px;
-    max-width: 100%;
-    object-fit: contain;
+    max-height: 170px !important;
+    max-width: 100% !important;
+    object-fit: contain !important;
   }
   .image-caption {
     font-size: 10px;
     font-style: italic;
     color: #555;
-    margin-top: 6px;
+    margin-top: 4px;
   }
   .footer {
     border-top: 1px solid #000;
-    padding-top: 8px;
+    padding-top: 6px;
     text-align: center;
-    font-size: 10px;
+    font-size: 9.5px;
     line-height: 1.35;
     margin-top: auto;
     page-break-inside: avoid;
