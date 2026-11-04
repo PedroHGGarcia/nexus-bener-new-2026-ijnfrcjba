@@ -550,8 +550,8 @@ export function buildPublicProposalHtml(
         <div style="display:flex;flex-direction:column;align-items:flex-start;">
           ${
             logoUrlOverride
-              ? `<img src="${esc(logoUrlOverride)}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:56px;width:auto;max-width:250px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
-              : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:56px;width:auto;max-width:250px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
+              ? `<img src="${esc(logoUrlOverride)}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:64px;width:auto;max-width:280px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
+              : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="height:64px;width:auto;max-width:280px;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
           }
         </div>
         <div style="text-align:right;color:#000;font-size:11px;line-height:1.35;flex-shrink:0;">
@@ -647,8 +647,8 @@ export function buildPublicProposalHtml(
       justify-content: space-between;
       box-sizing: border-box;
       background: #fff;
-      page-break-inside: avoid;
-      break-inside: avoid;
+      page-break-inside: auto;
+      break-inside: auto;
     }
     .page ~ .page {
     }
@@ -678,9 +678,9 @@ export function buildPublicProposalHtml(
       color: #0b3c26;
     }
     .bener-logo-img {
-      height: 56px;
+      height: 64px;
       width: auto;
-      max-width: 250px;
+      max-width: 280px;
       object-fit: contain;
     }
     .proposal-number-box {
@@ -787,6 +787,10 @@ export function buildPublicProposalHtml(
       border-collapse: collapse;
       font-size: 11px;
       margin-bottom: 12px;
+      page-break-inside: auto;
+      break-inside: auto;
+    }
+    tr {
       page-break-inside: avoid;
       break-inside: avoid;
     }
@@ -830,7 +834,7 @@ export function buildPublicProposalHtml(
 
     @page {
       size: A4 portrait;
-      margin: 44mm 12mm 22mm 12mm;
+      margin: 50mm 12mm 22mm 12mm;
     }
 
     .proposal-running-header {
@@ -872,7 +876,7 @@ export function buildPublicProposalHtml(
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        height: 34mm !important;
+        height: 44mm !important;
         background: #ffffff !important;
         z-index: 9999 !important;
         box-sizing: border-box !important;
@@ -910,12 +914,25 @@ export function buildPublicProposalHtml(
         max-width: 100% !important;
         padding: 0 !important;
         margin: 0 !important;
-        page-break-inside: auto;
-        break-inside: auto;
+        page-break-inside: auto !important;
+        break-inside: auto !important;
       }
+      /* Única quebra explícita entre capa e detalhes através do .page-divider;
+         evitar page-break-after aqui para não duplicar quebra gerando folha vazia */
       .page:not(:last-child) {
-        page-break-after: page;
-        break-after: page;
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+      .page-divider {
+        page-break-before: always !important;
+        break-before: page !important;
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+        border: none !important;
+      }
+      .page-divider > div {
+        page-break-inside: auto !important;
+        break-inside: auto !important;
       }
       .page:last-child {
         page-break-after: auto !important;
@@ -926,7 +943,6 @@ export function buildPublicProposalHtml(
       .page:last-child > *:last-child {
         margin-bottom: 0 !important;
       }
-      .page-divider { border: none !important; }
       table {
         table-layout: fixed !important;
         width: 100% !important;
@@ -1040,8 +1056,8 @@ export function buildPublicProposalHtml(
           ${renderInstitutionalHeaderHtml()}
         </div>
 
-        <div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);page-break-after:avoid;break-after:avoid;">
             <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
             <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
           </div>
@@ -1050,8 +1066,8 @@ export function buildPublicProposalHtml(
 
         ${
           primaryVersao?.caracteristicas_construtivas
-            ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
+            ? `<div style="margin-bottom:12px;">
+                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);page-break-after:avoid;break-after:avoid;">
                    <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
                    <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Características Construtivas</span>
                  </div>
@@ -1062,16 +1078,15 @@ export function buildPublicProposalHtml(
 
         ${
           primaryVersao?.acessorios_standards
-            ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
+            ? `<div style="margin-bottom:12px;">
+                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);page-break-after:avoid;break-after:avoid;">
                    <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Configuração Standard</span>
+                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Standards Inclusos</span>
                  </div>
                  <div style="font-size:11px;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao.acessorios_standards)}</div>
                </div>`
             : ''
         }
-
         ${(() => {
           // Regra 7: Acessórios com 3 estados mutuamente exclusivos
           const rawAcc = Array.isArray(proposta.acessorios_proposta)
@@ -1469,7 +1484,7 @@ export function buildPublicProposalHtml(
                  <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">Termos de Fornecimento</span>
                  <span style="font-size:10px;opacity:0.9;">Condições Gerais & Garantias</span>
                </div>
-               <div style="border:1px solid #e2e8f0;border-radius:3px;background:#ffffff;margin-bottom:16px;page-break-inside:avoid;break-inside:avoid;">
+               <div style="border:1px solid #e2e8f0;border-radius:3px;background:#ffffff;margin-bottom:16px;">
                  ${filteredTerms
                    .map(
                      ([lbl, val], idx) => `
@@ -1490,7 +1505,7 @@ export function buildPublicProposalHtml(
                    <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">Informações Adicionais</span>
                    <span style="font-size:10px;opacity:0.9;">Campos Específicos da Proposta</span>
                  </div>
-                 <div style="border:1px solid #e2e8f0;border-radius:3px;background:#ffffff;page-break-inside:avoid;break-inside:avoid;">
+                 <div style="border:1px solid #e2e8f0;border-radius:3px;background:#ffffff;">
                    ${validCamposAdicionais
                      .map((field, idx) => {
                        const fieldTitle = String(field.titulo || field.chave || '').trim()

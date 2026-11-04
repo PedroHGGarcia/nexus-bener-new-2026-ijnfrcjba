@@ -888,9 +888,9 @@ export function buildProposalPdfHtml(
       gap: 16px;
     }
     .logo-img {
-      height: 46px;
+      height: 64px;
       width: auto;
-      max-width: 220px;
+      max-width: 280px;
       object-fit: contain;
     }
     .header-company-info {
@@ -1160,7 +1160,7 @@ export function buildProposalPdfHtml(
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        height: 34mm !important;
+        height: 44mm !important;
         background: #ffffff !important;
         z-index: 9999 !important;
         box-sizing: border-box !important;
@@ -1206,7 +1206,7 @@ export function buildProposalPdfHtml(
     }
     @page {
       size: A4 portrait;
-      margin: 44mm 12mm 22mm 12mm;
+      margin: 50mm 12mm 22mm 12mm;
     }
   </style>
 </head>
