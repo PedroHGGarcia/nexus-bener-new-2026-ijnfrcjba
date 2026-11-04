@@ -759,7 +759,14 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   const drawHeader = (): void => {
     const y0 = M_HEADER_TOP
     if (input.logo && logoImageName) {
-      doc.drawImage(logoImageName, M_LEFT, y0, 227, 77, input.logo)
+      // Logo encostada na margem esquerda, no topo do cabeçalho (mesma escala
+      // ~60mm × 27mm — apenas posição: desenhada a partir de M_LEFT, sem o
+      // centramento horizontal no box 227×77, que empurrava a logo para o
+      // centro da página e criava um vão vazio à esquerda).
+      const logoW = input.logo.width || 1
+      const logoH = input.logo.height || 1
+      const fit = Math.min(227 / logoW, 77 / logoH)
+      doc.drawImage(logoImageName, M_LEFT, y0, logoW * fit, logoH * fit, input.logo)
     } else {
       doc.txt(M_LEFT, y0, 'BENER', { font: 'F2', size: 22, color: GREEN })
       doc.txt(M_LEFT, y0 + 24, 'MÁQUINAS QUE TRANSFORMAM', { font: 'F1', size: 6.5, color: GRAY })
@@ -778,12 +785,14 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     })
 
     // Sigla | N° Oferta | Mês | Ano box (right-aligned)
-    // Aproximado do bloco de empresa/data (~3px de respiro vertical abaixo do texto da data)
+    // Encostado no bloco empresa/data: a BASE do quadro alinha com a BASE da
+    // logo (y0 + 77) — a logo cobre a altura dos dois blocos à direita, como
+    // no print de referência. Sem vão grande entre a data e o quadro.
     const boxW = 270
     const colW = [50, 130, 45, 45]
     const boxX = PAGE_W - M_RIGHT - boxW
-    const boxY = y0 + 30
     const rowH = 15
+    const boxY = y0 + 77 - rowH * 2
     doc.rect(boxX, boxY, boxW, rowH * 2, { stroke: INK, lw: 0.9 })
     const heads = ['Sigla', 'N° Oferta', 'Mês', 'Ano']
     const fullNumero = revisao ? `${numero} (Rev. ${revisao})` : numero
@@ -808,7 +817,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       })
       curX += colW[i]
     }
-    doc.hline(boxX + colW[0], boxX + colW[0] + colW[1] + colW[2], boxY + rowH, {
+    doc.hline(boxX, boxX + boxW, boxY + rowH, {
       lw: 0.9,
       color: [0.2, 0.2, 0.2],
     })
@@ -914,7 +923,10 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   } else if (!input.machineImage) {
     console.log('[proposal-pdf-layout] Capa: nenhuma imagem da máquina carregada; legenda omitida.')
   } else {
-    console.warn('[proposal-pdf-layout] Capa: espaço restante insuficiente para imagem da máquina:', remaining)
+    console.warn(
+      '[proposal-pdf-layout] Capa: espaço restante insuficiente para imagem da máquina:',
+      remaining,
+    )
   }
 
   if (hasAdditionalContent) {

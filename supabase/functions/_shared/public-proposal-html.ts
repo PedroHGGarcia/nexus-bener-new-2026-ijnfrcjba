@@ -551,7 +551,7 @@ export function buildPublicProposalHtml(
 
   const renderInstitutionalHeaderHtml = () => `
     <div class="proposal-institutional-header" style="border-bottom:1px solid #000;padding-bottom:10px;margin-bottom:14px;page-break-inside:avoid;break-inside:avoid;page-break-after:avoid;break-after:avoid;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:stretch;gap:16px;">
         <div style="display:flex;flex-direction:column;align-items:flex-start;">
           ${
             logoUrlOverride
@@ -559,12 +559,10 @@ export function buildPublicProposalHtml(
               : `<img src="https://ugnhnbfogxbcptprsfot.supabase.co/storage/v1/object/public/propostas-files/bener-header-logo.png" alt="BENER - MÁQUINAS QUE TRANSFORMAM" style="width:60mm;height:auto;max-width:62mm;max-height:27mm;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><div style="display:none;flex-direction:column;"><span style="font-size:24px;font-weight:800;letter-spacing:2px;color:#0b3c26;line-height:1;">BENER</span><span style="font-size:9px;font-weight:600;letter-spacing:1px;color:#0b3c26;text-transform:uppercase;margin-top:2px;">MÁQUINAS QUE TRANSFORMAM</span></div>`
           }
         </div>
-        <div style="text-align:right;color:#000;font-size:11px;line-height:1.35;flex-shrink:0;">
+        <div style="display:flex;flex-direction:column;align-items:flex-end;text-align:right;color:#000;font-size:11px;line-height:1.35;flex-shrink:0;">
           <div style="font-weight:bold;font-size:12px;">Bener Comercial Importadora Exportadora Ltda.</div>
           <div style="margin-top:2px;">${esc(formattedDateWithCity)}</div>
-        </div>
-      </div>
-      <div style="display:flex;justify-content:flex-end;margin-top:3px;">
+          <div style="margin-top:auto;padding-top:8px;">
         <table style="width:auto;min-width:280px;max-width:340px;border-collapse:collapse;border:1px solid #000;margin:0;font-size:9.5px;line-height:1.2;background:#fff;">
           <thead>
             <tr style="background:#fff;border-bottom:1px solid #000;">
@@ -583,6 +581,8 @@ export function buildPublicProposalHtml(
             </tr>
           </tbody>
         </table>
+          </div>
+        </div>
       </div>
     </div>
   `

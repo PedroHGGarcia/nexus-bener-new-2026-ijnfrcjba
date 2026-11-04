@@ -101,9 +101,7 @@ export function isLikelySubheading(raw: string): boolean {
   if (!clean) return false
   if (/^<b\b[^>]*>([\s\S]*?)<\/b\s*>$/i.test(clean)) return true
   if (
-    /^(\d{1,2}[.)\-–—]|p[oó]nto\s+\d{1,3}[:.\-–—]?)[ \t]*<b\b[^>]*>([\s\S]*?)<\/b\s*>/i.test(
-      clean,
-    )
+    /^(\d{1,2}[.)\-–—]|p[oó]nto\s+\d{1,3}[:.\-–—]?)[ \t]*<b\b[^>]*>([\s\S]*?)<\/b\s*>/i.test(clean)
   )
     return true
 

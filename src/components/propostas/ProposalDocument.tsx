@@ -400,8 +400,8 @@ export function ProposalDocument({ proposal }: Props) {
     </div>
   )
   const headerInstitucional = (
-    <div className="flex justify-between items-start gap-4">
-      <div className="flex items-center gap-2">
+    <div className="flex justify-between items-stretch gap-4">
+      <div className="flex items-start gap-2">
         <img
           src={benerLogo}
           alt="BENER - MÁQUINAS QUE TRANSFORMAM"
@@ -416,11 +416,12 @@ export function ProposalDocument({ proposal }: Props) {
           loading="eager"
         />
       </div>
-      <div className="text-right text-[10px] sm:text-[11px] leading-tight text-black shrink-0">
+      <div className="flex flex-col items-end text-right text-[10px] sm:text-[11px] leading-tight text-black shrink-0">
         <p className="font-bold text-[12px] sm:text-[13px]">
           Bener Comercial Importadora Exportadora Ltda.
         </p>
         <p className="mt-1">Vinhedo, {dataPorExtensoCap}</p>
+        <div className="mt-auto pt-1.5">{siglaBox}</div>
       </div>
     </div>
   )
@@ -739,7 +740,6 @@ export function ProposalDocument({ proposal }: Props) {
       {/* Running Header Nativo para @media print (aparece no topo de TODAS as páginas impressas via fixed header) */}
       <div className="proposal-running-header hidden print:block print:fixed print:top-0 print:left-0 print:right-0 print:h-[34mm] print:bg-white print:z-[9999] border-b border-black pb-2">
         {headerInstitucional}
-        <div className="flex justify-end mt-[3px]">{siglaBox}</div>
       </div>
 
       {/* Running Footer Nativo para @media print (aparece no rodapé de TODAS as páginas impressas via fixed footer) */}
@@ -786,7 +786,6 @@ export function ProposalDocument({ proposal }: Props) {
                     {/* Section 0: Top Header (exibido na tela; no print fica a cargo do header nativo repetido) */}
                     <div className="border-b border-black pb-3 mb-5 print:hidden">
                       {headerInstitucional}
-                      <div className="flex justify-end mt-[3px]">{siglaBox}</div>
                     </div>
 
                     {/* Section 1: Client Header (Top Left) */}
@@ -950,7 +949,6 @@ export function ProposalDocument({ proposal }: Props) {
                   {/* Institutional header repeated on Page 2 on screen; in print, handled by proposal-running-header */}
                   <div className="border-b border-black pb-3 mb-5 break-inside-avoid print:hidden">
                     {headerInstitucional}
-                    <div className="flex justify-end mt-[3px]">{siglaBox}</div>
                   </div>
 
                   <div>

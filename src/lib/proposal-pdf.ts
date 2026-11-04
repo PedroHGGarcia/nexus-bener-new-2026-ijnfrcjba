@@ -334,7 +334,7 @@ export function generatePropostaHtml(
       <div>
         <div style="page-break-inside:avoid;break-inside:avoid;">
           <div class="proposal-top-header">
-            <div style="display:flex;align-items:center;gap:8px;">
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;">
               <img src="${benerLogo}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" />
             </div>
             <div class="proposal-number-box">

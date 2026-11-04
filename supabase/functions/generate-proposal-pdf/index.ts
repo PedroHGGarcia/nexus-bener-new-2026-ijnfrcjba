@@ -356,7 +356,9 @@ Deno.serve(async (req: Request) => {
           )
         }
       } else {
-        console.log('[generate-proposal-pdf] Nenhuma imagem de máquina configurada para esta versão.')
+        console.log(
+          '[generate-proposal-pdf] Nenhuma imagem de máquina configurada para esta versão.',
+        )
       }
 
       let pdfBytes: Uint8Array
