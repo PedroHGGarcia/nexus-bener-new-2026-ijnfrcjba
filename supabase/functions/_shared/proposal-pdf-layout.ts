@@ -775,11 +775,11 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     })
 
     // Sigla | N° Oferta | Mês | Ano box (right-aligned)
-    // Box width accommodates full offer number (ex.: PROP-2026-142-A) without truncating
+    // Aproximado do bloco de empresa/data (~3px de respiro vertical abaixo do texto da data)
     const boxW = 270
     const colW = [50, 130, 45, 45]
     const boxX = PAGE_W - M_RIGHT - boxW
-    const boxY = y0 + 34
+    const boxY = y0 + 30
     const rowH = 15
     doc.rect(boxX, boxY, boxW, rowH * 2, { stroke: INK, lw: 0.9 })
     const heads = ['Sigla', 'N° Oferta', 'Mês', 'Ano']
