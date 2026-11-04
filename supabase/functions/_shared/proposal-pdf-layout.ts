@@ -24,8 +24,8 @@ const PAGE_H = 841.89
 const M_LEFT = 42
 const M_RIGHT = 42
 export const M_HEADER_TOP = 42
-export const HEADER_HEIGHT = 88 // Cabeçalho institucional: de y=42 até linha divisória (y=116) + 14pt respiro = 88pt
-export const M_TOP = M_HEADER_TOP + HEADER_HEIGHT // Margem superior exata (130pt) para o corpo nunca sobrepor o cabeçalho
+export const HEADER_HEIGHT = 97 // Cabeçalho institucional: de y=42 até linha divisória (y=129) + 10pt respiro = 97pt
+export const M_TOP = M_HEADER_TOP + HEADER_HEIGHT // Margem superior exata (139pt) para o corpo nunca sobrepor o cabeçalho
 const M_BOTTOM = 60
 
 // Helvetica / Helvetica-Bold advance widths (per 1000 units), ASCII 32..126
@@ -756,7 +756,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   const drawHeader = (): void => {
     const y0 = M_HEADER_TOP
     if (input.logo && logoImageName) {
-      doc.drawImage(logoImageName, M_LEFT, y0, 180, 48, input.logo)
+      doc.drawImage(logoImageName, M_LEFT, y0, 227, 77, input.logo)
     } else {
       doc.txt(M_LEFT, y0, 'BENER', { font: 'F2', size: 22, color: GREEN })
       doc.txt(M_LEFT, y0 + 24, 'MÁQUINAS QUE TRANSFORMAM', { font: 'F1', size: 6.5, color: GRAY })
@@ -810,7 +810,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       color: [0.2, 0.2, 0.2],
     })
 
-    const headerLineY = Math.max(y0 + 48, boxY + rowH * 2) + 10
+    const headerLineY = Math.max(y0 + 77, boxY + rowH * 2) + 10
     doc.hline(M_LEFT, PAGE_W - M_RIGHT, headerLineY, { lw: 1.1, color: [0.15, 0.15, 0.15] })
     doc.y = M_TOP
   }

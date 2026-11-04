@@ -405,8 +405,14 @@ export function ProposalDocument({ proposal }: Props) {
         <img
           src={benerLogo}
           alt="BENER - MÁQUINAS QUE TRANSFORMAM"
-          className="h-[60px] w-auto object-contain max-w-[270px]"
-          style={{ maxHeight: '60px', height: '60px' }}
+          className="object-contain"
+          style={{
+            width: '60mm',
+            height: 'auto',
+            maxWidth: '62mm',
+            maxHeight: '27mm',
+            objectFit: 'contain',
+          }}
           loading="eager"
         />
       </div>
