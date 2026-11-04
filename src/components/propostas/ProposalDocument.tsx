@@ -889,13 +889,13 @@ export function ProposalDocument({ proposal }: Props) {
                       </div>
 
                       {/* Section 4: Machine Image (Large centered image with small caption below) */}
-                      <div className="flex flex-col items-center justify-center my-1.5 break-before-avoid break-inside-avoid image-container max-h-[250px] overflow-hidden">
+                      <div className="flex flex-col items-center justify-center break-before-avoid break-inside-avoid image-container overflow-hidden w-full h-[105mm] min-h-[105mm] max-h-[105mm] my-[6mm_0_2mm] text-center">
                         {machineImage ? (
-                          <div className="w-full max-w-xl max-h-[230px] flex items-center justify-center">
+                          <div className="w-full flex items-center justify-center">
                             <img
                               src={machineImage}
                               alt={machineTitle}
-                              className="max-h-[230px] w-auto max-w-full object-contain machine-img block mx-auto"
+                              className="w-auto max-w-[145mm] h-auto max-h-[92mm] object-contain machine-img block mx-auto"
                               loading="eager"
                             />
                           </div>
@@ -904,7 +904,7 @@ export function ProposalDocument({ proposal }: Props) {
                             Foto do equipamento indisponível no catálogo
                           </div>
                         )}
-                        <p className="text-[9px] text-black/70 italic text-center mt-1 image-caption">
+                        <p className="text-[9px] text-black/70 italic text-center mt-[3mm] image-caption">
                           Imagem meramente ilustrativa
                         </p>
                       </div>

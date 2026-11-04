@@ -1,5 +1,5 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
 import { getCorsHeaders } from '../_shared/cors.ts'
 import { requireUser } from '../_shared/auth.ts'
 import { buildProposalPdfHtml } from '../_shared/pdf-builder.ts'

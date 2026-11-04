@@ -753,24 +753,37 @@ export function buildPublicProposalHtml(
       object-fit: contain !important;
     }
     .proposal-cover .image-container {
+      width: 100% !important;
+      height: 105mm !important;
+      min-height: 105mm !important;
+      max-height: 105mm !important;
       display: flex !important;
       flex-direction: column !important;
       align-items: center !important;
       justify-content: center !important;
-      max-height: 250px !important;
+      text-align: center !important;
+      margin: 6mm 0 2mm !important;
+      page-break-before: avoid !important;
+      page-break-inside: avoid !important;
+      break-before: avoid !important;
+      break-inside: avoid !important;
       overflow: hidden !important;
     }
     .proposal-cover .machine-img {
-      max-height: 230px !important;
+      display: block !important;
       width: auto !important;
-      max-width: 100% !important;
+      max-width: 145mm !important;
+      height: auto !important;
+      max-height: 92mm !important;
       object-fit: contain !important;
+      margin: 0 auto !important;
     }
-    .image-caption {
+    .image-caption,
+    .proposal-cover .image-caption {
       font-size: 9px !important;
       font-style: italic;
       color: #444;
-      margin-top: 4px !important;
+      margin-top: 3mm !important;
     }
     .footer {
       border-top: 1px solid #000;
@@ -966,6 +979,39 @@ export function buildPublicProposalHtml(
         width: 100% !important;
         max-width: 100% !important;
         word-break: break-word;
+      }
+
+      .proposal-cover .image-container {
+        width: 100% !important;
+        height: 105mm !important;
+        min-height: 105mm !important;
+        max-height: 105mm !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        margin: 6mm 0 2mm !important;
+        page-break-before: avoid !important;
+        page-break-inside: avoid !important;
+        break-before: avoid !important;
+        break-inside: avoid !important;
+        overflow: hidden !important;
+      }
+
+      .proposal-cover .machine-img {
+        display: block !important;
+        width: auto !important;
+        max-width: 145mm !important;
+        height: auto !important;
+        max-height: 92mm !important;
+        object-fit: contain !important;
+        margin: 0 auto !important;
+      }
+
+      .proposal-cover .image-caption {
+        margin-top: 3mm !important;
+        font-size: 9px !important;
       }
     }
   </style>

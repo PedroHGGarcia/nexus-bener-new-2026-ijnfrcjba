@@ -890,13 +890,16 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   }
   doc.y += 6
 
-  // Machine image (fits in the remaining cover space)
-  const remaining = doc.bottomLimit - 20 - doc.y
+  // Machine image (fits in the remaining cover space: target approx 145mm width, 92-100mm height)
+  // 145mm ≈ 411pt, 92mm ≈ 260pt. Content width on A4 with 34pt margins is ~527pt.
+  const remaining = doc.bottomLimit - 15 - doc.y
   if (input.machineImage && remaining > 90) {
-    const boxH = Math.min(230, remaining - 18)
+    const targetW = Math.min(411, doc.contentW - 40) // ~145mm
+    const maxH = Math.min(270, remaining - 20) // ~95mm max height
+    const imgX = M_LEFT + (doc.contentW - targetW) / 2
     const name = doc.registerImage(input.machineImage)
-    doc.drawImage(name, M_LEFT + 60, doc.y, doc.contentW - 120, boxH, input.machineImage)
-    doc.y += boxH + 4
+    doc.drawImage(name, imgX, doc.y, targetW, maxH, input.machineImage)
+    doc.y += maxH + 4
     doc.txt(M_LEFT, doc.y, 'Imagem meramente ilustrativa', {
       font: 'F3',
       size: 8,
@@ -904,7 +907,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       align: 'center',
       w: doc.contentW,
     })
-    doc.y += 10
+    doc.y += 8
   }
 
   if (hasAdditionalContent) {

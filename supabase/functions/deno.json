@@ -1,25 +1,25 @@
 {
   "_versions": {
-    "cep-lookup": 715,
+    "cep-lookup": 716,
     "admin-user-management": 704,
-    "ai-suggestions": 704,
+    "ai-suggestions": 705,
     "verify-recaptcha": 704,
-    "suggest-specs": 700,
-    "generate-proposal-pdf": 733,
-    "send-proposal-email": 696,
-    "cnpj-lookup": 645,
+    "suggest-specs": 701,
+    "generate-proposal-pdf": 734,
+    "send-proposal-email": 697,
+    "cnpj-lookup": 646,
     "versoes-chatbot": 652,
     "currency-rates": 635,
-    "public-proposal-pdf": 597,
+    "public-proposal-pdf": 598,
     "confirm-email-delivery": 568,
-    "notify-critical-action-email": 527,
+    "notify-critical-action-email": 528,
     "importar-clientes-antigos": 495,
     "importar-base-antiga": 491,
-    "batch-cep-lookup": 478,
+    "batch-cep-lookup": 479,
     "send-password-reset": 441,
     "upload-asset": 248,
     "public-proposal": 204,
     "invite-user": 54,
-    "enriquecer-cnpj-receita": 41
+    "enriquecer-cnpj-receita": 42
   }
 }

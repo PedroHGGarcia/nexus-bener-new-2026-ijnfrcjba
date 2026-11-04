@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2.118.0'
 import { getCorsHeaders } from './cors.ts'
 
 export interface AuthenticatedUser {
