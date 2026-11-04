@@ -620,7 +620,8 @@ export function ProposalDocument({ proposal }: Props) {
   // PONTO 3: Garantir linha da máquina limpa (sem comissão)
   // Se o valor_final gravado embute comissão (rawFinal ~= base + comissao), subtrair comissão na linha da máquina!
   const rawValorFinalGravado = Number(proposal?.valor_final || 0)
-  const qtdProposta = Number(proposal?.quantidade || 1) > 0 ? Number(proposal?.quantidade || 1) : 1
+  const qtdProposta =
+    Number(proposalAny?.quantidade || 1) > 0 ? Number(proposalAny?.quantidade || 1) : 1
 
   const valorMaquinaLimpoLinha = useMemo(() => {
     if (proposal?.preco_especial != null && Number(proposal.preco_especial) > 0) {
