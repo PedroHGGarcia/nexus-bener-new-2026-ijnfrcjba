@@ -80,21 +80,22 @@ export const A4_PRINT_STYLES = `
     margin-bottom: 2px;
   }
   .reception-text {
-    margin-top: 12px !important;
+    margin-top: 10px !important;
     text-align: justify;
     font-size: 11px;
     page-break-inside: avoid;
     break-inside: avoid;
   }
-  .reception-text p { margin: 6px 0 !important; }
+  .reception-text p { margin: 4px 0 !important; }
   .machine-presentation-block {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
   .machine-title {
     text-align: center;
-    margin: 10px 0 8px !important;
+    margin: 8px 0 8px !important;
     font-size: 14px !important;
+    line-height: 1.2 !important;
     font-weight: bold;
     page-break-inside: avoid;
     break-inside: avoid;
@@ -110,15 +111,32 @@ export const A4_PRINT_STYLES = `
     break-inside: avoid !important;
   }
   .machine-img {
-    max-height: 170px !important;
+    display: block !important;
+    margin: 0 auto !important;
+    width: auto !important;
+    max-height: 230px !important;
+    max-width: 100% !important;
+    object-fit: contain !important;
+  }
+  .proposal-cover .image-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    max-height: 250px !important;
+    overflow: hidden !important;
+  }
+  .proposal-cover .machine-img {
+    max-height: 230px !important;
+    width: auto !important;
     max-width: 100% !important;
     object-fit: contain !important;
   }
   .image-caption {
-    font-size: 10px;
+    font-size: 9px !important;
     font-style: italic;
     color: #555;
-    margin-top: 4px;
+    margin-top: 4px !important;
   }
   .footer {
     border-top: 1px solid #000;

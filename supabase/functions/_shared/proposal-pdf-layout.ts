@@ -893,7 +893,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   // Machine image (fits in the remaining cover space)
   const remaining = doc.bottomLimit - 20 - doc.y
   if (input.machineImage && remaining > 90) {
-    const boxH = Math.min(170, remaining - 18)
+    const boxH = Math.min(230, remaining - 18)
     const name = doc.registerImage(input.machineImage)
     doc.drawImage(name, M_LEFT + 60, doc.y, doc.contentW - 120, boxH, input.machineImage)
     doc.y += boxH + 4
