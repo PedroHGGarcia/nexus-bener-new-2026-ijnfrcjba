@@ -42,6 +42,9 @@ Deno.serve(async (req: Request) => {
   try {
     const url = new URL(req.url)
 
+    const format = url.searchParams.get('format') || 'html'
+    const saveToStorage = url.searchParams.get('save') === 'true'
+
     // Accept ?token=... or ?id=... or /functions/v1/public-proposal-pdf/<token_or_uuid>
     let identifier = url.searchParams.get('token') || url.searchParams.get('id')
     if (!identifier) {
@@ -253,6 +256,81 @@ Deno.serve(async (req: Request) => {
     }
 
     const appUrl = DEFAULT_APP_URL
+
+    if (format === 'pdf' || saveToStorage) {
+      let logo: any = null
+      try {
+        logo = await (await import('../_shared/proposal-pdf-layout.ts')).loadImage(null)
+      } catch (errLogo) {
+        console.warn('[public-proposal-pdf] Aviso: não foi possível carregar logo:', errLogo)
+      }
+
+      let machineImage: any = null
+      const machineImageUrl =
+        equipmentItems[0]?.versoes?.imagem_preview ||
+        proposal.dados_snapshot?.primary_versao?.imagem_preview ||
+        proposal.versoes?.imagem_preview ||
+        null
+      if (machineImageUrl) {
+        try {
+          machineImage = await (
+            await import('../_shared/proposal-pdf-layout.ts')
+          ).loadImage(machineImageUrl)
+          if (machineImage) {
+            console.log(
+              `[public-proposal-pdf] Imagem da máquina carregada com sucesso: ${machineImage.kind}, ${machineImage.width}x${machineImage.height}`,
+            )
+          } else {
+            console.warn(
+              '[public-proposal-pdf] loadImage retornou null para imagem da máquina:',
+              machineImageUrl.slice(0, 80),
+            )
+          }
+        } catch (errImg) {
+          console.warn('[public-proposal-pdf] Aviso: imagem da máquina:', errImg)
+        }
+      } else {
+        console.log('[public-proposal-pdf] Nenhuma imagem de máquina configurada para esta versão.')
+      }
+
+      const { buildProposalPdfBytes } = await import('../_shared/proposal-pdf-layout.ts')
+      const pdfBytes = await buildProposalPdfBytes({
+        proposta: proposal,
+        equipmentItems,
+        tipoProposta: tipoPropostaData,
+        creatorInfo,
+        logo,
+        machineImage,
+      })
+
+      if (saveToStorage && proposal.id) {
+        const fileName = `${proposal.id}.pdf`
+        const { error: uploadError } = await adminClient.storage
+          .from('propostas-pdf')
+          .upload(fileName, pdfBytes, { contentType: 'application/pdf', upsert: true })
+
+        if (!uploadError) {
+          const { data: urlData } = adminClient.storage.from('propostas-pdf').getPublicUrl(fileName)
+          if (urlData?.publicUrl) {
+            await adminClient
+              .from('propostas')
+              .update({ pdf_anexo: urlData.publicUrl })
+              .eq('id', proposal.id)
+          }
+        }
+      }
+
+      return new Response(pdfBytes, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `inline; filename="${proposal.numero_proposta || 'proposta'}.pdf"`,
+          'Cache-Control': 'private, max-age=60',
+          ...cors,
+        },
+      })
+    }
+
     const htmlContent = buildPublicProposalHtml(
       proposal,
       appUrl,

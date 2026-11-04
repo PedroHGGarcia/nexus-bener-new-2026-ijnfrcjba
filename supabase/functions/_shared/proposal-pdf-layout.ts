@@ -18,6 +18,7 @@
  */
 
 import { calcComissaoServicosBener, TEXTO_COMISSAO_BENER_VERBATIM } from './pdf-builder.ts'
+import { renderRichContent } from './proposal-rich-text.ts'
 
 const PAGE_W = 595.28
 const PAGE_H = 841.89
@@ -693,11 +694,13 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   const clientEmail = c.email || ''
   const contactName = c.contato || p.contato || ''
 
-  const primary = equipmentItems[0]
-  const primaryV = primary?.versoes || p.versoes || {}
+  const primaryFromSnapshot = dadosSnapshot?.primary_versao
+  const primary = equipmentItems && equipmentItems[0] ? equipmentItems[0] : null
+  const primaryVersao = primaryFromSnapshot || primary?.versoes || p.versoes || null
+  const primaryV = primaryVersao || {}
   const machineTitle = String(
-    primaryV?.nome ||
-      primaryV?.nome_abreviado ||
+    primaryVersao?.nome ||
+      primaryVersao?.nome_abreviado ||
       p.versao_original ||
       p.descricao_proposta ||
       'EQUIPAMENTO INDUSTRIAL',
@@ -908,6 +911,10 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       w: doc.contentW,
     })
     doc.y += 8
+  } else if (!input.machineImage) {
+    console.log('[proposal-pdf-layout] Capa: nenhuma imagem da máquina carregada; legenda omitida.')
+  } else {
+    console.warn('[proposal-pdf-layout] Capa: espaço restante insuficiente para imagem da máquina:', remaining)
   }
 
   if (hasAdditionalContent) {
@@ -919,29 +926,17 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     primaryV?.especificacoes_tecnicas || p.especificacoes_tecnicas || p.descricao_proposta
   if (specs) {
     sectionHeading('Especificações Técnicas')
-    doc.para(M_LEFT + 10, doc.contentW - 10, String(specs), { size: 9 }, 11.5)
+    renderRichContent(doc, String(specs), ensureSpace)
     doc.y += 8
   }
   if (primaryV?.caracteristicas_construtivas) {
     sectionHeading('Características Construtivas')
-    doc.para(
-      M_LEFT + 10,
-      doc.contentW - 10,
-      String(primaryV.caracteristicas_construtivas),
-      { size: 9 },
-      11.5,
-    )
+    renderRichContent(doc, String(primaryV.caracteristicas_construtivas), ensureSpace)
     doc.y += 8
   }
   if (primaryV?.acessorios_standards) {
     sectionHeading('Configuração Standard')
-    doc.para(
-      M_LEFT + 10,
-      doc.contentW - 10,
-      String(primaryV.acessorios_standards),
-      { size: 9 },
-      11.5,
-    )
+    renderRichContent(doc, String(primaryV.acessorios_standards), ensureSpace)
     doc.y += 8
   }
 

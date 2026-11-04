@@ -340,7 +340,12 @@ export function buildPublicProposalHtml(
 
   // Snapshot congelado (Regra 9)
   const dadosSnapshot = proposta.dados_snapshot as Record<string, any> | null
+  const tpOverride =
+    (proposta.tipo_proposta_override as Record<string, any> | null) ||
+    (dadosSnapshot?.tipo_proposta_override as Record<string, any> | null) ||
+    null
   const tpSnapshot =
+    tpOverride ||
     (dadosSnapshot?.tipo_proposta_detalhes as Record<string, any>) ||
     (tipoProposta as Record<string, any>) ||
     null

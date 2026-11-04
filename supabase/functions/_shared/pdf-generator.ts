@@ -67,35 +67,74 @@ export async function generateAndUploadProposalPdf(
   creatorInfo?: { name: string; email: string } | null,
   logoDataUrl?: string | null,
 ): Promise<{ pdfUrl: string; pdfBytes: Uint8Array }> {
-  const logo = await loadImage(logoDataUrl || null)
-  const machineImageUrl =
-    equipmentItems[0]?.versoes?.imagem_preview || proposal.versoes?.imagem_preview || null
-  const machineImage = await loadImage(machineImageUrl)
-
-  const pdfBytes = await buildProposalPdfBytes({
-    proposta: proposal,
-    equipmentItems,
-    tipoProposta,
-    creatorInfo,
-    logo,
-    machineImage,
-  })
-
-  const fileName = `${propostaId}.pdf`
-
-  const { error: uploadError } = await adminClient.storage
-    .from(BUCKET)
-    .upload(fileName, pdfBytes, { contentType: 'application/pdf', upsert: true })
-
-  if (uploadError) {
-    throw new Error(`Erro ao fazer upload do PDF: ${uploadError.message}`)
+  // Carrega logo e imagem da máquina de forma resiliente:
+  // se falhar o download ou decodificação da imagem, não derruba a geração do PDF
+  let logo: LoadedImg = null
+  try {
+    logo = await loadImage(logoDataUrl || null)
+  } catch (errLogo) {
+    console.warn('[pdf-generator] Falha não impeditiva ao carregar logo:', errLogo)
   }
 
-  const { data: urlData } = adminClient.storage.from(BUCKET).getPublicUrl(fileName)
-  const pdfUrl = urlData.publicUrl
+  let machineImage: LoadedImg = null
+  const machineImageUrl =
+    equipmentItems[0]?.versoes?.imagem_preview || proposal.versoes?.imagem_preview || null
+  if (machineImageUrl) {
+    try {
+      machineImage = await loadImage(machineImageUrl)
+    } catch (errImg) {
+      console.warn('[pdf-generator] Falha não impeditiva ao carregar imagem da máquina:', errImg)
+    }
+  }
 
-  // Persist the URL on the proposal row for later retrieval
-  await adminClient.from('propostas').update({ pdf_anexo: pdfUrl }).eq('id', propostaId)
+  // ETAPA 1: Construção do PDF em memória
+  let pdfBytes: Uint8Array
+  try {
+    pdfBytes = await buildProposalPdfBytes({
+      proposta: proposal,
+      equipmentItems,
+      tipoProposta,
+      creatorInfo,
+      logo,
+      machineImage,
+    })
+  } catch (errBuild: any) {
+    const msg = errBuild?.message || String(errBuild)
+    throw new Error(`falha ao gerar o PDF: ${msg}`)
+  }
+
+  // ETAPA 2: Gravação no Storage
+  const fileName = `${propostaId}.pdf`
+  let uploadError: any = null
+  try {
+    const uploadRes = await adminClient.storage
+      .from(BUCKET)
+      .upload(fileName, pdfBytes, { contentType: 'application/pdf', upsert: true })
+    uploadError = uploadRes.error
+  } catch (errStorage: any) {
+    const msg = errStorage?.message || String(errStorage)
+    throw new Error(`falha ao gravar no storage: ${msg}`)
+  }
+
+  if (uploadError) {
+    throw new Error(
+      `falha ao gravar no storage: ${uploadError.message || JSON.stringify(uploadError)}`,
+    )
+  }
+
+  let pdfUrl: string
+  try {
+    const { data: urlData } = adminClient.storage.from(BUCKET).getPublicUrl(fileName)
+    pdfUrl = urlData.publicUrl
+
+    // Persist the URL on the proposal row for later retrieval
+    await adminClient.from('propostas').update({ pdf_anexo: pdfUrl }).eq('id', propostaId)
+  } catch (errPersist: any) {
+    console.warn('[pdf-generator] Aviso: erro ao atualizar pdf_anexo na proposta:', errPersist)
+    // Se o upload foi bem sucedido mas falhou apenas o update, ainda temos a publicUrl
+    const { data: urlData } = adminClient.storage.from(BUCKET).getPublicUrl(fileName)
+    pdfUrl = urlData.publicUrl
+  }
 
   return { pdfUrl, pdfBytes }
 }
