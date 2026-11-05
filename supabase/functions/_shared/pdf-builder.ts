@@ -1,4 +1,5 @@
 import { escapeHtml } from './escape-html.ts'
+import { ProposalSectionCounter } from './proposal-section-numbering.ts'
 export {
   buildProposalPdfBytes,
   PdfDoc,
@@ -218,7 +219,12 @@ function formatLongDate(dtCad: string | null | undefined): string {
   return `Vinhedo, ${formatted}`
 }
 
-function buildEquipmentSection(items: any[], proposta: any, comissaoRowHtml: string = ''): string {
+function buildEquipmentSection(
+  items: any[],
+  proposta: any,
+  comissaoRowHtml: string = '',
+  sectionCounter: ProposalSectionCounter,
+): string {
   const fmtVal = (v: number | null | undefined) =>
     (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -252,10 +258,6 @@ function buildEquipmentSection(items: any[], proposta: any, comissaoRowHtml: str
           a.inclusao === undefined ||
           a.inclusao === null,
       )
-      const naoInclusosPacote = filteredAcc.filter(
-        (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
-      )
-
       let acessoriosHtml = ''
       if (inclusosPacote.length > 0) {
         acessoriosHtml += `<div class="equipment-accessories" style="margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;page-break-inside:avoid;break-inside:avoid;">
@@ -273,24 +275,6 @@ function buildEquipmentSection(items: any[], proposta: any, comissaoRowHtml: str
           </ul>
         </div>`
       }
-      if (naoInclusosPacote.length > 0) {
-        acessoriosHtml += `<div class="equipment-accessories" style="margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;page-break-inside:avoid;break-inside:avoid;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-            <span style="display:inline-block;width:3px;height:12px;background:#0b3c26;border-radius:1px;"></span>
-            <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;">Acessórios Opcionais Não Inclusos no Preço</span>
-          </div>
-          <ul style="list-style:none;padding:0 0 0 9px;margin:2px 0 0 0;font-size:11px;line-height:1.55;color:#1e293b;">
-            ${naoInclusosPacote
-              .map((a: any) => {
-                const itemMoeda = normalizeMoedaCode(a.moeda || moeda)
-                const valFmt = a.valor != null ? `${itemMoeda} ${fmtVal(a.valor)}` : null
-                return `<li style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px;"><div style="display:flex;align-items:baseline;gap:6px;"><span style="color:#0b3c26;font-weight:bold;">•</span><span>${a.quantidade ? a.quantidade + 'x ' : ''}${escapeHtml(a.nome || '—')}</span></div>${valFmt ? `<span style="font-weight:bold;color:#0f172a;white-space:nowrap;">${valFmt}</span>` : ''}</li>`
-              })
-              .join('')}
-          </ul>
-        </div>`
-      }
-
       const imagemHtml = v?.imagem_preview
         ? `<img src="${v.imagem_preview}" alt="${v.nome || ''}" class="equipment-img" />`
         : ''
@@ -403,13 +387,13 @@ function buildEquipmentSection(items: any[], proposta: any, comissaoRowHtml: str
 
   return `
   <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-      <span>Detalhamento de Equipamentos & Condições Comerciais</span>
-    </div>
-    <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Pacote de Máquinas</span>
-  </div>
-  <div class="equipment-list">${itemsHtml}${comissaoRowHtml}</div>
+   <div style="display:flex;align-items:center;gap:8px;">
+     <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+     <span>${escapeHtml(sectionCounter.nextLevel1('Detalhamento de Equipamentos & Condições Comerciais'))}</span>
+   </div>
+   <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Pacote de Máquinas</span>
+ </div>
+ <div class="equipment-list">${itemsHtml}${comissaoRowHtml}</div>
 `
 }
 
@@ -423,6 +407,7 @@ export function buildProposalPdfHtml(
   logoUrlOverride?: string | null,
 ): string {
   const logoUrl = logoUrlOverride || ''
+  const sectionCounter = new ProposalSectionCounter()
 
   // Normalização de Moeda (Regras 1 e 2)
   const moedaProp = normalizeMoedaCode(proposta.moeda || 'BRL')
@@ -557,14 +542,14 @@ export function buildProposalPdfHtml(
       ? `
     <div class="section-title" style="display:flex;align-items:center;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
       <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-      <span>Termos de Fornecimento & Informações Comerciais</span>
+      <span>${escapeHtml(sectionCounter.nextLevel1('Termos de Fornecimento & Informações Comerciais'))}</span>
     </div>
     <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
       ${filteredTerms
         .map(
           ([lbl, val]) => `
         <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-          <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(lbl)}</div>
+          <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(sectionCounter.nextLevel2(lbl))}</div>
           <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderCommercialFieldHtml(val)}</div>
         </div>`,
         )
@@ -617,14 +602,14 @@ export function buildProposalPdfHtml(
       camposAdicionaisSection = `
       <div class="section-title" style="display:flex;align-items:center;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
         <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-        <span>Informações Adicionais</span>
+        <span>${escapeHtml(sectionCounter.nextLevel1('Informações Adicionais'))}</span>
       </div>
       <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
         ${validCampos
           .map(
             (c: any) => `
           <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-            <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(String(c.titulo || c.chave || '').trim())}</div>
+            <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(sectionCounter.nextLevel2(String(c.titulo || c.chave || '').trim()))}</div>
             <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderCommercialFieldHtml(c.conteudo != null ? c.conteudo : c.valor)}</div>
           </div>`,
           )
@@ -770,7 +755,7 @@ export function buildProposalPdfHtml(
 
   const equipmentSection =
     equipmentItems && equipmentItems.length > 0
-      ? buildEquipmentSection(equipmentItems, proposta, comissaoPacoteCardHtml)
+      ? buildEquipmentSection(equipmentItems, proposta, comissaoPacoteCardHtml, sectionCounter)
       : ''
 
   const footerCreator = creatorInfo
@@ -1285,19 +1270,19 @@ export function buildProposalPdfHtml(
   </div>
 
   <div class="spec-block">
-    <div class="spec-block-heading">
-      <span class="spec-block-bar"></span>
-      <span>Especificações Técnicas</span>
-    </div>
+  <div class="spec-block-heading">
+    <span class="spec-block-bar"></span>
+    <span>${escapeHtml(sectionCounter.nextLevel1('Especificações Técnicas'))}</span>
+  </div>
     <div class="spec-block-content">${escapeHtml(proposta.versoes?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme especificações padrão do catálogo.')}</div>
   </div>
   ${
     proposta.versoes?.caracteristicas_construtivas
       ? `<div class="spec-block">
            <div class="spec-block-heading">
-             <span class="spec-block-bar"></span>
-             <span>Características Construtivas</span>
-           </div>
+           <span class="spec-block-bar"></span>
+           <span>${escapeHtml(sectionCounter.nextLevel1('Características Construtivas'))}</span>
+         </div>
            <div class="spec-block-content">${escapeHtml(proposta.versoes.caracteristicas_construtivas)}</div>
          </div>`
       : ''
@@ -1306,9 +1291,9 @@ export function buildProposalPdfHtml(
     proposta.versoes?.acessorios_standards
       ? `<div class="spec-block">
            <div class="spec-block-heading">
-             <span class="spec-block-bar"></span>
-             <span>Configuração Standard</span>
-           </div>
+           <span class="spec-block-bar"></span>
+           <span>${escapeHtml(sectionCounter.nextLevel1('Configuração Standard'))}</span>
+         </div>
            <div class="spec-block-content">${escapeHtml(proposta.versoes.acessorios_standards)}</div>
          </div>`
       : ''
@@ -1329,16 +1314,13 @@ export function buildProposalPdfHtml(
         a.inclusao === undefined ||
         a.inclusao === null,
     )
-    const naoInclusos = filteredAcc.filter(
-      (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
-    )
     let out = ''
 
     if (inclusos.length > 0) {
       out += `<div class="spec-block">
         <div class="spec-block-heading">
           <span class="spec-block-bar"></span>
-          <span>Acessórios Opcionais Inclusos no Preço</span>
+          <span>${escapeHtml(sectionCounter.nextLevel1('Acessórios Opcionais Inclusos no Preço'))}</span>
         </div>
         <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:11px;line-height:1.55;color:#1e293b;">
           ${inclusos
@@ -1346,27 +1328,6 @@ export function buildProposalPdfHtml(
               (a: any) =>
                 `<li style="display:flex;align-items:baseline;gap:6px;margin-bottom:2px;"><span style="color:#0b3c26;font-weight:bold;">•</span><span>${a.quantidade ? a.quantidade + 'x ' : ''}${escapeHtml(a.nome || '—')}</span></li>`,
             )
-            .join('')}
-        </ul>
-      </div>`
-    }
-
-    if (naoInclusos.length > 0) {
-      out += `<div class="spec-block">
-        <div class="spec-block-heading">
-          <span class="spec-block-bar"></span>
-          <span>Acessórios Opcionais Não Inclusos no Preço</span>
-        </div>
-        <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:11px;line-height:1.55;color:#1e293b;">
-          ${naoInclusos
-            .map((a: any) => {
-              const itemMoeda = normalizeMoedaCode(a.moeda || moedaProp)
-              const valFmt =
-                a.valor != null
-                  ? `${itemMoeda} ${Number(a.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                  : null
-              return `<li style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px;"><div style="display:flex;align-items:baseline;gap:6px;"><span style="color:#0b3c26;font-weight:bold;">•</span><span>${a.quantidade ? a.quantidade + 'x ' : ''}${escapeHtml(a.nome || '—')}</span></div>${valFmt ? `<span style="font-weight:bold;color:#0f172a;white-space:nowrap;">${valFmt}</span>` : ''}</li>`
-            })
             .join('')}
         </ul>
       </div>`
@@ -1446,7 +1407,7 @@ export function buildProposalPdfHtml(
           <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-              <span>Condições Comerciais</span>
+              <span>${escapeHtml(sectionCounter.nextLevel1('Condições Comerciais'))}</span>
             </div>
             <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Fornecimento Unitário</span>
           </div>
@@ -1538,12 +1499,43 @@ export function buildProposalPdfHtml(
     </div>`
   })()}
 
+  ${(() => {
+    // Acessórios Opcionais Não Inclusos no Preço Acima: seção própria numerada,
+    // imediatamente após as Condições Comerciais (bloco Valor Total do Fornecimento)
+    const rawAcc = Array.isArray(proposta.acessorios_proposta)
+      ? (proposta.acessorios_proposta as any[])
+      : []
+    const filteredAcc = rawAcc.filter((a) => a && a.inclusao !== 'nao_exibir')
+    const naoInclusos = filteredAcc.filter(
+      (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
+    )
+    if (naoInclusos.length === 0) return ''
+    return `<div class="spec-block">
+      <div class="spec-block-heading">
+        <span class="spec-block-bar"></span>
+        <span>${escapeHtml(sectionCounter.nextLevel1('ACESSÓRIOS OPCIONAIS NÃO INCLUSOS NO PREÇO ACIMA'))}</span>
+      </div>
+      <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:11px;line-height:1.55;color:#1e293b;">
+        ${naoInclusos
+          .map((a: any) => {
+            const itemMoeda = normalizeMoedaCode(a.moeda || moedaProp)
+            const valFmt =
+              a.valor != null
+                ? `${itemMoeda} ${Number(a.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                : null
+            return `<li style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px;"><div style="display:flex;align-items:baseline;gap:6px;"><span style="color:#0b3c26;font-weight:bold;">•</span><span>${a.quantidade ? a.quantidade + 'x ' : ''}${escapeHtml(a.nome || '—')}</span></div>${valFmt ? `<span style="font-weight:bold;color:#0f172a;white-space:nowrap;">${valFmt}</span>` : ''}</li>`
+          })
+          .join('')}
+      </ul>
+    </div>`
+  })()}
+
   ${commercialSection}
   ${camposAdicionaisSection}
 
   <!-- Regra 8: Texto de encerramento verbatim -->
   <div style="margin-top:20px;margin-bottom:16px;font-size:11px;color:#0f172a;page-break-inside:avoid;break-inside:avoid;">
-    <p style="text-align:justify;line-height:1.6;margin:0 0 12px 0;">
+  <p style="text-align:justify;line-height:1.6;margin:0 0 12px 0;">
       Antecipadamente agradecemos vossa honrosa preferência, permanecendo ao vosso inteiro dispor, para dirimir e atender quaisquer eventuais esclarecimentos adicionais que se fizerem necessários.
     </p>
     <p style="text-align:left;margin:0;">
@@ -1561,7 +1553,7 @@ export function buildProposalPdfHtml(
   <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #cbd5e1; page-break-inside:avoid; break-inside:avoid;">
     <div style="display:flex;align-items:center;gap:8px;font-size: 12.5pt; font-weight: bold; text-transform: uppercase; color: #0b3c26; margin: 16px 0 5px 0; padding-bottom: 5px; border-bottom: 0.5pt solid #cbd5e1; letter-spacing: 0.8px; page-break-after:avoid; break-after:avoid;">
       <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-      <span>De Acordo e Assinaturas</span>
+      <span>${escapeHtml(sectionCounter.nextLevel1('De Acordo e Assinaturas'))}</span>
     </div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; text-align: center; margin-top: 16px;">
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end;">

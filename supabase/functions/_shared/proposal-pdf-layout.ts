@@ -680,6 +680,9 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   )
   const moeda = p.moeda || 'BRL'
 
+  // Numeração hierárquica das seções do PDF (1., 2., ...; subtítulos X.1, X.2)
+  const sectionCounter = new ProposalSectionCounter()
+
   const c = p.clientes || {}
   const clientName = c.razao_social || c.fantasia || p.cliente_original || 'Cliente'
   const clientStreet = [c.logradouro, c.numero].filter(Boolean).join(', ')
@@ -948,12 +951,12 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   const descFontSizePt = resolveDescricaoFontSizePdfNum((primaryV as any)?.descricao_tamanho)
 
   if (specs) {
-    sectionHeading('Especificações Técnicas')
+    sectionHeading(sectionCounter.nextLevel1('Especificações Técnicas'))
     renderRichContent(doc, String(specs), ensureSpace, descFontSizePt)
     doc.y += 8
   }
   if (primaryV?.caracteristicas_construtivas) {
-    sectionHeading('Características Construtivas')
+    sectionHeading(sectionCounter.nextLevel1('Características Construtivas'))
     renderRichContent(
       doc,
       String(primaryV.caracteristicas_construtivas),
@@ -963,7 +966,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.y += 8
   }
   if (primaryV?.acessorios_standards) {
-    sectionHeading('Configuração Standard')
+    sectionHeading(sectionCounter.nextLevel1('Configuração Standard'))
     renderRichContent(doc, String(primaryV.acessorios_standards), ensureSpace, descFontSizePt)
     doc.y += 8
   }
@@ -983,7 +986,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   )
   const drawAccList = (title: string, list: any[], withPrice: boolean) => {
     if (list.length === 0) return
-    sectionHeading(title)
+    sectionHeading(sectionCounter.nextLevel1(title))
     for (const a of list) {
       const label = `${a.quantidade ? `${a.quantidade}x ` : ''}${a.nome || '—'}`
       ensureSpace(12)
@@ -999,12 +1002,14 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     doc.y += 6
   }
   drawAccList('Acessórios Opcionais Inclusos no Preço', inclusos, false)
-  drawAccList('Acessórios Opcionais Não Inclusos no Preço', naoInclusos, true)
 
   // ===== COMMERCIAL TABLE =====
   ensureSpace(120)
   doc.rect(M_LEFT, doc.y, 3, 12, { fill: INK })
-  doc.txt(M_LEFT + 8, doc.y + 2, 'CONDIÇÕES COMERCIAIS', { font: 'F2', size: 12.5 })
+  doc.txt(M_LEFT + 8, doc.y + 2, sectionCounter.nextLevel1('CONDIÇÕES COMERCIAIS'), {
+    font: 'F2',
+    size: 12.5,
+  })
   doc.txt(
     PAGE_W - M_RIGHT,
     doc.y + 3,
@@ -1423,6 +1428,33 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   }
   doc.y += totalH + 8
 
+  // Acessórios Opcionais Não Inclusos no Preço Acima: seção própria numerada,
+  // imediatamente após as Condições Comerciais (bloco Valor Total do Fornecimento).
+  if (naoInclusos.length > 0) {
+    ensureSpace(40)
+    doc.rect(M_LEFT, doc.y, 3, 12, { fill: INK })
+    doc.txt(
+      M_LEFT + 8,
+      doc.y + 2,
+      sectionCounter.nextLevel1('ACESSÓRIOS OPCIONAIS NÃO INCLUSOS NO PREÇO ACIMA'),
+      { font: 'F2', size: 12.5 },
+    )
+    doc.y += 18
+    for (const a of naoInclusos) {
+      const label = `${a.quantidade ? `${a.quantidade}x ` : ''}${a.nome || '—'}`
+      ensureSpace(12)
+      doc.txt(M_LEFT + 14, doc.y, '\u2022', { font: 'F2', size: 9, color: GREEN })
+      doc.txt(M_LEFT + 24, doc.y, label, { font: 'F1', size: 9 })
+      if (a.valor != null) {
+        const itemMoeda = normalizeMoeda(a.moeda || moeda)
+        const price = fmtMoney(a.valor, itemMoeda)
+        doc.txt(PAGE_W - M_RIGHT, doc.y, price, { font: 'F2', size: 9, align: 'right', w: 0 })
+      }
+      doc.y += 12
+    }
+    doc.y += 6
+  }
+
   // PONTO 1: Bloco Câmbio/Cotação com 4 decimais e texto "Cotação de fechamento de DD/MM/AAAA"
   const moedaOrigNormalized = normalizeMoeda(p.moeda_original || p.moeda || 'BRL')
   const moedaPropNormalized = normalizeMoeda(moeda)
@@ -1469,11 +1501,16 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   if (terms.length > 0) {
     ensureSpace(70)
     doc.rect(M_LEFT, doc.y, doc.contentW, 20, { fill: GREEN })
-    doc.txt(M_LEFT + 8, doc.y + 5, 'TERMOS DE FORNECIMENTO & INFORMAÇÕES COMERCIAIS', {
-      font: 'F2',
-      size: 12,
-      color: [1, 1, 1],
-    })
+    doc.txt(
+      M_LEFT + 8,
+      doc.y + 5,
+      sectionCounter.nextLevel1('TERMOS DE FORNECIMENTO & INFORMAÇÕES COMERCIAIS'),
+      {
+        font: 'F2',
+        size: 12,
+        color: [1, 1, 1],
+      },
+    )
     doc.y += 20
     const labelW = 170
     for (const [label, value] of terms) {
@@ -1481,7 +1518,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       const rowH = Math.max(14, valLines.length * 10 + 5)
       ensureSpace(rowH)
       doc.rect(M_LEFT, doc.y, doc.contentW, rowH, { stroke: [0.85, 0.86, 0.88], lw: 0.4 })
-      doc.txt(M_LEFT + 6, doc.y + 4, label.toUpperCase(), {
+      doc.txt(M_LEFT + 6, doc.y + 4, sectionCounter.nextLevel2(label.toUpperCase()), {
         font: 'F2',
         size: 7,
         color: [0.3, 0.33, 0.38],
@@ -1533,7 +1570,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       if (fKey) renderedCampoKeys.add(fKey)
       ensureSpace(36)
       if (fTitle) {
-        sectionHeading(fTitle)
+        sectionHeading(sectionCounter.nextLevel1(fTitle))
       }
       if (fContent) doc.para(M_LEFT + 10, doc.contentW - 10, String(fContent), { size: 9 }, 11.5)
       doc.y += 6
@@ -1558,7 +1595,11 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   // ===== SIGNATURES =====
   // Ponto 24: título de seção no mesmo padrão dos demais (12.5pt bold uppercase)
   doc.y += 10
-  doc.txt(M_LEFT, doc.y, 'DE ACORDO E ASSINATURAS', { font: 'F2', size: 12.5, color: GREEN })
+  doc.txt(M_LEFT, doc.y, sectionCounter.nextLevel1('DE ACORDO E ASSINATURAS'), {
+    font: 'F2',
+    size: 12.5,
+    color: GREEN,
+  })
   doc.y += 7
   doc.hline(M_LEFT, PAGE_W - M_RIGHT, doc.y, { lw: 0.5, color: [0.75, 0.78, 0.8] })
   doc.y += 30
