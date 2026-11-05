@@ -328,10 +328,10 @@
   /* Tabela de paginação para impressão: thead/tfoot repetem em todas as páginas
      reservando o espaço exato do cabeçalho fixo (46mm) e rodapé fixo (16mm),
      impedindo que o conteúdo do corpo sobreponha o cabeçalho institucional em qualquer folha.
-     MEDIDA COMPARTILHADA (Ponto 2): a altura do header fixo (46mm) e do footer fixo (16mm)
-     deve ser IDÊNTICA à reservada pelo thead (.proposal-print-header-space) e pelo tfoot
-     (.proposal-print-footer-space). Alterar um exige alterar o outro nos dois fluxos
-     (navegador via ProposalDocument + servidor via pdf-builder/proposal-pdf-layout). */
+     MEDIDA COMPARTILHADA: a altura do header fixo (46mm) e do footer fixo (16mm)
+     é rigorosamente IDÊNTICA à reservada pelo thead (.proposal-print-header-space = 46mm) e pelo tfoot
+     (.proposal-print-footer-space = 16mm). Isso garante que o corpo inicie abaixo do cabeçalho
+     em todas as páginas, eliminando sobreposição. */
   .proposal-print-table {
     width: 100% !important;
     border-collapse: collapse !important;
@@ -365,7 +365,7 @@
   }
 
   .proposal-print-header-space {
-    height: 36mm !important;
+    height: 46mm !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;

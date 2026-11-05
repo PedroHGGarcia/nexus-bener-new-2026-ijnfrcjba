@@ -897,7 +897,7 @@ export function buildPublicProposalHtml(
 
     @page {
       size: A4 portrait;
-      margin: 43mm 12mm 20mm 12mm;
+      margin: 48mm 12mm 20mm 12mm;
     }
 
     .proposal-running-header {
@@ -939,7 +939,7 @@ export function buildPublicProposalHtml(
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        height: 38mm !important;
+        height: 46mm !important;
         background: #ffffff !important;
         z-index: 9999 !important;
         box-sizing: border-box !important;

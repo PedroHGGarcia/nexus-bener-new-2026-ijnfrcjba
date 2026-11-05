@@ -768,9 +768,9 @@ export function ProposalDocument({ proposal }: Props) {
       }}
     >
       {/* Running Header Nativo para @media print (aparece no topo de TODAS as páginas impressas via fixed header) */}
-      {/* Ponto 2: altura fixa 46mm = spacer do thead (.proposal-print-header-space 36mm) + margens @page 2x5mm */}
-      <div className="proposal-running-header hidden print:block print:fixed print:top-0 print:left-0 print:right-0 print:h-[46mm] print:bg-white print:z-[9999] border-b border-black pb-2">
-        {headerInstitucional}
+      {/* Ponto 2: altura fixa 46mm idêntica ao spacer do thead (.proposal-print-header-space 46mm) */}
+      <div className="proposal-running-header hidden print:block print:fixed print:top-0 print:left-0 print:right-0 print:h-[46mm] print:bg-white print:z-[9999] box-border pb-2">
+        <div className="border-b border-black pb-1.5">{headerInstitucional}</div>
       </div>
 
       {/* Running Footer Nativo para @media print (aparece no rodapé de TODAS as páginas impressas via fixed footer) */}
@@ -787,7 +787,9 @@ export function ProposalDocument({ proposal }: Props) {
       <table className="proposal-print-table w-full border-collapse m-0 p-0 border-none">
         <thead className="hidden print:table-header-group border-none m-0 p-0">
           <tr className="border-none m-0 p-0">
-            <th className="proposal-print-header-space border-none m-0 p-0 font-normal">&nbsp;</th>
+            <th className="proposal-print-header-space border-none m-0 p-0 font-normal print:h-[46mm]">
+              &nbsp;
+            </th>
           </tr>
         </thead>
         <tfoot className="hidden print:table-footer-group border-none m-0 p-0">
