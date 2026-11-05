@@ -617,8 +617,8 @@ export function RichTextEditor({
 
       {/* Table Configuration Dialog */}
       <Dialog open={tableDialogOpen} onOpenChange={setTableDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-5xl max-h-[90dvh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="p-6 pb-4 border-b shrink-0">
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
               <TableIcon className="w-4 h-4 text-[#0b3c26]" />
               Inserir Tabela de Especificações
@@ -628,8 +628,8 @@ export function RichTextEditor({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
+          <div className="min-h-0 flex-1 overflow-y-auto p-6 space-y-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label htmlFor="col-count" className="text-xs font-semibold">
                   Nº de Colunas (1 a 10)
@@ -663,14 +663,24 @@ export function RichTextEditor({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold">Nomes dos Cabeçalhos</Label>
-              <div className="max-h-56 overflow-y-auto space-y-2 pr-1 border rounded-md p-2 bg-slate-50/50 dark:bg-slate-900/50">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">Nomes dos Cabeçalhos</Label>
+                <span className="text-[11px] text-muted-foreground">
+                  {columnCount} coluna{columnCount > 1 ? 's' : ''} configurada
+                  {columnCount > 1 ? 's' : ''}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 border rounded-md p-3.5 bg-slate-50/50 dark:bg-slate-900/50">
                 {Array.from({ length: columnCount }).map((_, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono font-semibold text-muted-foreground w-12 shrink-0">
-                      Col. {idx + 1}:
-                    </span>
+                  <div key={idx} className="flex flex-col gap-1">
+                    <Label
+                      htmlFor={`col-header-${idx}`}
+                      className="text-[11px] font-mono font-semibold text-muted-foreground"
+                    >
+                      Coluna {idx + 1}
+                    </Label>
                     <Input
+                      id={`col-header-${idx}`}
                       value={columnHeaders[idx] ?? ''}
                       onChange={(e) => handleHeaderNameChange(idx, e.target.value)}
                       placeholder={
@@ -689,38 +699,45 @@ export function RichTextEditor({
               </div>
             </div>
 
-            {/* Preview visual da tabela */}
-            <div className="rounded border bg-white dark:bg-slate-950 p-2 overflow-x-auto">
-              <div className="text-[10px] font-semibold uppercase text-muted-foreground mb-1.5">
-                Pré-visualização
-              </div>
-              <table className="w-full border-collapse border border-slate-200 text-[10px]">
-                <thead>
-                  <tr className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold">
-                    {Array.from({ length: columnCount }).map((_, i) => (
-                      <th
-                        key={i}
-                        className="border border-slate-200 p-1 text-left truncate max-w-[120px]"
+            {/* Preview visual da tabela em largura total */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Pré-visualização da Tabela</Label>
+              <div className="rounded border bg-white dark:bg-slate-950 p-3 overflow-x-auto w-full shadow-xs">
+                <table className="w-full border-collapse border border-slate-200 text-xs min-w-[600px]">
+                  <thead>
+                    <tr className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold">
+                      {Array.from({ length: columnCount }).map((_, i) => (
+                        <th key={i} className="border border-slate-200 p-2 text-left">
+                          {columnHeaders[i]?.trim() || `Coluna ${i + 1}`}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: Math.min(rowCount, 3) }).map((_, rIdx) => (
+                      <tr
+                        key={rIdx}
+                        className="odd:bg-white even:bg-slate-50/40 dark:odd:bg-slate-950 dark:even:bg-slate-900/40"
                       >
-                        {columnHeaders[i]?.trim() || `Col. ${i + 1}`}
-                      </th>
+                        {Array.from({ length: columnCount }).map((_, i) => (
+                          <td key={i} className="border border-slate-200 p-2 text-slate-500">
+                            {i === 0 ? String(rIdx + 1) : `Dado ${rIdx + 1}.${i + 1}`}
+                          </td>
+                        ))}
+                      </tr>
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    {Array.from({ length: columnCount }).map((_, i) => (
-                      <td key={i} className="border border-slate-200 p-1 text-slate-500">
-                        {i === 0 ? '1' : '...'}
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+                {rowCount > 3 && (
+                  <p className="text-[10px] text-muted-foreground mt-2 italic text-center">
+                    + {rowCount - 3} linha(s) adicional(is) serão criadas no documento.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="p-4 sm:p-6 sm:py-4 border-t shrink-0 gap-2 sm:gap-0 bg-slate-50/40 dark:bg-slate-900/40">
             <Button
               type="button"
               variant="outline"

@@ -50,9 +50,14 @@ import { fetchProdutos } from '@/services/produtos'
 import { fetchTiposProposta } from '@/services/tipos-proposta'
 import { MultiSelectRelation } from '@/components/shared/searchable-multi-select'
 import { Badge } from '@/components/ui/badge'
-import { Link2, Check } from 'lucide-react'
+import { Link2, Check, Type } from 'lucide-react'
 import { RichTextEditor } from '@/components/shared/rich-text-editor'
 import { convertTechnicalToHtml } from '@/lib/technical-html-converter'
+import {
+  DESCRICAO_TAMANHO_OPTIONS,
+  normalizeDescricaoTamanho,
+  type DescricaoTamanho,
+} from '@/lib/descricao-tamanho'
 
 interface Props {
   editing?: VersaoWithModelo | null
@@ -84,6 +89,7 @@ interface FormState {
   acessorios_standards: string
   caracteristicas_construtivas: string
   especificacoes_tecnicas: string
+  descricao_tamanho: DescricaoTamanho
   tipos_proposta: string[]
   nome_abreviado: string
   status: string
@@ -111,6 +117,7 @@ function emptyForm(mId?: string): FormState {
     acessorios_standards: '',
     caracteristicas_construtivas: '',
     especificacoes_tecnicas: '',
+    descricao_tamanho: 'padrao',
     tipos_proposta: [],
     nome_abreviado: '',
     status: 'Ativo',
@@ -166,6 +173,7 @@ function versaoToForm(v: Versao): FormState {
     acessorios_standards: v.acessorios_standards ?? '',
     caracteristicas_construtivas: v.caracteristicas_construtivas ?? '',
     especificacoes_tecnicas: v.especificacoes_tecnicas ?? '',
+    descricao_tamanho: normalizeDescricaoTamanho((v as any).descricao_tamanho),
     tipos_proposta: Array.isArray(v.tipos_proposta) ? v.tipos_proposta : [],
     nome_abreviado: v.nome_abreviado ?? '',
     status: v.status ?? 'Ativo',
@@ -879,6 +887,51 @@ export function VersaoForm({
               </p>
             </div>
           )}
+        </div>
+
+        {/* Controle do Tamanho da Fonte das Descrições no Documento e PDF */}
+        <div className="border rounded-lg bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Type className="w-4 h-4 text-[#0b3c26]" />
+              <Label className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                Tamanho da Fonte das Descrições Técnicas
+              </Label>
+            </div>
+            <span className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+              Aprovado para tela, PDF e link público
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Define o tamanho da tipografia aplicada nas descrições da máquina (Acessórios,
+            Características e Especificações) nesta versão, mantendo a padronização visual dos
+            Termos de Fornecimento.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+            {DESCRICAO_TAMANHO_OPTIONS.map((opt) => {
+              const isSelected = form.descricao_tamanho === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => upd('descricao_tamanho', opt.value)}
+                  className={`p-3 rounded-lg border text-left transition-all ${
+                    isSelected
+                      ? 'border-[#0b3c26] bg-[#0b3c26]/5 ring-1 ring-[#0b3c26]'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-foreground">{opt.label}</span>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-[#0b3c26]" />}
+                  </div>
+                  <span className="text-[11px] text-muted-foreground block font-mono">
+                    {opt.hint}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {/* 2. Campos Técnicos em Rich-Text WYSIWYG (Word-like) com suporte a texto formatado, tabelas e inserção de imagens */}

@@ -9,6 +9,7 @@ import { openPrintWindow } from '@/lib/pdf-builder'
 import { escapeHtml, sanitizeHtml } from '@/lib/escape-html'
 import { renderParagraphsHtml, isCommercialFieldEmpty, isTaxValueEmpty } from '@/lib/paragraphs'
 import { renderVersaoRichHtml } from '@/lib/versao-rich-text'
+import { resolveDescricaoFontSizePdf } from '@/lib/descricao-tamanho'
 import benerLogo from '@/assets/image-f448b.png'
 
 const esc = escapeHtml
@@ -17,7 +18,11 @@ export function renderMultilinhaHtml(raw: string | null | undefined, extraClass 
   return renderParagraphsHtml(raw, extraClass, esc)
 }
 
-function renderTechnicalHtml(raw: string | null | undefined, fallbackText = ''): string {
+function renderTechnicalHtml(
+  raw: string | null | undefined,
+  fallbackText = '',
+  fontSizePt = '9.5pt',
+): string {
   if (!raw || !raw.trim()) {
     return fallbackText
       ? `<div style="font-size:11px;color:#64748b;font-style:italic;">${esc(fallbackText)}</div>`
@@ -27,7 +32,7 @@ function renderTechnicalHtml(raw: string | null | undefined, fallbackText = ''):
   // 1. Se for rich HTML (do RichTextEditor): sanitiza e renderiza diretamente com formatação e imagens
   if (isHtmlContent(raw)) {
     const clean = sanitizeHtml(raw)
-    return `<div class="term-desc-content" style="display:block;width:100%;font-size:9.5pt;font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;">${clean}</div>`
+    return `<div class="term-desc-content" style="display:block;width:100%;font-size:${fontSizePt};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;">${clean}</div>`
   }
 
   // 2. Se for JSON estruturado de tabela técnica
@@ -76,8 +81,8 @@ function renderTechnicalHtml(raw: string | null | undefined, fallbackText = ''):
   }
 
   // 3. Fallback: renderização rica (atende estritamente às regras de <B>, quebras e bullets "•" sem exibir marcadores crus)
-  // Estilo padronizado = mesmo padrão do bloco "Termos de Fornecimento" (título 10,5pt bold caixa alta; corpo 9,5pt largura total, sem recuo)
-  return `<div class="term-desc-content" style="display:block;width:100%;font-size:9.5pt;font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;">${renderVersaoRichHtml(raw, fallbackText)}</div>`
+  // Estilo padronizado = mesmo padrão do bloco "Termos de Fornecimento" (título 10,5pt bold caixa alta; corpo customizável por versão, largura total, sem recuo)
+  return `<div class="term-desc-content" style="display:block;width:100%;font-size:${fontSizePt};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;">${renderVersaoRichHtml(raw, fallbackText)}</div>`
 }
 
 export function generatePropostaHtml(
@@ -279,17 +284,22 @@ export function generatePropostaHtml(
         ? Math.round(((valorOriginalTabela - precoEspecial) / valorOriginalTabela) * 100 * 10) / 10
         : 0
 
+  const primaryDescFontSizePt = resolveDescricaoFontSizePdf(
+    (primaryVersao as any)?.descricao_tamanho,
+  )
+
   const technicalSpecsHtml = renderTechnicalHtml(
     primaryVersao?.especificacoes_tecnicas ||
       proposal.especificacoes_tecnicas ||
       proposal.descricao_proposta,
     'Conforme catálogo e especificações técnicas de fábrica.',
+    primaryDescFontSizePt,
   )
   const caracteristicasHtml = primaryVersao?.caracteristicas_construtivas
-    ? renderTechnicalHtml(primaryVersao.caracteristicas_construtivas)
+    ? renderTechnicalHtml(primaryVersao.caracteristicas_construtivas, '', primaryDescFontSizePt)
     : ''
   const acessoriosStandardsHtml = primaryVersao?.acessorios_standards
-    ? renderTechnicalHtml(primaryVersao.acessorios_standards)
+    ? renderTechnicalHtml(primaryVersao.acessorios_standards, '', primaryDescFontSizePt)
     : ''
 
   const snapshotCampos = snapshotRoot?.campos_adicionais
@@ -504,6 +514,9 @@ export function generatePropostaHtml(
                          : '')
                      const itemCaract = item.versoes?.caracteristicas_construtivas
                      const itemAcess = item.versoes?.acessorios_standards
+                     const itemFontSizePt = resolveDescricaoFontSizePdf(
+                       (item.versoes as any)?.descricao_tamanho,
+                     )
 
                      return `<div style="border:1px solid #ccc;padding:6px;border-radius:4px;">
                        <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -517,7 +530,7 @@ export function generatePropostaHtml(
                          itemAcess
                            ? `<div style="margin-top:6px;padding-top:4px;border-top:1px solid #e2e8f0;">
                          <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">Configuração Standard</div>
-                         ${renderTechnicalHtml(itemAcess)}
+                         ${renderTechnicalHtml(itemAcess, '', itemFontSizePt)}
                        </div>`
                            : ''
                        }
@@ -525,7 +538,7 @@ export function generatePropostaHtml(
                          itemCaract
                            ? `<div style="margin-top:6px;padding-top:4px;border-top:1px solid #e2e8f0;">
                          <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">Características Construtivas</div>
-                         ${renderTechnicalHtml(itemCaract)}
+                         ${renderTechnicalHtml(itemCaract, '', itemFontSizePt)}
                        </div>`
                            : ''
                        }
@@ -533,7 +546,7 @@ export function generatePropostaHtml(
                          itemSpecs
                            ? `<div style="margin-top:6px;padding-top:4px;border-top:1px solid #e2e8f0;">
                          <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">Especificações Técnicas</div>
-                         ${renderTechnicalHtml(itemSpecs)}
+                         ${renderTechnicalHtml(itemSpecs, '', itemFontSizePt)}
                        </div>`
                            : ''
                        }

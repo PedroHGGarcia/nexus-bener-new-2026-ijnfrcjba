@@ -22,6 +22,7 @@ export interface Versao {
   acessorios_standards: string | null
   caracteristicas_construtivas: string | null
   especificacoes_tecnicas: string | null
+  descricao_tamanho?: 'pequeno' | 'padrao' | 'medio' | 'grande' | string | null
   tipos_proposta: string[] | null
   atualizado_por: string | null
   status: string

@@ -29,6 +29,7 @@ export const versaoSchema = z.object({
   acessorios_standards: z.string().optional().default(''),
   caracteristicas_construtivas: z.string().optional().default(''),
   especificacoes_tecnicas: z.string().optional().default(''),
+  descricao_tamanho: z.enum(['pequeno', 'padrao', 'medio', 'grande']).optional().default('padrao'),
   tipos_proposta: z
     .array(z.string())
     .optional()
