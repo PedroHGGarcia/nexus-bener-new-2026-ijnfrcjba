@@ -27,6 +27,10 @@ interface MultiSelectProps {
     query: string,
     page: number,
   ) => Promise<{ items: MultiSelectOption[]; hasMore: boolean }>
+  /** Opcional: ativa destaque visual mais forte para os itens já selecionados no dropdown */
+  highlightSelected?: boolean
+  /** Opcional: renderizador customizado de cada opção no dropdown */
+  renderOption?: (option: MultiSelectOption, isSelected: boolean) => React.ReactNode
 }
 
 export function SearchableMultiSelect({
@@ -35,6 +39,8 @@ export function SearchableMultiSelect({
   placeholder = 'Selecionar...',
   searchPlaceholder = 'Buscar...',
   fetchOptions,
+  highlightSelected = false,
+  renderOption,
 }: MultiSelectProps) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -140,17 +146,42 @@ export function SearchableMultiSelect({
             ) : options.length === 0 ? (
               <CommandEmpty>Nenhum resultado.</CommandEmpty>
             ) : (
-              options.map((opt) => (
-                <CommandItem key={opt.value} value={opt.value} onSelect={() => toggle(opt.value)}>
-                  <Check
+              options.map((opt) => {
+                const isSelected = values.includes(opt.value)
+                return (
+                  <CommandItem
+                    key={opt.value}
+                    value={opt.value}
+                    onSelect={() => toggle(opt.value)}
                     className={cn(
-                      'mr-2 h-4 w-4',
-                      values.includes(opt.value) ? 'opacity-100' : 'opacity-0',
+                      highlightSelected &&
+                        isSelected &&
+                        'bg-emerald-50 text-emerald-900 font-medium dark:bg-emerald-950/60 dark:text-emerald-200 border-l-2 border-emerald-600',
                     )}
-                  />
-                  {opt.label}
-                </CommandItem>
-              ))
+                  >
+                    {renderOption ? (
+                      renderOption(opt, isSelected)
+                    ) : (
+                      <>
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4 shrink-0',
+                            isSelected
+                              ? 'opacity-100 text-emerald-700 dark:text-emerald-400'
+                              : 'opacity-0',
+                          )}
+                        />
+                        <span className="truncate flex-1">{opt.label}</span>
+                        {highlightSelected && isSelected && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/60 px-1.5 py-0.5 rounded ml-2 shrink-0">
+                            Selecionado
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </CommandItem>
+                )
+              })
             )}
             {loading && options.length > 0 && (
               <div className="p-2 text-center">
@@ -171,6 +202,8 @@ interface RelationProps {
   labelColumn?: string
   filter?: Record<string, unknown>
   placeholder?: string
+  highlightSelected?: boolean
+  renderOption?: (option: MultiSelectOption, isSelected: boolean) => React.ReactNode
 }
 
 export function MultiSelectRelation({
@@ -180,6 +213,8 @@ export function MultiSelectRelation({
   labelColumn = 'nome',
   filter,
   placeholder,
+  highlightSelected = false,
+  renderOption,
 }: RelationProps) {
   const fetchOpts = useCallback(
     async (
@@ -219,6 +254,8 @@ export function MultiSelectRelation({
       onChange={onChange}
       fetchOptions={fetchOpts}
       placeholder={placeholder ?? 'Selecionar relacionados...'}
+      highlightSelected={highlightSelected}
+      renderOption={renderOption}
     />
   )
 }

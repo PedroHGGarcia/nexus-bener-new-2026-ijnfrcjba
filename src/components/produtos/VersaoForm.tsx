@@ -49,7 +49,8 @@ import { fetchCategoriasProdutos } from '@/services/categorias-produtos'
 import { fetchProdutos } from '@/services/produtos'
 import { fetchTiposProposta } from '@/services/tipos-proposta'
 import { MultiSelectRelation } from '@/components/shared/searchable-multi-select'
-import { Link2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Link2, Check } from 'lucide-react'
 import { RichTextEditor } from '@/components/shared/rich-text-editor'
 import { convertTechnicalToHtml } from '@/lib/technical-html-converter'
 
@@ -948,16 +949,74 @@ export function VersaoForm({
 
       {/* Seção Única de Tipos de Proposta Vinculados (join table e filtro de emissão) */}
       <div className="border rounded-lg bg-card p-4 space-y-4">
-        <h3 className="text-sm font-semibold flex items-center gap-1.5">
-          <Link2 className="w-3.5 h-3.5 text-[#0b3c26]" /> Tipos de Proposta Vinculados
-        </h3>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold flex items-center gap-1.5">
+            <Link2 className="w-3.5 h-3.5 text-[#0b3c26]" /> Tipos de Proposta Vinculados
+          </h3>
+          {linkedTipoIds.length > 0 && (
+            <Badge
+              variant="outline"
+              className="border-emerald-600/40 text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 text-[11px] font-semibold px-2 py-0.5"
+            >
+              {linkedTipoIds.length} selecionado(s)
+            </Badge>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground">
           Selecione os tipos de proposta que poderão ser emitidos com esta versão. No formulário de
           Emitir Proposta, o campo “Tipo de Proposta” será filtrado para exibir apenas os tipos
           vinculados à versão selecionada.
         </p>
+
+        {/* Área de destaque das versões/tipos já selecionados com badges visíveis e ação de remoção */}
+        {linkedTipoIds.length > 0 && (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 dark:border-emerald-900/60 dark:bg-emerald-950/30 space-y-2">
+            <div className="text-[11px] font-semibold text-emerald-900 dark:text-emerald-200 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+                Tipos atualmente vinculados a esta versão:
+              </span>
+              <button
+                type="button"
+                onClick={() => handleTipoIdsChange([])}
+                className="text-[11px] text-muted-foreground hover:text-red-600 underline font-normal transition-colors"
+              >
+                Limpar todos
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {linkedTipoIds.map((id) => {
+                const tipoObj = tipos.find((t) => t.id === id)
+                const label = tipoObj?.nome || id
+                return (
+                  <Badge
+                    key={id}
+                    className="gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white dark:bg-emerald-800 dark:hover:bg-emerald-700 border-0 shadow-xs px-2.5 py-1 text-xs font-medium transition-colors"
+                  >
+                    <Check className="w-3 h-3 shrink-0 text-emerald-200" />
+                    <span>{label}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleTipoIdsChange(linkedTipoIds.filter((v) => v !== id))
+                      }}
+                      className="ml-1 rounded-full p-0.5 hover:bg-emerald-900/40 text-emerald-100 hover:text-white transition-colors"
+                      title={`Remover vínculo com ${label}`}
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="space-y-2">
-          <Label className="text-sm font-medium">Tipos de proposta permitidos</Label>
+          <Label className="text-sm font-medium">
+            Adicionar ou alterar tipos de proposta permitidos
+          </Label>
           {editing && !linkedTiposLoaded ? (
             <div className="h-10 w-full animate-pulse rounded-md bg-muted" />
           ) : (
@@ -967,14 +1026,14 @@ export function VersaoForm({
               tableName="tipos_proposta"
               labelColumn="nome"
               filter={{ status: ['A', 'Ativo'] }}
-              placeholder="Selecionar tipos de proposta..."
+              placeholder="Buscar e selecionar tipos de proposta..."
+              highlightSelected
             />
           )}
-          {linkedTipoIds.length > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {linkedTipoIds.length} tipo(s) de proposta vinculado(s) a esta versão.
-            </p>
-          )}
+          <p className="text-[11px] text-muted-foreground">
+            Dica: clique em um tipo para marcar ou desmarcar. Os tipos já selecionados aparecem com
+            destaque verde e etiqueta “Selecionado” na lista.
+          </p>
         </div>
       </div>
     </div>

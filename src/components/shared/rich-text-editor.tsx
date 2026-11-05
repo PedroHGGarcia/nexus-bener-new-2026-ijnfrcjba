@@ -1,6 +1,8 @@
 import { useRef, useEffect, useState } from 'react'
-import { sanitizeHtml } from '@/lib/escape-html'
+import { escapeHtml, sanitizeHtml } from '@/lib/escape-html'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import {
   Bold,
@@ -20,8 +22,18 @@ import {
   Loader2,
   Maximize2,
   Minimize2,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import { uploadVersaoImage } from '@/services/versoes'
 import { toast } from '@/hooks/use-toast'
@@ -67,6 +79,16 @@ export function RichTextEditor({
   const [colorPickerOpen, setColorPickerOpen] = useState(false)
   const [selectedColor, setSelectedColor] = useState('#0b3c26')
   const [isFullscreen, setIsFullscreen] = useState(false)
+
+  // Table Dialog State
+  const [tableDialogOpen, setTableDialogOpen] = useState(false)
+  const [columnCount, setColumnCount] = useState<number>(3)
+  const [columnHeaders, setColumnHeaders] = useState<string[]>([
+    'Item / Componente',
+    'Descrição / Especificação',
+    'Observação',
+  ])
+  const [rowCount, setRowCount] = useState<number>(2)
 
   // Keep internal state in sync with external value
   useEffect(() => {
@@ -207,41 +229,102 @@ export function RichTextEditor({
     }
   }
 
-  // Insert Simple Table (Mixed content helper)
-  const handleInsertTable = () => {
+  // Open dialog to configure table insertion
+  const handleOpenTableDialog = () => {
     if (isSourceView) return
-    editorRef.current?.focus()
-    restoreSelection()
+    saveSelection()
+    // Inicializa valores padrão
+    setColumnCount(3)
+    setColumnHeaders(['Item / Componente', 'Descrição / Especificação', 'Observação'])
+    setRowCount(2)
+    setTableDialogOpen(true)
+  }
+
+  const handleColumnCountChange = (count: number) => {
+    const clamped = Math.max(1, Math.min(10, count || 1))
+    setColumnCount(clamped)
+    setColumnHeaders((prev) => {
+      const next = [...prev]
+      if (clamped > next.length) {
+        for (let i = next.length; i < clamped; i++) {
+          if (i === 0) next.push('Item / Componente')
+          else if (i === 1) next.push('Descrição / Especificação')
+          else if (i === 2) next.push('Observação')
+          else next.push(`Coluna ${i + 1}`)
+        }
+      } else if (clamped < next.length) {
+        return next.slice(0, clamped)
+      }
+      return next
+    })
+  }
+
+  const handleHeaderNameChange = (index: number, value: string) => {
+    setColumnHeaders((prev) => {
+      const next = [...prev]
+      next[index] = value
+      return next
+    })
+  }
+
+  // Insert Configurable Spec Table
+  const handleConfirmInsertTable = () => {
+    const cols = Math.max(1, Math.min(10, columnCount || 1))
+    const rows = Math.max(1, Math.min(20, rowCount || 1))
+
+    // Sanitiza e gera cabeçalhos escapados
+    const thsHtml = Array.from({ length: cols })
+      .map((_, i) => {
+        const raw = columnHeaders[i]?.trim()
+        const label =
+          raw ||
+          (i === 0 ? 'Item' : i === 1 ? 'Descrição' : i === 2 ? 'Observação' : `Coluna ${i + 1}`)
+        return `<th style="border:1px solid #cbd5e1;padding:6px 8px;font-size:11px;font-weight:700;text-align:left;">${escapeHtml(label)}</th>`
+      })
+      .join('')
+
+    // Gera linhas do corpo (tbody)
+    const rowsHtml = Array.from({ length: rows })
+      .map((_, rIdx) => {
+        const tdsHtml = Array.from({ length: cols })
+          .map((_, cIdx) => {
+            const defaultVal = cIdx === 0 ? String(rIdx + 1) : '&nbsp;'
+            return `<td style="border:1px solid #cbd5e1;padding:5px 8px;font-size:11px;">${defaultVal}</td>`
+          })
+          .join('')
+        return `<tr>${tdsHtml}</tr>`
+      })
+      .join('')
+
     const tableHtml = `
-      <table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;margin:8px 0;">
+      <table class="spec-table" style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;margin:8px 0;">
         <thead>
           <tr style="background:#f1f5f9;color:#334155;">
-            <th style="border:1px solid #cbd5e1;padding:6px 8px;font-size:11px;font-weight:700;text-align:left;">Item / Componente</th>
-            <th style="border:1px solid #cbd5e1;padding:6px 8px;font-size:11px;font-weight:700;text-align:left;">Descrição / Especificação</th>
-            <th style="border:1px solid #cbd5e1;padding:6px 8px;font-size:11px;font-weight:700;text-align:left;">Observação</th>
+            ${thsHtml}
           </tr>
         </thead>
         <tbody>
-          <tr>
-            <td style="border:1px solid #cbd5e1;padding:5px 8px;font-size:11px;">1</td>
-            <td style="border:1px solid #cbd5e1;padding:5px 8px;font-size:11px;">Exemplo de item técnico</td>
-            <td style="border:1px solid #cbd5e1;padding:5px 8px;font-size:11px;">Padrão de fábrica</td>
-          </tr>
-          <tr>
-            <td style="border:1px solid #cbd5e1;padding:5px 8px;font-size:11px;">2</td>
-            <td style="border:1px solid #cbd5e1;padding:5px 8px;font-size:11px;">Segundo componente</td>
-            <td style="border:1px solid #cbd5e1;padding:5px 8px;font-size:11px;">Conforme norma</td>
-          </tr>
+          ${rowsHtml}
         </tbody>
       </table>
       <p><br /></p>
     `
+
+    setTableDialogOpen(false)
+    editorRef.current?.focus()
+    restoreSelection()
     document.execCommand('insertHTML', false, tableHtml)
+
     if (editorRef.current) {
       const html = editorRef.current.innerHTML
       onChange(html)
       setSourceCode(html)
     }
+
+    toast({
+      title: 'Tabela inserida',
+      description: `Tabela com ${cols} coluna(s) adicionada às especificações.`,
+    })
   }
 
   // Toggle Source Code View
@@ -441,13 +524,14 @@ export function RichTextEditor({
         <Button
           type="button"
           variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-slate-700 hover:text-[#0b3c26] hover:bg-slate-200/70"
-          onClick={handleInsertTable}
-          title="Inserir tabela de especificações"
+          size="sm"
+          className="h-8 px-2 text-xs gap-1 font-medium text-slate-700 hover:text-[#0b3c26] hover:bg-slate-200/70"
+          onClick={handleOpenTableDialog}
+          title="Inserir tabela de especificações configurável"
           disabled={isSourceView}
         >
-          <TableIcon className="h-4 w-4" />
+          <TableIcon className="h-4 w-4 text-[#0b3c26]" />
+          <span className="hidden sm:inline">Tabela</span>
         </Button>
 
         {/* Image upload button */}
@@ -530,6 +614,132 @@ export function RichTextEditor({
           )}
         </Button>
       </div>
+
+      {/* Table Configuration Dialog */}
+      <Dialog open={tableDialogOpen} onOpenChange={setTableDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
+              <TableIcon className="w-4 h-4 text-[#0b3c26]" />
+              Inserir Tabela de Especificações
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Escolha a quantidade de colunas e personalize os cabeçalhos.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="col-count" className="text-xs font-semibold">
+                  Nº de Colunas (1 a 10)
+                </Label>
+                <Input
+                  id="col-count"
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={columnCount}
+                  onChange={(e) => handleColumnCountChange(parseInt(e.target.value, 10))}
+                  className="h-9 text-xs"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="row-count" className="text-xs font-semibold">
+                  Linhas Iniciais (1 a 20)
+                </Label>
+                <Input
+                  id="row-count"
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={rowCount}
+                  onChange={(e) =>
+                    setRowCount(Math.max(1, Math.min(20, parseInt(e.target.value, 10) || 1)))
+                  }
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Nomes dos Cabeçalhos</Label>
+              <div className="max-h-56 overflow-y-auto space-y-2 pr-1 border rounded-md p-2 bg-slate-50/50 dark:bg-slate-900/50">
+                {Array.from({ length: columnCount }).map((_, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono font-semibold text-muted-foreground w-12 shrink-0">
+                      Col. {idx + 1}:
+                    </span>
+                    <Input
+                      value={columnHeaders[idx] ?? ''}
+                      onChange={(e) => handleHeaderNameChange(idx, e.target.value)}
+                      placeholder={
+                        idx === 0
+                          ? 'Item / Componente'
+                          : idx === 1
+                            ? 'Descrição / Especificação'
+                            : idx === 2
+                              ? 'Observação'
+                              : `Coluna ${idx + 1}`
+                      }
+                      className="h-8 text-xs bg-white dark:bg-slate-900"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Preview visual da tabela */}
+            <div className="rounded border bg-white dark:bg-slate-950 p-2 overflow-x-auto">
+              <div className="text-[10px] font-semibold uppercase text-muted-foreground mb-1.5">
+                Pré-visualização
+              </div>
+              <table className="w-full border-collapse border border-slate-200 text-[10px]">
+                <thead>
+                  <tr className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold">
+                    {Array.from({ length: columnCount }).map((_, i) => (
+                      <th
+                        key={i}
+                        className="border border-slate-200 p-1 text-left truncate max-w-[120px]"
+                      >
+                        {columnHeaders[i]?.trim() || `Col. ${i + 1}`}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    {Array.from({ length: columnCount }).map((_, i) => (
+                      <td key={i} className="border border-slate-200 p-1 text-slate-500">
+                        {i === 0 ? '1' : '...'}
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setTableDialogOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="bg-[#0b3c26] hover:bg-[#0b3c26]/90 text-white"
+              onClick={handleConfirmInsertTable}
+            >
+              Inserir Tabela
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Editor Body */}
       {isSourceView ? (
