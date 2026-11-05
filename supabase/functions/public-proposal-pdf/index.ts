@@ -10,8 +10,8 @@ const DEFAULT_APP_URL = 'https://nexus.bener.com.br'
 /**
  * PUBLIC endpoint (no auth) that returns a single proposal rendered as a
  *
- * Deploy v0.0.71: Atualizado com o gerador public-proposal-html (_shared/public-proposal-html.ts)
- * refletindo os Pontos 1 e 3 (PTAX com 4 decimais e subtotal limpo com comissão em linha própria).
+ * Deploy v0.0.123: Atualizado com o gerador public-proposal-html (_shared/public-proposal-html.ts)
+ * com padrão tipográfico dos Termos de Fornecimento nas descrições de máquinas (.term-desc-content, 9.5pt #0f172a weight 500 sem recuo lateral).
  *
  * complete, standalone, styled HTML page — branded with Bener identity
  * (green #0b3c26 header, "BENER", "Máquinas que Transformam", equipment
