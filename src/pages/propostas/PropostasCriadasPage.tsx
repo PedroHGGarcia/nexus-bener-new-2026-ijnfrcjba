@@ -277,41 +277,52 @@ export default function PropostasCriadasPage() {
         />
       ) : (
         <>
-          <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
-            <Table className="min-w-[1060px]">
+          <div className="w-full border rounded-lg bg-card overflow-x-auto shadow-sm">
+            <Table className="w-full min-w-[1060px] table-auto">
+              <colgroup>
+                <col className="w-[185px]" />
+                <col className="w-[200px]" />
+                <col className="w-[240px]" />
+                <col className="w-[150px]" />
+                <col className="w-[140px]" />
+                <col className="w-[150px]" />
+                <col className="w-[110px]" />
+                <col className="w-[100px]" />
+                <col className="w-[170px]" />
+              </colgroup>
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead className="w-[185px] min-w-[170px] whitespace-nowrap">
                     Nº Oferta
                   </TableHead>
                   <TableHead className="w-[200px] min-w-[170px]">Cliente</TableHead>
-                  <TableHead className="w-[260px] min-w-[210px]">
+                  <TableHead className="w-[240px] min-w-[190px]">
                     <div className="flex items-center gap-1.5">
                       <Cpu className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>Máquina / Versão</span>
                     </div>
                   </TableHead>
-                  <TableHead className="w-[160px] min-w-[130px]">
+                  <TableHead className="w-[150px] min-w-[120px]">
                     <div className="flex items-center gap-1.5">
                       <Layers className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>Tipo Proposta</span>
                     </div>
                   </TableHead>
-                  <TableHead className="w-[150px] min-w-[130px]">
+                  <TableHead className="w-[140px] min-w-[120px]">
                     <div className="flex items-center gap-1.5">
                       <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>Criado por</span>
                     </div>
                   </TableHead>
                   <TableHead className="w-[150px] min-w-[130px]">Valor Final</TableHead>
-                  <TableHead className="w-[115px] min-w-[105px]">Status</TableHead>
+                  <TableHead className="w-[110px] min-w-[100px]">Status</TableHead>
                   <TableHead className="w-[100px] min-w-[90px]">
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
                       <span>Data</span>
                     </div>
                   </TableHead>
-                  <TableHead className="w-[180px] min-w-[170px] text-right">Ações</TableHead>
+                  <TableHead className="w-[170px] min-w-[160px] text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

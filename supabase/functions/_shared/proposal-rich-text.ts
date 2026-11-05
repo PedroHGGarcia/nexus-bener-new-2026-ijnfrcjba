@@ -292,14 +292,26 @@ export function drawSegments(
  * - Subheading hierarchy
  * - Keep with next (no orphan headings at page bottoms)
  */
+export function resolveDescricaoFontSizePdfNum(value: unknown): number {
+  if (value === 'pequeno') return 8.5
+  if (value === 'medio') return 10.5
+  if (value === 'grande') return 11.5
+  return 9.5
+}
+
 export function renderRichContent(
   doc: any,
   rawText: string | null | undefined,
   ensureSpace: (h: number) => void,
+  fontSizePt: number = 8.5,
 ): void {
   if (!rawText) return
   const blocks = parseRichBlocks(rawText)
   if (blocks.length === 0) return
+
+  const bodySize = typeof fontSizePt === 'number' && fontSizePt > 0 ? fontSizePt : 8.5
+  const lineH = bodySize * 1.35
+  const subheadSize = Math.max(11.5, bodySize + 1.5)
 
   const M_LEFT = doc.margins?.left ?? 34
   const M_RIGHT = doc.margins?.right ?? 34
@@ -317,57 +329,56 @@ export function renderRichContent(
     const block = blocks[i]
 
     if (block.type === 'subheading') {
-      // Ponto 24: subtítulo 11.5pt bold (corpo 8.5pt), respiro antes/depois e
-      // keep-with-next: o subtítulo nunca fica sozinho no fim da página.
-      ensureSpace(52)
+      // Ponto 24: subtítulo bold, respiro antes/depois e keep-with-next
+      ensureSpace(subheadSize * 2.5 + 20)
       doc.y += 9
       const title = block.text.toUpperCase()
       doc.txt(M_LEFT + 10, doc.y, title, {
         font: 'F2',
-        size: 11.5,
+        size: subheadSize,
         color: GREEN,
       })
-      doc.y += 15
+      doc.y += subheadSize + 4
       continue
     }
 
     if (block.type === 'tabular_row') {
-      ensureSpace(12)
+      ensureSpace(lineH + 2)
       if (block.bulletChar) {
-        doc.txt(M_LEFT + 12, doc.y, '\u2022', { font: 'F2', size: 8.5, color: GREEN })
+        doc.txt(M_LEFT + 12, doc.y, '\u2022', { font: 'F2', size: bodySize, color: GREEN })
       }
-      drawSegments(doc, col1X, doc.y, block.col1, 8.5, INK)
+      drawSegments(doc, col1X, doc.y, block.col1, bodySize, INK)
       if (block.col2) {
-        drawSegments(doc, col2X, doc.y, block.col2, 8.5, INK)
+        drawSegments(doc, col2X, doc.y, block.col2, bodySize, INK)
       }
       if (block.col3) {
-        drawSegments(doc, col3X, doc.y, block.col3, 8.5, INK)
+        drawSegments(doc, col3X, doc.y, block.col3, bodySize, INK)
       }
-      doc.y += 11.5
+      doc.y += lineH
       continue
     }
 
     if (block.type === 'bullet') {
-      ensureSpace(12)
-      doc.txt(M_LEFT + 12, doc.y, '\u2022', { font: 'F2', size: 8.5, color: GREEN })
+      ensureSpace(lineH + 2)
+      doc.txt(M_LEFT + 12, doc.y, '\u2022', { font: 'F2', size: bodySize, color: GREEN })
       const maxW = contentW - 22
-      const lines = wrapRichSegments(block.segments, maxW, 8.5)
+      const lines = wrapRichSegments(block.segments, maxW, bodySize)
       for (const line of lines) {
-        ensureSpace(11.5)
-        drawSegments(doc, M_LEFT + 22, doc.y, line, 8.5, INK)
-        doc.y += 11.5
+        ensureSpace(lineH)
+        drawSegments(doc, M_LEFT + 22, doc.y, line, bodySize, INK)
+        doc.y += lineH
       }
       continue
     }
 
     if (block.type === 'paragraph') {
-      ensureSpace(12)
+      ensureSpace(lineH + 2)
       const maxW = contentW - 12
-      const lines = wrapRichSegments(block.segments, maxW, 8.5)
+      const lines = wrapRichSegments(block.segments, maxW, bodySize)
       for (const line of lines) {
-        ensureSpace(11.5)
-        drawSegments(doc, M_LEFT + 12, doc.y, line, 8.5, INK)
-        doc.y += 11.5
+        ensureSpace(lineH)
+        drawSegments(doc, M_LEFT + 12, doc.y, line, bodySize, INK)
+        doc.y += lineH
       }
       doc.y += 2
       continue

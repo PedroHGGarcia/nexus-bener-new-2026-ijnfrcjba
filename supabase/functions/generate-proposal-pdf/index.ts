@@ -270,7 +270,7 @@ Deno.serve(async (req: Request) => {
         const { data: pv } = await adminClient
           .from('proposta_versoes')
           .select(
-            'quantidade, valor_unitario, desconto_percentual, desconto_valor, ordem, tipo_proposta, versoes(id, nome, cod_erp, nome_abreviado, imagem_preview, moeda, valor, especificacoes_tecnicas, caracteristicas_construtivas, acessorios_standards, modelos(id, nome, marcas(id, nome), produtos(id, nome, categorias_produtos:categorias(id, nome))))',
+            'quantidade, valor_unitario, desconto_percentual, desconto_valor, ordem, tipo_proposta, versoes(id, nome, cod_erp, nome_abreviado, imagem_preview, moeda, valor, descricao_tamanho, especificacoes_tecnicas, caracteristicas_construtivas, acessorios_standards, modelos(id, nome, marcas(id, nome), produtos(id, nome, categorias_produtos:categorias(id, nome))))',
           )
           .eq('proposta_id', proposalData.id)
           .order('ordem', { ascending: true })
@@ -281,7 +281,7 @@ Deno.serve(async (req: Request) => {
         const { data: versaoFull } = await adminClient
           .from('versoes')
           .select(
-            'id, nome, cod_erp, nome_abreviado, imagem_preview, moeda, valor, especificacoes_tecnicas, caracteristicas_construtivas, acessorios_standards, modelos(id, nome, marcas(id, nome), produtos(id, nome, categorias_produtos:categorias(id, nome)))',
+            'id, nome, cod_erp, nome_abreviado, imagem_preview, moeda, valor, descricao_tamanho, especificacoes_tecnicas, caracteristicas_construtivas, acessorios_standards, modelos(id, nome, marcas(id, nome), produtos(id, nome, categorias_produtos:categorias(id, nome)))',
           )
           .eq('id', proposalData.versao)
           .maybeSingle()

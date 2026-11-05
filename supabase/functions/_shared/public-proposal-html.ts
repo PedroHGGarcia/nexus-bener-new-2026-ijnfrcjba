@@ -362,9 +362,7 @@ export function buildPublicProposalHtml(
   const primaryFromSnapshot = dadosSnapshot?.primary_versao
   const primaryItem = (equipmentItems && equipmentItems[0]) || {}
   const primaryVersao = primaryFromSnapshot || primaryItem.versoes || proposta.versoes || {}
-  const primaryDescFontSize = resolveDescricaoFontSizePublicHtml(
-    primaryVersao?.descricao_tamanho,
-  )
+  const primaryDescFontSize = resolveDescricaoFontSizePublicHtml(primaryVersao?.descricao_tamanho)
 
   const machineTitle = (
     primaryVersao?.nome ||

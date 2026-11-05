@@ -506,8 +506,7 @@ export function ClienteFormDialog({
     const values = { ...result.data }
 
     // Sincronizar dados do contato legado com o contato principal de contatosList
-    const principalContato =
-      contatosList.find((c) => c.is_principal) || contatosList[0]
+    const principalContato = contatosList.find((c) => c.is_principal) || contatosList[0]
     if (principalContato) {
       if (principalContato.nome?.trim()) values.contato = principalContato.nome.trim()
       if (principalContato.telefone?.trim()) values.telefone = principalContato.telefone.trim()

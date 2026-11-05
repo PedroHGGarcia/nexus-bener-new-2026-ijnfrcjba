@@ -5,12 +5,12 @@
     "ai-suggestions": 705,
     "verify-recaptcha": 704,
     "suggest-specs": 701,
-    "generate-proposal-pdf": 747,
+    "generate-proposal-pdf": 748,
     "send-proposal-email": 697,
     "cnpj-lookup": 646,
     "versoes-chatbot": 652,
     "currency-rates": 635,
-    "public-proposal-pdf": 613,
+    "public-proposal-pdf": 614,
     "confirm-email-delivery": 568,
     "notify-critical-action-email": 528,
     "importar-clientes-antigos": 495,
@@ -18,7 +18,7 @@
     "batch-cep-lookup": 479,
     "send-password-reset": 441,
     "upload-asset": 248,
-    "public-proposal": 204,
+    "public-proposal": 205,
     "invite-user": 54,
     "enriquecer-cnpj-receita": 42
   }

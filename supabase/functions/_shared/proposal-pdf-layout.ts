@@ -18,7 +18,7 @@
  */
 
 import { calcComissaoServicosBener, TEXTO_COMISSAO_BENER_VERBATIM } from './pdf-builder.ts'
-import { renderRichContent } from './proposal-rich-text.ts'
+import { renderRichContent, resolveDescricaoFontSizePdfNum } from './proposal-rich-text.ts'
 
 const PAGE_W = 595.28
 const PAGE_H = 841.89
@@ -944,19 +944,26 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   // ===== TECHNICAL SECTIONS =====
   const specs =
     primaryV?.especificacoes_tecnicas || p.especificacoes_tecnicas || p.descricao_proposta
+  const descFontSizePt = resolveDescricaoFontSizePdfNum((primaryV as any)?.descricao_tamanho)
+
   if (specs) {
     sectionHeading('Especificações Técnicas')
-    renderRichContent(doc, String(specs), ensureSpace)
+    renderRichContent(doc, String(specs), ensureSpace, descFontSizePt)
     doc.y += 8
   }
   if (primaryV?.caracteristicas_construtivas) {
     sectionHeading('Características Construtivas')
-    renderRichContent(doc, String(primaryV.caracteristicas_construtivas), ensureSpace)
+    renderRichContent(
+      doc,
+      String(primaryV.caracteristicas_construtivas),
+      ensureSpace,
+      descFontSizePt,
+    )
     doc.y += 8
   }
   if (primaryV?.acessorios_standards) {
     sectionHeading('Configuração Standard')
-    renderRichContent(doc, String(primaryV.acessorios_standards), ensureSpace)
+    renderRichContent(doc, String(primaryV.acessorios_standards), ensureSpace, descFontSizePt)
     doc.y += 8
   }
 
