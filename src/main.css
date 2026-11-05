@@ -307,7 +307,7 @@
     top: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    height: 44mm !important;
+    height: 46mm !important;
     background: #fff !important;
     z-index: 9999 !important;
     box-sizing: border-box !important;
@@ -326,8 +326,12 @@
   }
 
   /* Tabela de paginação para impressão: thead/tfoot repetem em todas as páginas
-     reservando o espaço exato do cabeçalho fixo (36mm) e rodapé fixo (18mm),
-     impedindo que o conteúdo do corpo sobreponha o cabeçalho institucional em qualquer folha. */
+     reservando o espaço exato do cabeçalho fixo (46mm) e rodapé fixo (16mm),
+     impedindo que o conteúdo do corpo sobreponha o cabeçalho institucional em qualquer folha.
+     MEDIDA COMPARTILHADA (Ponto 2): a altura do header fixo (46mm) e do footer fixo (16mm)
+     deve ser IDÊNTICA à reservada pelo thead (.proposal-print-header-space) e pelo tfoot
+     (.proposal-print-footer-space). Alterar um exige alterar o outro nos dois fluxos
+     (navegador via ProposalDocument + servidor via pdf-builder/proposal-pdf-layout). */
   .proposal-print-table {
     width: 100% !important;
     border-collapse: collapse !important;
@@ -361,7 +365,7 @@
   }
 
   .proposal-print-header-space {
-    height: 34mm !important;
+    height: 36mm !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -370,7 +374,7 @@
   }
 
   .proposal-print-footer-space {
-    height: 18mm !important;
+    height: 16mm !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;

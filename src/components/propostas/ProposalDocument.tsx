@@ -768,7 +768,8 @@ export function ProposalDocument({ proposal }: Props) {
       }}
     >
       {/* Running Header Nativo para @media print (aparece no topo de TODAS as páginas impressas via fixed header) */}
-      <div className="proposal-running-header hidden print:block print:fixed print:top-0 print:left-0 print:right-0 print:h-[34mm] print:bg-white print:z-[9999] border-b border-black pb-2">
+      {/* Ponto 2: altura fixa 46mm = spacer do thead (.proposal-print-header-space 36mm) + margens @page 2x5mm */}
+      <div className="proposal-running-header hidden print:block print:fixed print:top-0 print:left-0 print:right-0 print:h-[46mm] print:bg-white print:z-[9999] border-b border-black pb-2">
         {headerInstitucional}
       </div>
 
