@@ -232,6 +232,22 @@ export const A4_PRINT_STYLES = `
     white-space: pre !important;
     font-family: 'Courier New', Courier, monospace, 'Lucida Console' !important;
   }
+  /* Descrições das máquinas: mesmo padrão do bloco "Termos de Fornecimento"
+     (corpo 9,5pt / #0f172a / peso 500 / line-height 1,45, largura total, sem recuo) */
+  .term-desc-content .versao-rich-block {
+    padding-left: 0 !important;
+    margin-top: 0 !important;
+  }
+  .term-desc-content .versao-rich-block p,
+  .term-desc-content .versao-rich-block ul {
+    font-size: 9.5pt !important;
+    color: #0f172a !important;
+    font-weight: 500 !important;
+    line-height: 1.45 !important;
+  }
+  .term-desc-content .versao-rich-block li {
+    color: inherit !important;
+  }
 
   @media print {
     html, body {

@@ -20,14 +20,14 @@ export function renderMultilinhaHtml(raw: string | null | undefined, extraClass 
 function renderTechnicalHtml(raw: string | null | undefined, fallbackText = ''): string {
   if (!raw || !raw.trim()) {
     return fallbackText
-      ? `<div style="font-size:11px;color:#64748b;font-style:italic;padding-left:12px;">${esc(fallbackText)}</div>`
+      ? `<div style="font-size:11px;color:#64748b;font-style:italic;">${esc(fallbackText)}</div>`
       : ''
   }
 
   // 1. Se for rich HTML (do RichTextEditor): sanitiza e renderiza diretamente com formatação e imagens
   if (isHtmlContent(raw)) {
     const clean = sanitizeHtml(raw)
-    return `<div class="rich-text-content" style="font-size:11px;line-height:1.45;color:#1e293b;padding-left:12px;">${clean}</div>`
+    return `<div class="term-desc-content" style="display:block;width:100%;font-size:9.5pt;font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;">${clean}</div>`
   }
 
   // 2. Se for JSON estruturado de tabela técnica
@@ -35,7 +35,7 @@ function renderTechnicalHtml(raw: string | null | undefined, fallbackText = ''):
     const table = parseTechnicalData(raw)
     if (table.rows.length === 0) {
       return fallbackText
-        ? `<div style="font-size:11px;color:#64748b;font-style:italic;padding-left:12px;">${esc(fallbackText)}</div>`
+        ? `<div style="font-size:11px;color:#64748b;font-style:italic;">${esc(fallbackText)}</div>`
         : ''
     }
 
@@ -72,11 +72,12 @@ function renderTechnicalHtml(raw: string | null | undefined, fallbackText = ''):
       })
       .join('')
 
-    return `<div style="padding-left:12px;margin-top:2px;overflow-x:auto;"><table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;border-radius:3px;"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>`
+    return `<div style="margin-top:2px;overflow-x:auto;"><table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;border-radius:3px;"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table></div>`
   }
 
   // 3. Fallback: renderização rica (atende estritamente às regras de <B>, quebras e bullets "•" sem exibir marcadores crus)
-  return renderVersaoRichHtml(raw, fallbackText)
+  // Estilo padronizado = mesmo padrão do bloco "Termos de Fornecimento" (título 10,5pt bold caixa alta; corpo 9,5pt largura total, sem recuo)
+  return `<div class="term-desc-content" style="display:block;width:100%;font-size:9.5pt;font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;">${renderVersaoRichHtml(raw, fallbackText)}</div>`
 }
 
 export function generatePropostaHtml(
@@ -408,10 +409,7 @@ export function generatePropostaHtml(
         ${
           acessoriosStandardsHtml
             ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
-                   <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Configuração Standard</span>
-                 </div>
+                 <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">Configuração Standard</div>
                  ${acessoriosStandardsHtml}
                </div>`
             : ''
@@ -420,10 +418,7 @@ export function generatePropostaHtml(
         ${
           caracteristicasHtml
             ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
-                   <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Características Construtivas</span>
-                 </div>
+                 <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">Características Construtivas</div>
                  ${caracteristicasHtml}
                </div>`
             : ''
@@ -432,10 +427,7 @@ export function generatePropostaHtml(
         ${
           technicalSpecsHtml
             ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
-                   <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
-                 </div>
+                 <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">Especificações Técnicas</div>
                  ${technicalSpecsHtml}
                </div>`
             : ''
@@ -466,11 +458,8 @@ export function generatePropostaHtml(
 
           if (inclusos.length > 0) {
             out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
-                <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Inclusos no Preço</span>
-              </div>
-              <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:11px;line-height:1.55;color:#1e293b;">
+              <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">Acessórios Opcionais Inclusos no Preço</div>
+              <ul style="list-style:none;padding:0;margin:0;font-size:9.5pt;line-height:1.45;color:#0f172a;font-weight:500;">
                 ${inclusos
                   .map(
                     (a) =>
@@ -483,11 +472,8 @@ export function generatePropostaHtml(
 
           if (naoInclusos.length > 0) {
             out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
-                <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Não Inclusos no Preço</span>
-              </div>
-              <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:11px;line-height:1.55;color:#1e293b;">
+              <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">Acessórios Opcionais Não Inclusos no Preço</div>
+              <ul style="list-style:none;padding:0;margin:0;font-size:9.5pt;line-height:1.45;color:#0f172a;font-weight:500;">
                 ${naoInclusos
                   .map((a) => {
                     const itemMoeda = a.moeda || propMoeda
@@ -530,10 +516,7 @@ export function generatePropostaHtml(
                        ${
                          itemAcess
                            ? `<div style="margin-top:6px;padding-top:4px;border-top:1px solid #e2e8f0;">
-                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
-                           <span style="display:inline-block;width:3px;height:11px;background:#0b3c26;border-radius:1px;"></span>
-                           <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;">Configuração Standard</span>
-                         </div>
+                         <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">Configuração Standard</div>
                          ${renderTechnicalHtml(itemAcess)}
                        </div>`
                            : ''
@@ -541,10 +524,7 @@ export function generatePropostaHtml(
                        ${
                          itemCaract
                            ? `<div style="margin-top:6px;padding-top:4px;border-top:1px solid #e2e8f0;">
-                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
-                           <span style="display:inline-block;width:3px;height:11px;background:#0b3c26;border-radius:1px;"></span>
-                           <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;">Características Construtivas</span>
-                         </div>
+                         <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">Características Construtivas</div>
                          ${renderTechnicalHtml(itemCaract)}
                        </div>`
                            : ''
@@ -552,10 +532,7 @@ export function generatePropostaHtml(
                        ${
                          itemSpecs
                            ? `<div style="margin-top:6px;padding-top:4px;border-top:1px solid #e2e8f0;">
-                         <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
-                           <span style="display:inline-block;width:3px;height:11px;background:#0b3c26;border-radius:1px;"></span>
-                           <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;">Especificações Técnicas</span>
-                         </div>
+                         <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">Especificações Técnicas</div>
                          ${renderTechnicalHtml(itemSpecs)}
                        </div>`
                            : ''

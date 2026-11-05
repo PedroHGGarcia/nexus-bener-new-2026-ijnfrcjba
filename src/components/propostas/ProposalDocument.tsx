@@ -1110,42 +1110,33 @@ export function ProposalDocument({ proposal }: Props) {
 
                                 {/* Detalhes Técnicos / Construtivos / Standard da Máquina (se preenchidos) */}
                                 {itemAcessStandards && (
-                                  <div className="mt-2.5 pt-2 border-t border-slate-100">
-                                    <div className="flex items-center gap-1.5 mb-1 pb-0.5 border-b border-emerald-900/20">
-                                      <span className="w-0.5 h-3 bg-[#0b3c26] rounded-xs" />
-                                      <span className="font-bold text-[#0b3c26] uppercase tracking-wide text-[10px]">
-                                        Configuração Standard
-                                      </span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-700 pl-2.5">
+                                  <div className="mt-2.5 pt-2 border-t border-slate-100 break-inside-avoid">
+                                    <h4 className="font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
+                                      Configuração Standard
+                                    </h4>
+                                    <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
                                       <TechnicalDataDisplay content={itemAcessStandards} compact />
                                     </div>
                                   </div>
                                 )}
 
                                 {itemCaract && (
-                                  <div className="mt-2.5 pt-2 border-t border-slate-100">
-                                    <div className="flex items-center gap-1.5 mb-1 pb-0.5 border-b border-emerald-900/20">
-                                      <span className="w-0.5 h-3 bg-[#0b3c26] rounded-xs" />
-                                      <span className="font-bold text-[#0b3c26] uppercase tracking-wide text-[10px]">
-                                        Características Construtivas
-                                      </span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-700 pl-2.5">
+                                  <div className="mt-2.5 pt-2 border-t border-slate-100 break-inside-avoid">
+                                    <h4 className="font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
+                                      Características Construtivas
+                                    </h4>
+                                    <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
                                       <TechnicalDataDisplay content={itemCaract} compact />
                                     </div>
                                   </div>
                                 )}
 
                                 {itemSpecs && (
-                                  <div className="mt-2.5 pt-2 border-t border-slate-100">
-                                    <div className="flex items-center gap-1.5 mb-1 pb-0.5 border-b border-emerald-900/20">
-                                      <span className="w-0.5 h-3 bg-[#0b3c26] rounded-xs" />
-                                      <span className="font-bold text-[#0b3c26] uppercase tracking-wide text-[10px]">
-                                        Especificações Técnicas
-                                      </span>
-                                    </div>
-                                    <div className="text-[10px] text-slate-700 pl-2.5">
+                                  <div className="mt-2.5 pt-2 border-t border-slate-100 break-inside-avoid">
+                                    <h4 className="font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
+                                      Especificações Técnicas
+                                    </h4>
+                                    <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
                                       <TechnicalDataDisplay content={itemSpecs} compact />
                                     </div>
                                   </div>
@@ -1157,13 +1148,10 @@ export function ProposalDocument({ proposal }: Props) {
                                     {/* Acessórios Opcionais Inclusos no Preço daquela máquina */}
                                     {accInclusos.length > 0 && (
                                       <div>
-                                        <div className="flex items-center gap-1.5 mb-1 pb-0.5 border-b border-emerald-900/20">
-                                          <span className="w-0.5 h-3 bg-[#0b3c26] rounded-xs" />
-                                          <h4 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[10px]">
-                                            Acessórios Opcionais Inclusos no Preço
-                                          </h4>
-                                        </div>
-                                        <ul className="leading-relaxed text-[10.5px] text-slate-800 pl-2.5 space-y-0.5">
+                                        <h4 className="font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
+                                          Acessórios Opcionais Inclusos no Preço
+                                        </h4>
+                                        <ul className="leading-[1.45] text-[9.5pt] font-medium text-[#0f172a] space-y-0.5 break-words">
                                           {accInclusos.map((a, accIdx) => (
                                             <li
                                               key={a.id || accIdx}
@@ -1185,13 +1173,10 @@ export function ProposalDocument({ proposal }: Props) {
                                     {/* Acessórios Opcionais Não Inclusos no Preço daquela máquina */}
                                     {accNaoInclusos.length > 0 && (
                                       <div>
-                                        <div className="flex items-center gap-1.5 mb-1 pb-0.5 border-b border-emerald-900/20">
-                                          <span className="w-0.5 h-3 bg-[#0b3c26] rounded-xs" />
-                                          <h4 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[10px]">
-                                            Acessórios Opcionais Não Inclusos no Preço
-                                          </h4>
-                                        </div>
-                                        <ul className="leading-relaxed text-[10.5px] text-slate-800 pl-2.5 space-y-0.5">
+                                        <h4 className="font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
+                                          Acessórios Opcionais Não Inclusos no Preço
+                                        </h4>
+                                        <ul className="leading-[1.45] text-[9.5pt] font-medium text-[#0f172a] space-y-0.5 break-words">
                                           {accNaoInclusos.map((a, accIdx) => {
                                             const accMoeda = a.moeda || itemMoeda
                                             const precoFormatted =
@@ -1235,13 +1220,10 @@ export function ProposalDocument({ proposal }: Props) {
                       <section className="proposal-section mb-4 text-xs break-inside-avoid print:break-inside-auto">
                         {primaryVersao?.acessorios_standards && (
                           <div className="mb-3.5 break-inside-avoid">
-                            <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
-                              <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
-                              <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
-                                Configuração Standard
-                              </h3>
-                            </div>
-                            <div className="pl-3">
+                            <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                              Configuração Standard
+                            </h3>
+                            <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
                               <TechnicalDataDisplay
                                 content={primaryVersao.acessorios_standards}
                                 compact
@@ -1252,13 +1234,10 @@ export function ProposalDocument({ proposal }: Props) {
 
                         {primaryVersao?.caracteristicas_construtivas && (
                           <div className="mb-3.5 break-inside-avoid">
-                            <div className="flex items-center gap-2 mt-3 mb-1 pb-1 border-b border-slate-200 break-after-avoid">
-                              <span className="w-[3.5pt] h-[12pt] bg-[#0b3c26] rounded-xs inline-block" />
-                              <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12pt]">
-                                Características Construtivas
-                              </h3>
-                            </div>
-                            <div className="pl-3">
+                            <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                              Características Construtivas
+                            </h3>
+                            <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
                               <TechnicalDataDisplay
                                 content={primaryVersao.caracteristicas_construtivas}
                                 compact
@@ -1275,13 +1254,10 @@ export function ProposalDocument({ proposal }: Props) {
                           if (!desc) return null
                           return (
                             <div className="mb-3.5 break-inside-avoid">
-                              <div className="flex items-center gap-2 mt-3 mb-1 pb-1 border-b border-slate-200 break-after-avoid">
-                                <span className="w-[3.5pt] h-[12pt] bg-[#0b3c26] rounded-xs inline-block" />
-                                <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12pt]">
-                                  Especificações Técnicas
-                                </h3>
-                              </div>
-                              <div className="pl-3">
+                              <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                                Especificações Técnicas
+                              </h3>
+                              <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
                                 <TechnicalDataDisplay content={desc} compact />
                               </div>
                             </div>
@@ -1325,13 +1301,10 @@ export function ProposalDocument({ proposal }: Props) {
                             <>
                               {inclusos.length > 0 && (
                                 <div className="mb-3.5 break-inside-avoid">
-                                  <div className="flex items-center gap-2 mt-3 mb-1 pb-1 border-b border-slate-200 break-after-avoid">
-                                    <span className="w-[3.5pt] h-[12pt] bg-[#0b3c26] rounded-xs inline-block" />
-                                    <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12pt]">
-                                      Acessórios Opcionais Inclusos no Preço
-                                    </h3>
-                                  </div>
-                                  <ul className="leading-relaxed text-[11px] text-slate-800 pl-3 space-y-1">
+                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                                    Acessórios Opcionais Inclusos no Preço
+                                  </h3>
+                                  <ul className="leading-[1.45] text-[9.5pt] font-medium text-[#0f172a] space-y-1 break-words">
                                     {inclusos.map((a, i) => (
                                       <li key={a.id || i} className="flex items-start gap-1.5">
                                         <span className="text-[#0b3c26] select-none font-bold">
@@ -1349,13 +1322,10 @@ export function ProposalDocument({ proposal }: Props) {
 
                               {naoInclusos.length > 0 && (
                                 <div className="mb-3.5 break-inside-avoid">
-                                  <div className="flex items-center gap-2 mt-3 mb-1 pb-1 border-b border-slate-200 break-after-avoid">
-                                    <span className="w-[3.5pt] h-[12pt] bg-[#0b3c26] rounded-xs inline-block" />
-                                    <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12pt]">
-                                      Acessórios Opcionais Não Inclusos no Preço
-                                    </h3>
-                                  </div>
-                                  <ul className="leading-relaxed text-[11px] text-slate-800 pl-3 space-y-1">
+                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                                    Acessórios Opcionais Não Inclusos no Preço
+                                  </h3>
+                                  <ul className="leading-[1.45] text-[9.5pt] font-medium text-[#0f172a] space-y-1 break-words">
                                     {naoInclusos.map((a, i) => {
                                       const itemMoeda = a.moeda || propMoeda
                                       const precoFormatted =
@@ -1657,7 +1627,7 @@ export function ProposalDocument({ proposal }: Props) {
                               key={label}
                               className="term-item block w-full mb-3 break-inside-avoid"
                             >
-                              <div className="term-title block font-bold text-[#0b3c26] uppercase tracking-wide text-[10.5pt] mb-1 break-after-avoid">
+                              <div className="term-title block font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
                                 {label}
                               </div>
                               <div className="term-content block w-full text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words text-[9.5pt] font-sans">
@@ -1694,7 +1664,7 @@ export function ProposalDocument({ proposal }: Props) {
                                 key={i}
                                 className="term-item block w-full mb-3 break-inside-avoid"
                               >
-                                <div className="term-title block font-bold text-[#0b3c26] uppercase tracking-wide text-[10.5pt] mb-1 break-after-avoid">
+                                <div className="term-title block font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
                                   {fieldTitle}
                                 </div>
                                 <div className="term-content block w-full text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words text-[9.5pt] font-sans">
