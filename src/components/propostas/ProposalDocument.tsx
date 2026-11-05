@@ -327,6 +327,36 @@ export function ProposalDocument({ proposal }: Props) {
     return !isCommercialFieldEmpty(val, lbl)
   }) as Array<[string, string | null | undefined]>
 
+  // Regra 9 / Ponto 25: Deduplicação de campos customizados e Informações Adicionais
+  // Descarta dos "Informações Adicionais" os campos já exibidos nos Termos de Fornecimento,
+  // e se o bloco Informações Adicionais ficar vazio, não renderiza nada (nem o título).
+  const normCampoKey = (s: unknown): string =>
+    String(s ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+  const renderedCampoKeys = new Set<string>()
+  for (const [termLabel] of filteredTerms) {
+    const k = normCampoKey(termLabel)
+    if (k) renderedCampoKeys.add(k)
+  }
+
+  const validCamposAdicionaisProposal = Array.isArray(proposal.campos_adicionais)
+    ? (proposal.campos_adicionais as any[]).filter((f) => {
+        if (!f) return false
+        const fTitle = String(f.titulo || f.chave || '').trim()
+        const fContent = f.conteudo != null ? f.conteudo : f.valor
+        if (!fTitle && !fContent) return false
+        if (isCommercialFieldEmpty(fContent)) return false
+        const fKey = normCampoKey(f.chave || f.id || f.titulo)
+        if (fKey && renderedCampoKeys.has(fKey)) return false
+        if (fKey) renderedCampoKeys.add(fKey)
+        return true
+      })
+    : []
+
   // Client header pieces
   const clientCompanyName = c?.razao_social || c?.fantasia || proposal.cliente_original || 'Cliente'
 
@@ -784,7 +814,7 @@ export function ProposalDocument({ proposal }: Props) {
                   {/* Header + Client + Reception wrapped to avoid breaking apart */}
                   <div className="break-inside-avoid">
                     {/* Section 0: Top Header (exibido na tela; no print fica a cargo do header nativo repetido) */}
-                    <div className="border-b border-black pb-3 mb-5 print:hidden">
+                    <div className="border-b border-black pb-1.5 mb-2 print:hidden">
                       {headerInstitucional}
                     </div>
 
@@ -947,7 +977,7 @@ export function ProposalDocument({ proposal }: Props) {
                   }}
                 >
                   {/* Institutional header repeated on Page 2 on screen; in print, handled by proposal-running-header */}
-                  <div className="border-b border-black pb-3 mb-5 break-inside-avoid print:hidden">
+                  <div className="border-b border-black pb-1.5 mb-2 break-inside-avoid print:hidden">
                     {headerInstitucional}
                   </div>
 
@@ -955,12 +985,14 @@ export function ProposalDocument({ proposal }: Props) {
                     {/* Modo Pacote: Bloco estruturado por Máquina com Foto, Título e Acessórios vinculados */}
                     {proposal.is_pacote && equipmentItems.length > 0 ? (
                       <section className="proposal-section mb-5 text-xs">
-                        <div className="flex items-center gap-2 mb-3 pb-1.5 border-b-2 border-slate-800 break-after-avoid">
-                          <span className="w-1.5 h-4 bg-[#0b3c26] rounded-xs" />
-                          <h2 className="font-bold uppercase tracking-wider text-slate-900 text-[12px] sm:text-xs">
-                            Equipamentos e Acessórios do Pacote
-                          </h2>
-                          <span className="text-[10px] text-slate-600 font-medium ml-auto">
+                        <div className="flex items-center justify-between gap-2 mt-4 mb-1.5 pb-1.5 border-b border-slate-300 break-after-avoid">
+                          <div className="flex items-center gap-2">
+                            <span className="w-[3.5pt] h-[14pt] bg-[#0b3c26] rounded-xs inline-block" />
+                            <h2 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12.5pt]">
+                              Equipamentos e Acessórios do Pacote
+                            </h2>
+                          </div>
+                          <span className="text-[10pt] text-slate-500 font-medium">
                             {equipmentItems.length}{' '}
                             {equipmentItems.length === 1 ? 'máquina' : 'máquinas'}
                           </span>
@@ -1372,9 +1404,9 @@ export function ProposalDocument({ proposal }: Props) {
 
                         {primaryVersao?.caracteristicas_construtivas && (
                           <div className="mb-3.5 break-inside-avoid">
-                            <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
-                              <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
-                              <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
+                            <div className="flex items-center gap-2 mt-3 mb-1 pb-1 border-b border-slate-200 break-after-avoid">
+                              <span className="w-[3.5pt] h-[12pt] bg-[#0b3c26] rounded-xs inline-block" />
+                              <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12pt]">
                                 Características Construtivas
                               </h3>
                             </div>
@@ -1395,9 +1427,9 @@ export function ProposalDocument({ proposal }: Props) {
                           if (!desc) return null
                           return (
                             <div className="mb-3.5 break-inside-avoid">
-                              <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
-                                <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
-                                <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
+                              <div className="flex items-center gap-2 mt-3 mb-1 pb-1 border-b border-slate-200 break-after-avoid">
+                                <span className="w-[3.5pt] h-[12pt] bg-[#0b3c26] rounded-xs inline-block" />
+                                <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12pt]">
                                   Especificações Técnicas
                                 </h3>
                               </div>
@@ -1445,9 +1477,9 @@ export function ProposalDocument({ proposal }: Props) {
                             <>
                               {inclusos.length > 0 && (
                                 <div className="mb-3.5 break-inside-avoid">
-                                  <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
-                                    <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
-                                    <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
+                                  <div className="flex items-center gap-2 mt-3 mb-1 pb-1 border-b border-slate-200 break-after-avoid">
+                                    <span className="w-[3.5pt] h-[12pt] bg-[#0b3c26] rounded-xs inline-block" />
+                                    <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12pt]">
                                       Acessórios Opcionais Inclusos no Preço
                                     </h3>
                                   </div>
@@ -1469,9 +1501,9 @@ export function ProposalDocument({ proposal }: Props) {
 
                               {naoInclusos.length > 0 && (
                                 <div className="mb-3.5 break-inside-avoid">
-                                  <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-emerald-900/20 break-after-avoid">
-                                    <span className="w-1 h-3.5 bg-[#0b3c26] rounded-xs" />
-                                    <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[11px] sm:text-xs">
+                                  <div className="flex items-center gap-2 mt-3 mb-1 pb-1 border-b border-slate-200 break-after-avoid">
+                                    <span className="w-[3.5pt] h-[12pt] bg-[#0b3c26] rounded-xs inline-block" />
+                                    <h3 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12pt]">
                                       Acessórios Opcionais Não Inclusos no Preço
                                     </h3>
                                   </div>
@@ -1515,11 +1547,14 @@ export function ProposalDocument({ proposal }: Props) {
 
                     {/* Commercial Conditions Section (R2: Tabela limpa e alinhada em tom profissional + R4: Cotação detalhada) */}
                     <section className="proposal-section mb-5 text-xs break-inside-avoid print:break-inside-auto">
-                      <div className="border-b-2 border-slate-800 pb-1.5 mb-2.5 flex items-center justify-between break-after-avoid">
-                        <span className="font-bold tracking-wider uppercase text-slate-900 text-[11px] sm:text-xs">
-                          Condições Comerciais
-                        </span>
-                        <span className="text-[10px] text-slate-600 font-medium">
+                      <div className="flex items-center justify-between gap-2 mt-4 mb-1.5 pb-1.5 border-b border-slate-300 break-after-avoid">
+                        <div className="flex items-center gap-2">
+                          <span className="w-[3.5pt] h-[14pt] bg-[#0b3c26] rounded-xs inline-block" />
+                          <h2 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12.5pt]">
+                            Condições Comerciais
+                          </h2>
+                        </div>
+                        <span className="text-[10pt] text-slate-500 font-medium">
                           {proposal.is_pacote ? 'Pacote de Máquinas' : 'Fornecimento Unitário'}
                         </span>
                       </div>
@@ -1757,11 +1792,14 @@ export function ProposalDocument({ proposal }: Props) {
                     {/* Terms and conditions - layout vertical */}
                     {filteredTerms.length > 0 && (
                       <section className="proposal-section mb-5 print:mt-4 text-xs">
-                        <div className="bg-[#0b3c26] text-white px-3 py-1.5 rounded-sm flex items-center justify-between mb-3 shadow-sm break-after-avoid">
-                          <span className="font-bold tracking-wider uppercase text-[11px] sm:text-xs">
-                            Termos de Fornecimento
-                          </span>
-                          <span className="text-[10px] text-emerald-100 font-medium">
+                        <div className="flex items-center justify-between gap-2 mt-4 mb-1.5 pb-1.5 border-b border-slate-300 break-after-avoid">
+                          <div className="flex items-center gap-2">
+                            <span className="w-[3.5pt] h-[14pt] bg-[#0b3c26] rounded-xs inline-block" />
+                            <h2 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12.5pt]">
+                              Termos de Fornecimento
+                            </h2>
+                          </div>
+                          <span className="text-[10pt] text-slate-500 font-medium">
                             Condições Gerais & Garantias
                           </span>
                         </div>
@@ -1771,10 +1809,10 @@ export function ProposalDocument({ proposal }: Props) {
                               key={label}
                               className="term-item block w-full mb-3 break-inside-avoid"
                             >
-                              <div className="term-title block font-bold text-[#0b3c26] uppercase tracking-wide text-[11px] mb-1 break-after-avoid">
+                              <div className="term-title block font-bold text-[#0b3c26] uppercase tracking-wide text-[10.5pt] mb-1 break-after-avoid">
                                 {label}
                               </div>
-                              <div className="term-content block w-full text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words text-[11px] font-sans">
+                              <div className="term-content block w-full text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words text-[9.5pt] font-sans">
                                 {renderMultilinhaParagraphs(value)}
                               </div>
                             </div>
@@ -1784,57 +1822,42 @@ export function ProposalDocument({ proposal }: Props) {
                     )}
 
                     {/* Additional custom fields */}
-                    {Array.isArray(proposal.campos_adicionais) &&
-                      (proposal.campos_adicionais as any[]).filter(
-                        (f) =>
-                          f &&
-                          ((f.titulo && f.titulo.trim() !== '') ||
-                            (f.chave && f.chave.trim() !== '')) &&
-                          !isCommercialFieldEmpty(f.conteudo != null ? f.conteudo : f.valor),
-                      ).length > 0 && (
-                        <section className="proposal-section mb-4 text-xs">
-                          <div className="bg-[#0b3c26] text-white px-3 py-1.5 rounded-sm flex items-center justify-between mb-3 shadow-sm break-after-avoid">
-                            <span className="font-bold tracking-wider uppercase text-[11px] sm:text-xs">
+                    {validCamposAdicionaisProposal.length > 0 && (
+                      <section className="proposal-section mb-4 text-xs">
+                        <div className="flex items-center justify-between gap-2 mt-4 mb-1.5 pb-1.5 border-b border-slate-300 break-after-avoid">
+                          <div className="flex items-center gap-2">
+                            <span className="w-[3.5pt] h-[14pt] bg-[#0b3c26] rounded-xs inline-block" />
+                            <h2 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12.5pt]">
                               Informações Adicionais
-                            </span>
-                            <span className="text-[10px] text-emerald-100 font-medium">
-                              Campos Específicos da Proposta
-                            </span>
+                            </h2>
                           </div>
-                          <div className="terms-section w-full block mb-4 space-y-3">
-                            {(proposal.campos_adicionais as any[])
-                              .filter(
-                                (f) =>
-                                  f &&
-                                  ((f.titulo && f.titulo.trim() !== '') ||
-                                    (f.chave && f.chave.trim() !== '')) &&
-                                  !isCommercialFieldEmpty(
-                                    f.conteudo != null ? f.conteudo : f.valor,
-                                  ),
-                              )
-                              .map((field, i) => {
-                                const fieldTitle = (
-                                  (field.titulo || field.chave || '') as string
-                                ).trim()
-                                const fieldVal =
-                                  field.conteudo != null ? field.conteudo : field.valor
-                                return (
-                                  <div
-                                    key={i}
-                                    className="term-item block w-full mb-3 break-inside-avoid"
-                                  >
-                                    <div className="term-title block font-bold text-[#0b3c26] uppercase tracking-wide text-[11px] mb-1 break-after-avoid">
-                                      {fieldTitle}
-                                    </div>
-                                    <div className="term-content block w-full text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words text-[11px] font-sans">
-                                      {renderMultilinhaParagraphs(fieldVal)}
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                          </div>
-                        </section>
-                      )}
+                          <span className="text-[10pt] text-slate-500 font-medium">
+                            Campos Específicos da Proposta
+                          </span>
+                        </div>
+                        <div className="terms-section w-full block mb-4 space-y-3">
+                          {validCamposAdicionaisProposal.map((field, i) => {
+                            const fieldTitle = (
+                              (field.titulo || field.chave || '') as string
+                            ).trim()
+                            const fieldVal = field.conteudo != null ? field.conteudo : field.valor
+                            return (
+                              <div
+                                key={i}
+                                className="term-item block w-full mb-3 break-inside-avoid"
+                              >
+                                <div className="term-title block font-bold text-[#0b3c26] uppercase tracking-wide text-[10.5pt] mb-1 break-after-avoid">
+                                  {fieldTitle}
+                                </div>
+                                <div className="term-content block w-full text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words text-[9.5pt] font-sans">
+                                  {renderMultilinhaParagraphs(fieldVal)}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </section>
+                    )}
 
                     {/* Comparisons table */}
                     {hasComparison && (

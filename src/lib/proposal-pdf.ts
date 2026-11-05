@@ -309,13 +309,30 @@ export function generatePropostaHtml(
     }
   }
 
-  const validCamposAdicionais = parsedCamposAdicionais.filter(
-    (f) =>
-      f &&
-      ((f.titulo && String(f.titulo).trim() !== '') ||
-        (f.chave && String(f.chave).trim() !== '')) &&
-      !isCommercialFieldEmpty(f.conteudo != null ? f.conteudo : f.valor),
-  )
+  const normCampoKey = (s: unknown): string =>
+    String(s ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+  const renderedCampoKeys = new Set<string>()
+  for (const [termLabel] of filteredTerms) {
+    const k = normCampoKey(termLabel)
+    if (k) renderedCampoKeys.add(k)
+  }
+
+  const validCamposAdicionais = parsedCamposAdicionais.filter((f) => {
+    if (!f) return false
+    const fTitle = String(f.titulo || f.chave || '').trim()
+    const fContent = f.conteudo != null ? f.conteudo : f.valor
+    if (!fTitle && !fContent) return false
+    if (isCommercialFieldEmpty(fContent)) return false
+    const fKey = normCampoKey(f.chave || f.id || f.titulo)
+    if (fKey && renderedCampoKeys.has(fKey)) return false
+    if (fKey) renderedCampoKeys.add(fKey)
+    return true
+  })
 
   const hasAnyPage2Content =
     Boolean(technicalSpecsHtml) ||
@@ -852,17 +869,20 @@ export function generatePropostaHtml(
 
         ${
           filteredTerms.length > 0
-            ? `<div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
-                 <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">Termos de Fornecimento</span>
-                 <span style="font-size:10px;opacity:0.9;">Condições Gerais & Garantias</span>
+            ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                 <div style="display:flex;align-items:center;gap:8px;">
+                   <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+                   <span>Termos de Fornecimento</span>
+                 </div>
+                 <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Condições Gerais & Garantias</span>
                </div>
                <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
                  ${filteredTerms
                    .map(
                      ([lbl, val]) => `
                    <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                     <div class="term-title" style="display:block;font-size:11px;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(lbl)}</div>
-                     <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:11px;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(val)}</div>
+                     <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(lbl)}</div>
+                     <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(val)}</div>
                    </div>`,
                    )
                    .join('')}
@@ -873,9 +893,12 @@ export function generatePropostaHtml(
         ${
           validCamposAdicionais.length > 0
             ? `<div style="margin-bottom:16px;">
-                 <div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
-                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">Informações Adicionais</span>
-                   <span style="font-size:10px;opacity:0.9;">Campos Específicos da Proposta</span>
+                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                   <div style="display:flex;align-items:center;gap:8px;">
+                     <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+                     <span>Informações Adicionais</span>
+                   </div>
+                   <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Campos Específicos da Proposta</span>
                  </div>
                  <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
                    ${validCamposAdicionais
@@ -884,8 +907,8 @@ export function generatePropostaHtml(
                        const fieldVal = field.conteudo != null ? field.conteudo : field.valor
                        return `
                      <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                       <div class="term-title" style="display:block;font-size:11px;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(fieldTitle)}</div>
-                       <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:11px;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(fieldVal)}</div>
+                       <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(fieldTitle)}</div>
+                       <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(fieldVal)}</div>
                      </div>`
                      })
                      .join('')}

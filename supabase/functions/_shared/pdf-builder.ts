@@ -402,9 +402,12 @@ function buildEquipmentSection(items: any[], proposta: any, comissaoRowHtml: str
     .join('')
 
   return `
-  <div style="border-bottom:2px solid #0f172a;padding-bottom:6px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;display:flex;justify-content:space-between;align-items:center;page-break-after:avoid;break-after:avoid;">
-    <span>Detalhamento de Equipamentos & Condições Comerciais</span>
-    <span style="font-size:10px;color:#64748b;font-weight:500;text-transform:none;">Pacote de Máquinas</span>
+  <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+      <span>Detalhamento de Equipamentos & Condições Comerciais</span>
+    </div>
+    <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Pacote de Máquinas</span>
   </div>
   <div class="equipment-list">${itemsHtml}${comissaoRowHtml}</div>
 `
@@ -552,23 +555,39 @@ export function buildProposalPdfHtml(
   const commercialSection =
     filteredTerms.length > 0
       ? `
-    <div style="background:#0b3c26;color:#ffffff;padding:6px 12px;border-radius:4px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
-      Termos de Fornecimento & Informações Comerciais
+    <div class="section-title" style="display:flex;align-items:center;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+      <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+      <span>Termos de Fornecimento & Informações Comerciais</span>
     </div>
     <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
       ${filteredTerms
         .map(
           ([lbl, val]) => `
         <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-          <div class="term-title" style="display:block;font-size:11px;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(lbl)}</div>
-          <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:11px;font-weight:500;line-height:1.45;word-break:break-word;">${renderCommercialFieldHtml(val)}</div>
+          <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(lbl)}</div>
+          <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderCommercialFieldHtml(val)}</div>
         </div>`,
         )
         .join('')}
     </div>`
       : ''
 
-  // Informações adicionais da proposta (Regra 9)
+  // Regra 9 / Ponto 25: Deduplicação de campos customizados e Informações Adicionais
+  // Descarta dos "Informações Adicionais" os campos já exibidos nos Termos de Fornecimento,
+  // e se o bloco Informações Adicionais ficar vazio, não renderiza nada (nem o título).
+  const normCampoKey = (s: unknown): string =>
+    String(s ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+  const renderedCampoKeys = new Set<string>()
+  for (const [termLabel] of filteredTerms) {
+    const k = normCampoKey(termLabel)
+    if (k) renderedCampoKeys.add(k)
+  }
+
   let camposAdicionaisSection = ''
   const snapshotCampos = dadosSnapshot?.campos_adicionais
   let camposData: any =
@@ -583,25 +602,30 @@ export function buildProposalPdfHtml(
     }
   }
   if (Array.isArray(camposData) && camposData.length > 0) {
-    const validCampos = camposData.filter(
-      (c: any) =>
-        c &&
-        ((c.titulo && String(c.titulo).trim() !== '') ||
-          (c.chave && String(c.chave).trim() !== '')) &&
-        !isCommercialEmpty(c.conteudo != null ? c.conteudo : c.valor),
-    )
+    const validCampos = camposData.filter((c: any) => {
+      if (!c) return false
+      const fTitle = String(c.titulo || c.chave || '').trim()
+      const fContent = c.conteudo != null ? c.conteudo : c.valor
+      if (!fTitle && !fContent) return false
+      if (isCommercialEmpty(fContent)) return false
+      const fKey = normCampoKey(c.chave || c.id || c.titulo)
+      if (fKey && renderedCampoKeys.has(fKey)) return false
+      if (fKey) renderedCampoKeys.add(fKey)
+      return true
+    })
     if (validCampos.length > 0) {
       camposAdicionaisSection = `
-      <div style="background:#0b3c26;color:#ffffff;padding:6px 12px;border-radius:4px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
-        Informações Adicionais
+      <div class="section-title" style="display:flex;align-items:center;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+        <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+        <span>Informações Adicionais</span>
       </div>
       <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
         ${validCampos
           .map(
             (c: any) => `
           <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-            <div class="term-title" style="display:block;font-size:11px;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(String(c.titulo || c.chave || '').trim())}</div>
-            <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:11px;font-weight:500;line-height:1.45;word-break:break-word;">${renderCommercialFieldHtml(c.conteudo != null ? c.conteudo : c.valor)}</div>
+            <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(String(c.titulo || c.chave || '').trim())}</div>
+            <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderCommercialFieldHtml(c.conteudo != null ? c.conteudo : c.valor)}</div>
           </div>`,
           )
           .join('')}
@@ -953,18 +977,24 @@ export function buildProposalPdfHtml(
       break-inside: avoid;
     }
     .section-title {
-      font-size: 14px;
+      font-size: 12.5pt;
       font-weight: bold;
       color: #0b3c26;
-      border-left: 4px solid #0b3c26;
-      padding-left: 10px;
-      margin: 25px 0 15px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      border-left: 3.5pt solid #0b3c26;
+      padding-left: 8px;
+      margin: 16px 0 5px 0;
+      padding-bottom: 5px;
+      border-bottom: 0.5pt solid #cbd5e1;
       page-break-after: avoid;
       break-after: avoid;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .equipment-name {
       font-weight: 800;
-      font-size: 16px;
+      font-size: 14.5pt;
       color: #0b3c26;
       margin-left: 4px;
       display: inline-block;
@@ -1058,26 +1088,29 @@ export function buildProposalPdfHtml(
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 6px;
-      padding-bottom: 4px;
-      border-bottom: 1px solid rgba(11, 60, 38, 0.25);
-      font-size: 12px;
+      margin-top: 16px;
+      margin-bottom: 5px;
+      padding-bottom: 5px;
+      border-bottom: 0.5pt solid #cbd5e1;
+      font-size: 12.5pt;
       font-weight: bold;
       color: #0b3c26;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       page-break-after: avoid;
       break-after: avoid;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     .spec-block-bar {
       display: inline-block;
-      width: 4px;
-      height: 14px;
+      width: 3.5pt;
+      height: 14pt;
       background: #0b3c26;
       border-radius: 1px;
     }
     .spec-block-content {
-      font-size: 11px;
+      font-size: 9.5pt;
       line-height: 1.5;
       color: #1e293b;
       padding-left: 12px;
@@ -1410,9 +1443,12 @@ export function buildProposalPdfHtml(
             n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
           return `
-          <div style="border-bottom:2px solid #0f172a;padding-bottom:6px;font-size:12px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;margin:24px 0 10px 0;display:flex;justify-content:space-between;align-items:center;page-break-after:avoid;break-after:avoid;">
-            <span>Condições Comerciais</span>
-            <span style="font-size:10px;color:#64748b;font-weight:500;text-transform:none;">Fornecimento Unitário</span>
+          <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+              <span>Condições Comerciais</span>
+            </div>
+            <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Fornecimento Unitário</span>
           </div>
           <table style="width:100%;border-collapse:collapse;margin-bottom:12px;border:1px solid #cbd5e1;font-size:11px;background:#ffffff;page-break-inside:avoid;break-inside:avoid;">
             <thead>
@@ -1523,8 +1559,9 @@ export function buildProposalPdfHtml(
   </div>
 
   <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #cbd5e1; page-break-inside:avoid; break-inside:avoid;">
-    <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; color: #0b3c26; margin-bottom: 12px; letter-spacing: 0.5px;">
-      De Acordo e Assinaturas
+    <div style="display:flex;align-items:center;gap:8px;font-size: 12.5pt; font-weight: bold; text-transform: uppercase; color: #0b3c26; margin: 16px 0 5px 0; padding-bottom: 5px; border-bottom: 0.5pt solid #cbd5e1; letter-spacing: 0.8px; page-break-after:avoid; break-after:avoid;">
+      <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+      <span>De Acordo e Assinaturas</span>
     </div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; text-align: center; margin-top: 16px;">
       <div style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end;">

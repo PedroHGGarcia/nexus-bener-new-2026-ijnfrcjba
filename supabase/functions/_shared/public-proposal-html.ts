@@ -481,13 +481,33 @@ export function buildPublicProposalHtml(
       // ignore
     }
   }
-  const validCamposAdicionais = parsedCamposAdicionais.filter(
-    (f) =>
-      f &&
-      ((f.titulo && String(f.titulo).trim() !== '') ||
-        (f.chave && String(f.chave).trim() !== '')) &&
-      !isCommercialEmpty(f.conteudo != null ? f.conteudo : f.valor),
-  )
+  // Regra 9 / Ponto 25: Deduplicação de campos customizados e Informações Adicionais
+  // Descarta dos "Informações Adicionais" os campos já exibidos nos Termos de Fornecimento,
+  // e se o bloco Informações Adicionais ficar vazio, não renderiza nada (nem o título).
+  const normCampoKey = (s: unknown): string =>
+    String(s ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+  const renderedCampoKeys = new Set<string>()
+  for (const [termLabel] of filteredTerms) {
+    const k = normCampoKey(termLabel)
+    if (k) renderedCampoKeys.add(k)
+  }
+
+  const validCamposAdicionais = parsedCamposAdicionais.filter((f) => {
+    if (!f) return false
+    const fTitle = String(f.titulo || f.chave || '').trim()
+    const fContent = f.conteudo != null ? f.conteudo : f.valor
+    if (!fTitle && !fContent) return false
+    if (isCommercialEmpty(fContent)) return false
+    const fKey = normCampoKey(f.chave || f.id || f.titulo)
+    if (fKey && renderedCampoKeys.has(fKey)) return false
+    if (fKey) renderedCampoKeys.add(fKey)
+    return true
+  })
 
   const valorFinal = Number(proposta.valor_final ?? proposta.valor_atual ?? 0)
   const precoEspecial =
@@ -733,10 +753,12 @@ export function buildPublicProposalHtml(
     .machine-title {
       text-align: center;
       margin: 8px 0 8px !important;
-      font-size: 14px !important;
+      font-size: 14.5pt !important;
       line-height: 1.2 !important;
       font-weight: bold;
       letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #0b3c26;
       page-break-inside: avoid;
       break-inside: avoid;
       page-break-after: avoid !important;
@@ -810,14 +832,18 @@ export function buildPublicProposalHtml(
     }
 
     .section-heading {
-      font-size: 12px;
+      font-size: 12.5pt;
       font-weight: bold;
+      color: #0b3c26;
       text-transform: uppercase;
-      border-bottom: 1px solid #000;
-      padding-bottom: 2px;
-      margin: 18px 0 8px 0;
+      letter-spacing: 0.8px;
+      border-bottom: 0.5pt solid #cbd5e1;
+      padding-bottom: 5px;
+      margin: 16px 0 5px 0;
       page-break-after: avoid;
       break-after: avoid;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
     table {
       width: 100%;
@@ -871,7 +897,7 @@ export function buildPublicProposalHtml(
 
     @page {
       size: A4 portrait;
-      margin: 46mm 12mm 20mm 12mm;
+      margin: 43mm 12mm 20mm 12mm;
     }
 
     .proposal-running-header {
@@ -913,7 +939,7 @@ export function buildPublicProposalHtml(
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        height: 40mm !important;
+        height: 38mm !important;
         background: #ffffff !important;
         z-index: 9999 !important;
         box-sizing: border-box !important;
@@ -1127,21 +1153,21 @@ export function buildPublicProposalHtml(
         </div>
 
         <div style="margin-bottom:12px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);page-break-after:avoid;break-after:avoid;">
-            <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-            <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+            <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+            <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
           </div>
-          <div style="font-size:11px;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme catálogo e especificações técnicas de fábrica.')}</div>
+          <div style="font-size:9.5pt;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme catálogo e especificações técnicas de fábrica.')}</div>
         </div>
 
         ${
           primaryVersao?.caracteristicas_construtivas
             ? `<div style="margin-bottom:12px;">
-                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);page-break-after:avoid;break-after:avoid;">
-                   <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Características Construtivas</span>
+                 <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                   <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+                   <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Características Construtivas</span>
                  </div>
-                 <div style="font-size:11px;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao.caracteristicas_construtivas)}</div>
+                 <div style="font-size:9.5pt;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao.caracteristicas_construtivas)}</div>
                </div>`
             : ''
         }
@@ -1149,11 +1175,11 @@ export function buildPublicProposalHtml(
         ${
           primaryVersao?.acessorios_standards
             ? `<div style="margin-bottom:12px;">
-                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);page-break-after:avoid;break-after:avoid;">
-                   <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Standards Inclusos</span>
+                 <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                   <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+                   <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Standards Inclusos</span>
                  </div>
-                 <div style="font-size:11px;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao.acessorios_standards)}</div>
+                 <div style="font-size:9.5pt;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao.acessorios_standards)}</div>
                </div>`
             : ''
         }
@@ -1179,11 +1205,11 @@ export function buildPublicProposalHtml(
 
           if (inclusos.length > 0) {
             out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
-                <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Inclusos no Preço</span>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+                <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Inclusos no Preço</span>
               </div>
-              <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:11px;line-height:1.55;color:#1e293b;">
+              <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:9.5pt;line-height:1.55;color:#1e293b;">
                 ${inclusos
                   .map(
                     (a) =>
@@ -1196,11 +1222,11 @@ export function buildPublicProposalHtml(
 
           if (naoInclusos.length > 0) {
             out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid rgba(11,60,38,0.25);">
-                <span style="display:inline-block;width:4px;height:14px;background:#0b3c26;border-radius:1px;"></span>
-                <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Não Inclusos no Preço</span>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+                <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Não Inclusos no Preço</span>
               </div>
-              <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:11px;line-height:1.55;color:#1e293b;">
+              <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:9.5pt;line-height:1.55;color:#1e293b;">
                 ${naoInclusos
                   .map((a) => {
                     const itemMoeda = normalizeMoedaCode(a.moeda || moedaProp)
@@ -1216,9 +1242,12 @@ export function buildPublicProposalHtml(
           return out
         })()}
 
-        <div style="border-bottom:2px solid #0f172a;padding-bottom:5px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px 0;page-break-after:avoid;break-after:avoid;">
-          <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0f172a;">Condições Comerciais</span>
-          <span style="font-size:10px;color:#64748b;">${proposta.is_pacote ? 'Pacote de Máquinas' : 'Fornecimento Unitário'}</span>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+            <span>Condições Comerciais</span>
+          </div>
+          <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">${proposta.is_pacote ? 'Pacote de Máquinas' : 'Fornecimento Unitário'}</span>
         </div>
 
         <!-- Regra 1: Bloco Câmbio/Cotação só aparece quando há conversão REAL (PONTO 1: 4 decimais e texto de fechamento) -->
@@ -1550,17 +1579,20 @@ export function buildPublicProposalHtml(
 
         ${
           filteredTerms.length > 0
-            ? `<div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
-                 <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">Termos de Fornecimento</span>
-                 <span style="font-size:10px;opacity:0.9;">Condições Gerais & Garantias</span>
+            ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                 <div style="display:flex;align-items:center;gap:8px;">
+                   <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+                   <span>Termos de Fornecimento</span>
+                 </div>
+                 <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Condições Gerais & Garantias</span>
                </div>
                <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
                  ${filteredTerms
                    .map(
                      ([lbl, val]) => `
                    <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                     <div class="term-title" style="display:block;font-size:11px;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(lbl)}</div>
-                     <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:11px;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(val)}</div>
+                     <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(lbl)}</div>
+                     <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(val)}</div>
                    </div>`,
                    )
                    .join('')}
@@ -1571,9 +1603,12 @@ export function buildPublicProposalHtml(
         ${
           validCamposAdicionais.length > 0
             ? `<div style="margin-bottom:16px;">
-                 <div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px 0;-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid;">
-                   <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">Informações Adicionais</span>
-                   <span style="font-size:10px;opacity:0.9;">Campos Específicos da Proposta</span>
+                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                   <div style="display:flex;align-items:center;gap:8px;">
+                     <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+                     <span>Informações Adicionais</span>
+                   </div>
+                   <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Campos Específicos da Proposta</span>
                  </div>
                  <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
                    ${validCamposAdicionais
@@ -1582,8 +1617,8 @@ export function buildPublicProposalHtml(
                        const fieldVal = field.conteudo != null ? field.conteudo : field.valor
                        return `
                      <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                       <div class="term-title" style="display:block;font-size:11px;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(fieldTitle)}</div>
-                       <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:11px;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(fieldVal)}</div>
+                       <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(fieldTitle)}</div>
+                       <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(fieldVal)}</div>
                      </div>`
                      })
                      .join('')}
