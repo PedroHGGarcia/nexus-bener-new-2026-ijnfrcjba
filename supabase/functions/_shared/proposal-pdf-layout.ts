@@ -19,6 +19,7 @@
 
 import { calcComissaoServicosBener, TEXTO_COMISSAO_BENER_VERBATIM } from './pdf-builder.ts'
 import { renderRichContent, resolveDescricaoFontSizePdfNum } from './proposal-rich-text.ts'
+import { ProposalSectionCounter } from './proposal-section-numbering.ts'
 
 const PAGE_W = 595.28
 const PAGE_H = 841.89

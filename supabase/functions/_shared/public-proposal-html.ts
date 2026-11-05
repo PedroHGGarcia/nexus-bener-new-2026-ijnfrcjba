@@ -5,6 +5,7 @@
 
 import { escapeHtml } from './escape-html.ts'
 import { calcComissaoServicosBener, TEXTO_COMISSAO_BENER_VERBATIM } from './pdf-builder.ts'
+import { ProposalSectionCounter } from './proposal-section-numbering.ts'
 const esc = escapeHtml
 
 export function normalizeMoedaCode(raw?: string | null): string {
@@ -341,6 +342,7 @@ export function buildPublicProposalHtml(
   logoUrlOverride?: string | null,
 ): string {
   const c = proposta.clientes
+  const sectionCounter = new ProposalSectionCounter()
 
   // Normalização de Moeda (Regras 1 e 2)
   const moedaProp = normalizeMoedaCode(proposta.moeda || 'BRL')
@@ -1165,7 +1167,7 @@ export function buildPublicProposalHtml(
         <div style="margin-bottom:12px;">
           <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
             <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-            <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
+            <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">${sectionCounter.nextLevel1('Especificações Técnicas')}</span>
           </div>
           <div class="term-desc-content" style="display:block;width:100%;font-size:${primaryDescFontSize};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme catálogo e especificações técnicas de fábrica.')}</div>
         </div>
@@ -1175,7 +1177,7 @@ export function buildPublicProposalHtml(
             ? `<div style="margin-bottom:12px;">
                  <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                    <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Características Construtivas</span>
+                   <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">${sectionCounter.nextLevel1('Características Construtivas')}</span>
                  </div>
                  <div class="term-desc-content" style="display:block;width:100%;font-size:${primaryDescFontSize};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao.caracteristicas_construtivas)}</div>
                </div>`
@@ -1187,7 +1189,7 @@ export function buildPublicProposalHtml(
             ? `<div style="margin-bottom:12px;">
                  <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                    <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Standards Inclusos</span>
+                   <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">${sectionCounter.nextLevel1('Acessórios Standards Inclusos')}</span>
                  </div>
                  <div class="term-desc-content" style="display:block;width:100%;font-size:${primaryDescFontSize};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao.acessorios_standards)}</div>
                </div>`
@@ -1208,16 +1210,13 @@ export function buildPublicProposalHtml(
               a.inclusao === undefined ||
               a.inclusao === null,
           )
-          const naoInclusos = filteredAcc.filter(
-            (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
-          )
           let out = ''
 
           if (inclusos.length > 0) {
             out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
               <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                 <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-                <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Inclusos no Preço</span>
+                <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">${sectionCounter.nextLevel1('Acessórios Opcionais Inclusos no Preço')}</span>
               </div>
               <ul style="list-style:none;padding:0;margin:0;font-size:9.5pt;line-height:1.45;color:#0f172a;font-weight:500;">
                 ${inclusos
@@ -1230,32 +1229,13 @@ export function buildPublicProposalHtml(
             </div>`
           }
 
-          if (naoInclusos.length > 0) {
-            out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-              <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-                <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Não Inclusos no Preço</span>
-              </div>
-              <ul style="list-style:none;padding:0;margin:0;font-size:9.5pt;line-height:1.45;color:#0f172a;font-weight:500;">
-                ${naoInclusos
-                  .map((a) => {
-                    const itemMoeda = normalizeMoedaCode(a.moeda || moedaProp)
-                    const valFmt =
-                      a.valor != null ? formatCurrencyByMoeda(a.valor, itemMoeda) : null
-                    return `<li style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px;"><div style="display:flex;align-items:baseline;gap:6px;"><span style="color:#0b3c26;font-weight:bold;">•</span><span>${a.quantidade ? `${a.quantidade}x ` : ''}${esc(a.nome || '—')}</span></div>${valFmt ? `<span style="font-weight:bold;color:#0f172a;white-space:nowrap;">${valFmt}</span>` : ''}</li>`
-                  })
-                  .join('')}
-              </ul>
-            </div>`
-          }
-
           return out
         })()}
 
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-            <span>Condições Comerciais</span>
+            <span>${sectionCounter.nextLevel1('Condições Comerciais')}</span>
           </div>
           <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">${proposta.is_pacote ? 'Pacote de Máquinas' : 'Fornecimento Unitário'}</span>
         </div>
@@ -1587,12 +1567,39 @@ export function buildPublicProposalHtml(
           `
         })()}
 
+        ${(() => {
+          const rawAcc = Array.isArray(proposta.acessorios_proposta)
+            ? (proposta.acessorios_proposta as any[])
+            : []
+          const filteredAcc = rawAcc.filter((a) => a && a.inclusao !== 'nao_exibir')
+          const naoInclusos = filteredAcc.filter(
+            (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
+          )
+          if (naoInclusos.length === 0) return ''
+          return `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
+              <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+                <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">${sectionCounter.nextLevel1('Acessórios Opcionais Não Inclusos no Preço Acima')}</span>
+              </div>
+              <ul style="list-style:none;padding:0;margin:0;font-size:9.5pt;line-height:1.45;color:#0f172a;font-weight:500;">
+                ${naoInclusos
+                  .map((a) => {
+                    const itemMoeda = normalizeMoedaCode(a.moeda || moedaProp)
+                    const valFmt =
+                      a.valor != null ? formatCurrencyByMoeda(a.valor, itemMoeda) : null
+                    return `<li style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px;"><div style="display:flex;align-items:baseline;gap:6px;"><span style="color:#0b3c26;font-weight:bold;">•</span><span>${a.quantidade ? `${a.quantidade}x ` : ''}${esc(a.nome || '—')}</span></div>${valFmt ? `<span style="font-weight:bold;color:#0f172a;white-space:nowrap;">${valFmt}</span>` : ''}</li>`
+                  })
+                  .join('')}
+              </ul>
+            </div>`
+        })()}
+
         ${
           filteredTerms.length > 0
             ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                  <div style="display:flex;align-items:center;gap:8px;">
                    <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-                   <span>Termos de Fornecimento</span>
+                   <span>${sectionCounter.nextLevel1('Termos de Fornecimento')}</span>
                  </div>
                  <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Condições Gerais & Garantias</span>
                </div>
@@ -1601,7 +1608,7 @@ export function buildPublicProposalHtml(
                    .map(
                      ([lbl, val]) => `
                    <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                     <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(lbl)}</div>
+                     <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(sectionCounter.nextLevel2(lbl))}</div>
                      <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(val)}</div>
                    </div>`,
                    )
@@ -1616,7 +1623,7 @@ export function buildPublicProposalHtml(
                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                    <div style="display:flex;align-items:center;gap:8px;">
                      <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-                     <span>Informações Adicionais</span>
+                     <span>${sectionCounter.nextLevel1('Informações Adicionais')}</span>
                    </div>
                    <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Campos Específicos da Proposta</span>
                  </div>
@@ -1627,7 +1634,7 @@ export function buildPublicProposalHtml(
                        const fieldVal = field.conteudo != null ? field.conteudo : field.valor
                        return `
                      <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                       <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(fieldTitle)}</div>
+                       <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(sectionCounter.nextLevel2(fieldTitle))}</div>
                        <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(fieldVal)}</div>
                      </div>`
                      })
