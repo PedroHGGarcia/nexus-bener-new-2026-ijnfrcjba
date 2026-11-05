@@ -1157,7 +1157,7 @@ export function buildPublicProposalHtml(
             <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
             <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
           </div>
-          <div style="font-size:9.5pt;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme catálogo e especificações técnicas de fábrica.')}</div>
+          <div class="term-desc-content" style="display:block;width:100%;font-size:9.5pt;font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme catálogo e especificações técnicas de fábrica.')}</div>
         </div>
 
         ${
@@ -1167,7 +1167,7 @@ export function buildPublicProposalHtml(
                    <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
                    <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Características Construtivas</span>
                  </div>
-                 <div style="font-size:9.5pt;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao.caracteristicas_construtivas)}</div>
+                 <div class="term-desc-content" style="display:block;width:100%;font-size:9.5pt;font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao.caracteristicas_construtivas)}</div>
                </div>`
             : ''
         }
@@ -1179,7 +1179,7 @@ export function buildPublicProposalHtml(
                    <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
                    <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Standards Inclusos</span>
                  </div>
-                 <div style="font-size:9.5pt;white-space:pre-wrap;line-height:1.45;color:#1e293b;padding-left:12px;">${renderBulletList(primaryVersao.acessorios_standards)}</div>
+                 <div class="term-desc-content" style="display:block;width:100%;font-size:9.5pt;font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao.acessorios_standards)}</div>
                </div>`
             : ''
         }
@@ -1209,7 +1209,7 @@ export function buildPublicProposalHtml(
                 <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
                 <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Inclusos no Preço</span>
               </div>
-              <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:9.5pt;line-height:1.55;color:#1e293b;">
+              <ul style="list-style:none;padding:0;margin:0;font-size:9.5pt;line-height:1.45;color:#0f172a;font-weight:500;">
                 ${inclusos
                   .map(
                     (a) =>
@@ -1226,7 +1226,7 @@ export function buildPublicProposalHtml(
                 <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
                 <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Opcionais Não Inclusos no Preço</span>
               </div>
-              <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:9.5pt;line-height:1.55;color:#1e293b;">
+              <ul style="list-style:none;padding:0;margin:0;font-size:9.5pt;line-height:1.45;color:#0f172a;font-weight:500;">
                 ${naoInclusos
                   .map((a) => {
                     const itemMoeda = normalizeMoedaCode(a.moeda || moedaProp)

@@ -103,20 +103,26 @@ export function EquipmentDetailsSection({ proposal }: Props) {
               </div>
 
               {v?.especificacoes_tecnicas && (
-                <div className="mt-2 text-xs text-slate-700">
-                  <strong className="block mb-1">Especificações Técnicas:</strong>
+                <div className="mt-2 w-full break-words text-[12.7px] font-medium leading-[1.45] text-[#0f172a]">
+                  <strong className="mb-1 block text-[14px] font-bold uppercase tracking-[0.5px] text-[#0b3c26]">
+                    Especificações Técnicas:
+                  </strong>
                   <TechnicalDataDisplay content={v.especificacoes_tecnicas} compact />
                 </div>
               )}
               {v?.caracteristicas_construtivas && (
-                <div className="mt-2 text-xs text-slate-700">
-                  <strong className="block mb-1">Características Construtivas:</strong>
+                <div className="mt-2 w-full break-words text-[12.7px] font-medium leading-[1.45] text-[#0f172a]">
+                  <strong className="mb-1 block text-[14px] font-bold uppercase tracking-[0.5px] text-[#0b3c26]">
+                    Características Construtivas:
+                  </strong>
                   <TechnicalDataDisplay content={v.caracteristicas_construtivas} compact />
                 </div>
               )}
               {v?.acessorios_standards && (
-                <div className="mt-2 text-xs text-slate-700">
-                  <strong className="block mb-1">Acessórios Standards:</strong>
+                <div className="mt-2 w-full break-words text-[12.7px] font-medium leading-[1.45] text-[#0f172a]">
+                  <strong className="mb-1 block text-[14px] font-bold uppercase tracking-[0.5px] text-[#0b3c26]">
+                    Acessórios Standards:
+                  </strong>
                   <TechnicalDataDisplay content={v.acessorios_standards} compact />
                 </div>
               )}
