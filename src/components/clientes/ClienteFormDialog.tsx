@@ -41,7 +41,7 @@ interface Props {
   onOpenChange: (open: boolean) => void
   editing: Cliente | null
   onSaved: (cliente?: Cliente) => void
-  defaultTab?: 'principais' | 'contato' | 'endereco' | 'contatos_multiplos'
+  defaultTab?: 'principais' | 'endereco' | 'contatos_multiplos'
 }
 
 function emptyForm(): ClienteFormValues {
@@ -503,7 +503,17 @@ export function ClienteFormDialog({
     }
 
     setErrors({})
-    const values = result.data
+    const values = { ...result.data }
+
+    // Sincronizar dados do contato legado com o contato principal de contatosList
+    const principalContato =
+      contatosList.find((c) => c.is_principal) || contatosList[0]
+    if (principalContato) {
+      if (principalContato.nome?.trim()) values.contato = principalContato.nome.trim()
+      if (principalContato.telefone?.trim()) values.telefone = principalContato.telefone.trim()
+      if (principalContato.celular?.trim()) values.celular = principalContato.celular.trim()
+      if (principalContato.email?.trim()) values.email = principalContato.email.trim()
+    }
 
     if (values.documento) {
       const isDup = await checkDocumentoDuplicate(values.documento, editing?.id)
@@ -564,9 +574,8 @@ export function ClienteFormDialog({
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid grid-cols-4 w-full mb-4">
+            <TabsList className="grid grid-cols-3 w-full mb-4">
               <TabsTrigger value="principais">Dados Principais</TabsTrigger>
-              <TabsTrigger value="contato">Contato</TabsTrigger>
               <TabsTrigger value="endereco">Endereço</TabsTrigger>
               <TabsTrigger value="contatos_multiplos" className="gap-1.5">
                 Contatos ({contatosList.length})
@@ -708,105 +717,6 @@ export function ClienteFormDialog({
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   Anotação prévia sobre o modelo ou tipo de máquina que o cliente possui interesse.
                 </p>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="contato" className="space-y-3">
-              <div>
-                <div className="flex items-center justify-between">
-                  <Label>Pessoa de Contato</Label>
-                  {baseAntigaFields.contato && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                      <Database className="w-2.5 h-2.5" /> Base Bener
-                    </span>
-                  )}
-                </div>
-                <Input
-                  value={form.contato}
-                  onChange={(e) => {
-                    setField('contato', e.target.value)
-                    setBaseAntigaFields((prev) => ({ ...prev, contato: false }))
-                  }}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <Label>Telefone</Label>
-                    {baseAntigaFields.telefone && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                        <Database className="w-2.5 h-2.5" /> Base Bener
-                      </span>
-                    )}
-                  </div>
-                  <Input
-                    value={form.telefone}
-                    onChange={(e) => {
-                      const masked = formatPhoneBR(e.target.value)
-                      setField('telefone', masked)
-                      setBaseAntigaFields((prev) => ({ ...prev, telefone: false }))
-                    }}
-                    placeholder="(00) 0000-0000"
-                    maxLength={15}
-                  />
-                </div>
-                <div>
-                  <Label>Telefone 2</Label>
-                  <Input
-                    value={form.telefone_2}
-                    onChange={(e) => setField('telefone_2', formatPhoneBR(e.target.value))}
-                    placeholder="(00) 0000-0000"
-                    maxLength={15}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Telefone 3</Label>
-                  <Input
-                    value={form.telefone_3}
-                    onChange={(e) => setField('telefone_3', formatPhoneBR(e.target.value))}
-                    placeholder="(00) 0000-0000"
-                    maxLength={15}
-                  />
-                </div>
-                <div>
-                  <Label>Celular</Label>
-                  <Input
-                    value={form.celular}
-                    onChange={(e) => setField('celular', formatPhoneBR(e.target.value))}
-                    placeholder="(00) 90000-0000"
-                    maxLength={15}
-                  />
-                </div>
-              </div>{' '}
-              <div>
-                <div className="flex items-center justify-between">
-                  <Label>E-mail</Label>
-                  {baseAntigaFields.email && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
-                      <Database className="w-2.5 h-2.5" /> Base Bener
-                    </span>
-                  )}
-                </div>
-                <Input
-                  value={form.email}
-                  onChange={(e) => {
-                    setField('email', e.target.value)
-                    setBaseAntigaFields((prev) => ({ ...prev, email: false }))
-                  }}
-                />
-                {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
-              </div>
-              <div>
-                <Label>E-mail Fiscal</Label>
-                <Input
-                  value={form.email_fiscal}
-                  onChange={(e) => setField('email_fiscal', e.target.value)}
-                />
-                {errors.email_fiscal && (
-                  <p className="text-xs text-destructive mt-1">{errors.email_fiscal}</p>
-                )}
               </div>
             </TabsContent>
 

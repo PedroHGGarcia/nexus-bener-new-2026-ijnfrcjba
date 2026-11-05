@@ -278,7 +278,7 @@ export default function PropostasCriadasPage() {
       ) : (
         <>
           <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
-            <Table className="responsive-table min-w-[1240px]">
+            <Table className="min-w-[1060px]">
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead className="w-[185px] min-w-[170px] whitespace-nowrap">

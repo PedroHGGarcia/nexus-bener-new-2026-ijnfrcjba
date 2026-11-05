@@ -16,6 +16,7 @@ import {
   isCommercialFieldEmpty,
 } from '@/lib/paragraphs'
 import { TechnicalDataDisplay } from '@/components/produtos/TechnicalDataDisplay'
+import { resolveDescricaoFontSizeScreen } from '@/lib/descricao-tamanho'
 import benerLogo from '@/assets/image-f448b.png'
 
 interface Props {
@@ -1015,6 +1016,9 @@ export function ProposalDocument({ proposal }: Props) {
                             )
                             const tipoDesc =
                               item.tipo_proposta || (idx === 0 ? proposal.tipo_proposta : null)
+                            const itemDescFontSize = resolveDescricaoFontSizeScreen(
+                              (itemVersao as any)?.descricao_tamanho,
+                            )
                             const itemSpecs =
                               itemVersao?.especificacoes_tecnicas ||
                               (idx === 0
@@ -1114,7 +1118,10 @@ export function ProposalDocument({ proposal }: Props) {
                                     <h4 className="font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
                                       Configuração Standard
                                     </h4>
-                                    <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
+                                    <div
+                                      className="font-medium text-[#0f172a] leading-[1.45] break-words"
+                                      style={{ fontSize: itemDescFontSize }}
+                                    >
                                       <TechnicalDataDisplay content={itemAcessStandards} compact />
                                     </div>
                                   </div>
@@ -1125,7 +1132,10 @@ export function ProposalDocument({ proposal }: Props) {
                                     <h4 className="font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
                                       Características Construtivas
                                     </h4>
-                                    <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
+                                    <div
+                                      className="font-medium text-[#0f172a] leading-[1.45] break-words"
+                                      style={{ fontSize: itemDescFontSize }}
+                                    >
                                       <TechnicalDataDisplay content={itemCaract} compact />
                                     </div>
                                   </div>
@@ -1136,7 +1146,10 @@ export function ProposalDocument({ proposal }: Props) {
                                     <h4 className="font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
                                       Especificações Técnicas
                                     </h4>
-                                    <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
+                                    <div
+                                      className="font-medium text-[#0f172a] leading-[1.45] break-words"
+                                      style={{ fontSize: itemDescFontSize }}
+                                    >
                                       <TechnicalDataDisplay content={itemSpecs} compact />
                                     </div>
                                   </div>
@@ -1218,49 +1231,67 @@ export function ProposalDocument({ proposal }: Props) {
                     ) : (
                       /* Modo Padrão (máquina única): Standard + Características + Especificações + Acessórios Globais */
                       <section className="proposal-section mb-4 text-xs break-inside-avoid print:break-inside-auto">
-                        {primaryVersao?.acessorios_standards && (
-                          <div className="mb-3.5 break-inside-avoid">
-                            <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
-                              Configuração Standard
-                            </h3>
-                            <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
-                              <TechnicalDataDisplay
-                                content={primaryVersao.acessorios_standards}
-                                compact
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {primaryVersao?.caracteristicas_construtivas && (
-                          <div className="mb-3.5 break-inside-avoid">
-                            <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
-                              Características Construtivas
-                            </h3>
-                            <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
-                              <TechnicalDataDisplay
-                                content={primaryVersao.caracteristicas_construtivas}
-                                compact
-                              />
-                            </div>
-                          </div>
-                        )}
-
                         {(() => {
-                          const desc =
-                            primaryVersao?.especificacoes_tecnicas ||
-                            proposal.especificacoes_tecnicas ||
-                            proposal.descricao_proposta
-                          if (!desc) return null
+                          const primaryDescFontSize = resolveDescricaoFontSizeScreen(
+                            (primaryVersao as any)?.descricao_tamanho,
+                          )
                           return (
-                            <div className="mb-3.5 break-inside-avoid">
-                              <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
-                                Especificações Técnicas
-                              </h3>
-                              <div className="text-[9.5pt] font-medium text-[#0f172a] leading-[1.45] break-words">
-                                <TechnicalDataDisplay content={desc} compact />
-                              </div>
-                            </div>
+                            <>
+                              {primaryVersao?.acessorios_standards && (
+                                <div className="mb-3.5 break-inside-avoid">
+                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                                    Configuração Standard
+                                  </h3>
+                                  <div
+                                    className="font-medium text-[#0f172a] leading-[1.45] break-words"
+                                    style={{ fontSize: primaryDescFontSize }}
+                                  >
+                                    <TechnicalDataDisplay
+                                      content={primaryVersao.acessorios_standards}
+                                      compact
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              {primaryVersao?.caracteristicas_construtivas && (
+                                <div className="mb-3.5 break-inside-avoid">
+                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                                    Características Construtivas
+                                  </h3>
+                                  <div
+                                    className="font-medium text-[#0f172a] leading-[1.45] break-words"
+                                    style={{ fontSize: primaryDescFontSize }}
+                                  >
+                                    <TechnicalDataDisplay
+                                      content={primaryVersao.caracteristicas_construtivas}
+                                      compact
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              {(() => {
+                                const desc =
+                                  primaryVersao?.especificacoes_tecnicas ||
+                                  proposal.especificacoes_tecnicas ||
+                                  proposal.descricao_proposta
+                                if (!desc) return null
+                                return (
+                                  <div className="mb-3.5 break-inside-avoid">
+                                    <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                                      Especificações Técnicas
+                                    </h3>
+                                    <div
+                                      className="font-medium text-[#0f172a] leading-[1.45] break-words"
+                                      style={{ fontSize: primaryDescFontSize }}
+                                    >
+                                      <TechnicalDataDisplay content={desc} compact />
+                                    </div>
+                                  </div>
+                                )
+                              })()}
+                            </>
                           )
                         })()}
 

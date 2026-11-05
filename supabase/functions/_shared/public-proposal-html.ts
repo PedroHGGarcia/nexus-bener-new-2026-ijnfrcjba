@@ -40,6 +40,15 @@ export function formatCurrencyByMoeda(
   }
 }
 
+export type DescricaoTamanho = 'pequeno' | 'padrao' | 'medio' | 'grande'
+
+export function resolveDescricaoFontSizePublicHtml(value: unknown): string {
+  if (value === 'pequeno') return '8.5pt'
+  if (value === 'medio') return '10.5pt'
+  if (value === 'grande') return '11.5pt'
+  return '9.5pt'
+}
+
 export function formatPrecoEspecialDiscountBadge(
   valorOriginal: number | null | undefined,
   precoEspecial: number | null | undefined,
@@ -353,6 +362,9 @@ export function buildPublicProposalHtml(
   const primaryFromSnapshot = dadosSnapshot?.primary_versao
   const primaryItem = (equipmentItems && equipmentItems[0]) || {}
   const primaryVersao = primaryFromSnapshot || primaryItem.versoes || proposta.versoes || {}
+  const primaryDescFontSize = resolveDescricaoFontSizePublicHtml(
+    primaryVersao?.descricao_tamanho,
+  )
 
   const machineTitle = (
     primaryVersao?.nome ||
@@ -1157,7 +1169,7 @@ export function buildPublicProposalHtml(
             <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
             <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Especificações Técnicas</span>
           </div>
-          <div class="term-desc-content" style="display:block;width:100%;font-size:9.5pt;font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme catálogo e especificações técnicas de fábrica.')}</div>
+          <div class="term-desc-content" style="display:block;width:100%;font-size:${primaryDescFontSize};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme catálogo e especificações técnicas de fábrica.')}</div>
         </div>
 
         ${
@@ -1167,7 +1179,7 @@ export function buildPublicProposalHtml(
                    <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
                    <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Características Construtivas</span>
                  </div>
-                 <div class="term-desc-content" style="display:block;width:100%;font-size:9.5pt;font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao.caracteristicas_construtivas)}</div>
+                 <div class="term-desc-content" style="display:block;width:100%;font-size:${primaryDescFontSize};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao.caracteristicas_construtivas)}</div>
                </div>`
             : ''
         }
@@ -1179,7 +1191,7 @@ export function buildPublicProposalHtml(
                    <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
                    <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">Acessórios Standards Inclusos</span>
                  </div>
-                 <div class="term-desc-content" style="display:block;width:100%;font-size:9.5pt;font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao.acessorios_standards)}</div>
+                 <div class="term-desc-content" style="display:block;width:100%;font-size:${primaryDescFontSize};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao.acessorios_standards)}</div>
                </div>`
             : ''
         }
