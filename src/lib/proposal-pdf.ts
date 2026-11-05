@@ -561,6 +561,8 @@ export function generatePropostaHtml(
                            : ''
                        }
                        ${(() => {
+                         // Em pacote, o bloco vale para todas as máquinas: renderiza só na primeira
+                         if (idx > 0) return ''
                          const tpObj =
                            tipoDesc && tiposPropostaMap
                              ? tiposPropostaMap[tipoDesc]

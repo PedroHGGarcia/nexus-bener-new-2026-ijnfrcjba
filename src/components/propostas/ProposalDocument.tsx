@@ -1223,8 +1223,10 @@ export function ProposalDocument({ proposal }: Props) {
                                   </div>
                                 )}
 
-                                {/* 4. DETALHES E CONDIÇÕES DO TIPO DE PROPOSTA DESTA MÁQUINA */}
+                                {/* 4. DETALHES E CONDIÇÕES DO TIPO DE PROPOSTA — uma única vez por pacote
+                                    (só na primeira máquina: o tipo de proposta é igual para todas) */}
                                 {(() => {
+                                  if (idx > 0) return null
                                   const itemTipoObj = tipoDesc ? tiposPropostaMap[tipoDesc] : null
                                   if (!itemTipoObj) return null
 
