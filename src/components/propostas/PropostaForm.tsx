@@ -241,6 +241,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
   const [loadingContatos, setLoadingContatos] = useState(false)
   const [contatoId, setContatoId] = useState<string | null>(editProposta?.contato_id || null)
   const [contatoDialogOpen, setContatoDialogOpen] = useState(false)
+  const [contatoAberto, setContatoAberto] = useState(false)
   const [clienteFormTab, setClienteFormTab] = useState<
     'principais' | 'contato' | 'endereco' | 'contatos_multiplos'
   >('principais')
@@ -1787,8 +1788,8 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       <Card>
         <CardContent className="p-5 space-y-4">
           <div className="space-y-4">
-            {/* Linha 1: Cliente + Contato da proposta (2 colunas em md+, empilha em telas estreitas) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Linha 1: Cliente (linha inteira) + contato da proposta recolhido logo abaixo */}
+            <div className="space-y-1">
               <div className="w-full min-w-0">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Cliente *
@@ -1801,6 +1802,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                         // Troca de cliente: limpa o contato imediatamente; o efeito de
                         // contatos recarrega a lista e pré-seleciona o principal do novo cliente.
                         setContatoId(null)
+                        setContatoAberto(false)
                         upd('cliente', v || '')
                       }}
                       placeholder="Selecione um cliente..."
@@ -1923,83 +1925,103 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                 </div>
               </div>
 
-              {/* Coluna 2: Contato da proposta */}
-              <div className="w-full min-w-0">
-                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Contato da proposta
-                </Label>
-                <div className="mt-1">
-                  {form.cliente && !loadingContatos && contatosCliente.length === 0 ? (
-                    <div className="h-10 px-3 flex items-center border rounded-md bg-muted/30 text-sm text-muted-foreground">
-                      Nenhum contato cadastrado
-                    </div>
-                  ) : (
-                    <SearchableCombobox
-                      value={contatoId}
-                      onChange={(v) => setContatoId(v)}
-                      placeholder={
-                        !form.cliente
-                          ? 'Selecione um cliente primeiro'
-                          : loadingContatos
-                            ? 'Carregando contatos...'
-                            : 'Selecione o contato...'
-                      }
-                      searchPlaceholder="Buscar contato por nome, cargo ou e-mail..."
-                      disabled={!form.cliente || loadingContatos}
-                      selectedLabel={contatosCliente.find((c) => c.id === contatoId)?.nome ?? null}
-                      fetchOptions={async (query) => {
-                        const q = query.trim().toLowerCase()
-                        const items = contatosCliente
-                          .filter((c) => {
-                            if (!q) return true
-                            return [c.nome, c.cargo, c.email].some((f) =>
-                              (f || '').toLowerCase().includes(q),
-                            )
-                          })
-                          .sort(
-                            (a, b) =>
-                              Number(b.is_principal) - Number(a.is_principal) ||
-                              a.nome.localeCompare(b.nome),
-                          )
-                          .map((c) => ({
-                            value: c.id,
-                            label: c.nome,
-                            sublabel: [
-                              c.is_principal ? 'Principal' : null,
-                              c.cargo || null,
-                              c.email || null,
-                            ]
-                              .filter(Boolean)
-                              .join(' • '),
-                          }))
-                        return { items, hasMore: false }
-                      }}
-                    />
-                  )}
-                </div>
-                {!loadingContatos && form.cliente && contatosCliente.length === 0 && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Cadastre um contato para vinculá-lo como destinatário da proposta.
-                  </p>
-                )}
-                {!loadingContatos && form.cliente && contatosCliente.length > 0 && !contatoId && (
-                  <p className="mt-1 text-xs text-destructive flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3 shrink-0" />
-                    Selecione o contato destinatário da proposta.
-                  </p>
-                )}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="mt-1 h-7 px-2 text-xs text-primary hover:text-primary hover:bg-primary/5 gap-1"
-                  disabled={!form.cliente}
-                  onClick={() => setContatoDialogOpen(true)}
+              {/* Contato da proposta: disclosure discreto, visível só com cliente selecionado */}
+              {form.cliente && (
+                <Collapsible
+                  open={contatoAberto}
+                  onOpenChange={setContatoAberto}
+                  className="w-full min-w-0"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  Adicionar contato
-                </Button>
-              </div>
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      aria-controls="contato-proposta-conteudo"
+                      aria-expanded={contatoAberto}
+                      className="flex w-full items-center justify-between rounded-md py-2 text-sm text-muted-foreground hover:text-foreground"
+                    >
+                      <span className="truncate text-left">
+                        Contato da proposta
+                        <span aria-hidden="true"> · </span>
+                        {loadingContatos
+                          ? 'Carregando contatos...'
+                          : (contatosCliente.find((c) => c.id === contatoId)?.nome ??
+                            (contatosCliente.length === 0
+                              ? 'Nenhum contato cadastrado'
+                              : 'Selecionar contato'))}
+                      </span>
+                      <ChevronDown
+                        className={cn(
+                          'w-4 h-4 shrink-0 transition-transform duration-200',
+                          contatoAberto && 'rotate-180',
+                        )}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent
+                    id="contato-proposta-conteudo"
+                    className="mt-1 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end"
+                  >
+                    {!loadingContatos && contatosCliente.length === 0 ? (
+                      <p className="text-sm text-muted-foreground sm:col-span-2">
+                        Nenhum contato cadastrado para este cliente.
+                      </p>
+                    ) : (
+                      <div className="min-w-0">
+                        <SearchableCombobox
+                          value={contatoId}
+                          onChange={(v) => setContatoId(v)}
+                          placeholder={
+                            loadingContatos ? 'Carregando contatos...' : 'Selecione o contato...'
+                          }
+                          searchPlaceholder="Buscar contato por nome, cargo ou e-mail..."
+                          disabled={loadingContatos}
+                          selectedLabel={
+                            contatosCliente.find((c) => c.id === contatoId)?.nome ?? null
+                          }
+                          fetchOptions={async (query) => {
+                            const q = query.trim().toLowerCase()
+                            const items = contatosCliente
+                              .filter((c) => {
+                                if (!q) return true
+                                return [c.nome, c.cargo, c.email].some((f) =>
+                                  (f || '').toLowerCase().includes(q),
+                                )
+                              })
+                              .sort(
+                                (a, b) =>
+                                  Number(b.is_principal) - Number(a.is_principal) ||
+                                  a.nome.localeCompare(b.nome),
+                              )
+                              .map((c) => ({
+                                value: c.id,
+                                label: c.nome,
+                                sublabel: [c.cargo || null, c.email || null]
+                                  .filter(Boolean)
+                                  .join(' • '),
+                              }))
+                            return { items, hasMore: false }
+                          }}
+                        />
+                      </div>
+                    )}
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 justify-self-start sm:justify-self-end text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+                      onClick={() => setContatoDialogOpen(true)}
+                    >
+                      Adicionar contato
+                    </Button>
+                    {!loadingContatos && contatosCliente.length > 0 && !contatoId && (
+                      <p className="text-xs text-destructive flex items-center gap-1 sm:col-span-2">
+                        <AlertCircle className="w-3 h-3 shrink-0" />
+                        Selecione o contato destinatário da proposta.
+                      </p>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
             </div>
 
             {/* Linha 2: Equipe Comercial com largura confortável em 3 colunas (responsivo: 1 col no mobile, 3 col a partir de md) */}
