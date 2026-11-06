@@ -2928,30 +2928,30 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
             {form.tem_preco_especial && (
               <div className="p-4 rounded-lg border border-[#0b3c26]/20 bg-[#0b3c26]/5 dark:bg-[#0b3c26]/10 space-y-2 animate-in fade-in-50 duration-200">
                 <div className="max-w-xs">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold text-[#0b3c26] dark:text-emerald-400">
-                      Preço Especial ({form.moeda}) *
-                    </Label>
+                  <Label className="text-xs font-semibold text-[#0b3c26] dark:text-emerald-400">
+                    Preço Especial ({form.moeda}) *
+                  </Label>
+                  <div className="flex items-end gap-2 mt-1">
+                    <FormattedNumberInput
+                      className="min-w-0 flex-1 font-bold text-[#0b3c26] border-[#0b3c26]/30 focus-visible:ring-[#0b3c26]"
+                      value={form.preco_especial || 0}
+                      onChange={(v) => upd('preco_especial', v)}
+                      prefix={
+                        form.moeda === 'USD'
+                          ? 'US$'
+                          : form.moeda === 'EUR'
+                            ? '€'
+                            : form.moeda === 'JPY'
+                              ? '¥'
+                              : 'R$'
+                      }
+                    />
                     {formatPrecoEspecialDiscountBadge(valorFinal, form.preco_especial) && (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#0b3c26] text-white">
+                      <span className="shrink-0 rounded-lg bg-[#0b3c26] px-3 py-2 text-sm font-bold text-white">
                         {formatPrecoEspecialDiscountBadge(valorFinal, form.preco_especial)}
                       </span>
                     )}
                   </div>
-                  <FormattedNumberInput
-                    className="mt-1 font-bold text-[#0b3c26] border-[#0b3c26]/30 focus-visible:ring-[#0b3c26]"
-                    value={form.preco_especial || 0}
-                    onChange={(v) => upd('preco_especial', v)}
-                    prefix={
-                      form.moeda === 'USD'
-                        ? 'US$'
-                        : form.moeda === 'EUR'
-                          ? '€'
-                          : form.moeda === 'JPY'
-                            ? '¥'
-                            : 'R$'
-                    }
-                  />
                   <p className="text-[11px] text-muted-foreground mt-1">
                     Na proposta gerada, o valor cheio ({fmtCurrency(valorFinal)}) será mostrado
                     cortado e este preço especial aparecerá abaixo em destaque
