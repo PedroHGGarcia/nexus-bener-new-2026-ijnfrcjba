@@ -33,6 +33,7 @@ import { insertProposta, uploadSignatureDataUrl } from '@/services/propostas'
 import { buildPropostaSnapshot } from '@/lib/proposal-snapshot'
 import { ResponsavelInternoSignatureCard } from '@/components/propostas/ResponsavelInternoSignatureCard'
 import { sendProposalEmail } from '@/services/proposal-email'
+import { generateProposalPdf } from '@/services/proposal-pdf'
 import { fetchVersoes } from '@/services/versoes'
 import { fetchTiposProposta } from '@/services/tipos-proposta'
 import { useGerenteCategoryRestriction } from '@/hooks/use-gerente-restriction'
@@ -687,6 +688,22 @@ export default function EmitirLicitacaoPage() {
         emails: notificationEmails,
         event: 'created',
       }).catch((e) => console.warn('n8n email trigger warning:', e))
+
+      // Gera e salva o PDF oficial no storage a partir do snapshot congelado.
+      // O download posterior usa o arquivo salvo (pdf_anexo), sem regerar.
+      generateProposalPdf(result.id)
+        .then((pdfResult) => {
+          if (pdfResult.ok && pdfResult.data?.pdfUrl) {
+            toast({ title: 'PDF gerado e salvo no storage.' })
+          } else if (!pdfResult.ok) {
+            toast({
+              title: 'Falha ao gerar PDF da proposta',
+              description: (pdfResult as { ok: false; error: string }).error,
+              variant: 'destructive',
+            })
+          }
+        })
+        .catch((e) => console.warn('Falha ao gerar PDF da proposta de licitação:', e))
 
       toast({
         title: 'Proposta de Licitação enviada com sucesso!',

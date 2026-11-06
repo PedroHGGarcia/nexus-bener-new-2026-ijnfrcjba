@@ -539,6 +539,11 @@ export default function PropostasCriadasPage() {
                                   return
                                 }
                                 url = r.data?.pdfUrl ?? null
+                                if (url) {
+                                  setData((prev) =>
+                                    prev.map((x) => (x.id === p.id ? { ...x, pdf_anexo: url } : x)),
+                                  )
+                                }
                               }
                               if (url) {
                                 window.open(url, '_blank')

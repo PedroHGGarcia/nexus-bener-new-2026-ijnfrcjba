@@ -137,6 +137,7 @@ export default function PropostaPdfPage() {
     if (!proposal) return
     try {
       const url = await getProposalPdfUrl(proposal.id, proposal.pdf_anexo)
+      setProposal({ ...proposal, pdf_anexo: url })
       window.open(url, '_blank')
     } catch (err) {
       toast({

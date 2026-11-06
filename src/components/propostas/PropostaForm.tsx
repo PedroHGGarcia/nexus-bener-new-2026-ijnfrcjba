@@ -56,6 +56,7 @@ import { ClienteFormDialog } from '@/components/clientes/ClienteFormDialog'
 import { ClienteContatoFormDialog } from '@/components/propostas/ClienteContatoFormDialog'
 import { toast } from '@/hooks/use-toast'
 import { insertProposta, createPropostaVersion, uploadSignatureDataUrl } from '@/services/propostas'
+import { generateProposalPdf } from '@/services/proposal-pdf'
 import { preOpenProposalPrintTab } from '@/lib/proposal-auto-open'
 import { buildPropostaSnapshot } from '@/lib/proposal-snapshot'
 import { ResponsavelInternoSignatureCard } from '@/components/propostas/ResponsavelInternoSignatureCard'
@@ -1539,6 +1540,20 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       )
 
       const notificationEmails = notificationEmailsClean
+
+      // Gera e salva o PDF oficial no storage a partir do snapshot congelado
+      // (itens_snapshot / dados_snapshot), não do catálogo atual.
+      generateProposalPdf(result.id)
+        .then((pdfResult) => {
+          if (!pdfResult.ok) {
+            toast({
+              title: 'Falha ao gerar PDF da proposta',
+              description: (pdfResult as { ok: false; error: string }).error,
+              variant: 'destructive',
+            })
+          }
+        })
+        .catch((e) => console.warn('Falha ao gerar PDF da proposta:', e))
 
       toast({
         title: editProposta ? 'Nova versão criada com sucesso!' : 'Proposta emitida com sucesso!',

@@ -419,6 +419,8 @@ export async function createPropostaVersion(
     user: userName ?? 'Sistema',
     data_alteracao_status: new Date().toISOString(),
     ultimo_usuario_status: userName ?? 'Sistema',
+    // A nova versão começa sem PDF salvo: o PDF da versão anterior não é válido.
+    pdf_anexo: null,
   }
 
   const { data, error } = await supabase

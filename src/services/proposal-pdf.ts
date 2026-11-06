@@ -61,9 +61,26 @@ export async function generateProposalPdf(
     return { ok: false, error: data.error }
   }
 
+  const pdfUrl: string | null = data?.pdf_url ?? null
+
+  // Garante que a referência do PDF fique gravada no registro da proposta
+  // (o edge function grava também, isto é uma rede de segurança caso a
+  // atualização no servidor tenha falhado).
+  if (pdfUrl) {
+    try {
+      const { error: pdfErr } = await supabase
+        .from('propostas')
+        .update({ pdf_anexo: pdfUrl })
+        .eq('id', propostaId)
+      if (pdfErr) throw pdfErr
+    } catch (e) {
+      console.warn('Não foi possível salvar pdf_anexo na proposta:', e)
+    }
+  }
+
   return {
     ok: true,
-    data: { html: data?.html ?? '', pdfUrl: data?.pdf_url ?? null },
+    data: { html: data?.html ?? '', pdfUrl },
   }
 }
 
