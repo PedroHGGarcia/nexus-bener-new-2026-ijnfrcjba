@@ -61,6 +61,7 @@ const ImportarVersoesPage = lazy(() => import('./pages/ImportarVersoesPage'))
 const ImportarImagensVersoesPage = lazy(() => import('./pages/ImportarImagensVersoesPage'))
 const AlterarPrecosPage = lazy(() => import('./pages/produtos/AlterarPrecosPage'))
 const ProdutosDashboardPage = lazy(() => import('./pages/produtos/ProdutosDashboardPage'))
+const ControleQualidadePage = lazy(() => import('./pages/produtos/ControleQualidadePage'))
 const QuarentenaMaquinasPage = lazy(() => import('./pages/produtos/QuarentenaMaquinasPage'))
 const HistoricoAlteracoesCatalogoPage = lazy(
   () => import('./pages/produtos/HistoricoAlteracoesCatalogoPage'),
@@ -324,6 +325,14 @@ const App = () => (
                     }
                   />
                   <Route path="/produtos/dashboard" element={<ProdutosDashboardPage />} />
+                  <Route
+                    path="/produtos/qualidade"
+                    element={
+                      <RoleGuard disallowedRole={['Vendedor', 'Representante']}>
+                        <ControleQualidadePage />
+                      </RoleGuard>
+                    }
+                  />
                   <Route
                     path="/produtos/quarentena"
                     element={

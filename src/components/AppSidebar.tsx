@@ -151,6 +151,12 @@ const SECTIONS: NavSection[] = [
       { key: 'produtos.list', label: 'Lista de Versões', path: '/produtos' },
       { key: 'produtos.dashboard', label: 'Dashboard Produtos', path: '/produtos/dashboard' },
       {
+        key: 'produtos.qualidade',
+        label: 'Controle de Qualidade',
+        path: '/produtos/qualidade',
+        hideForVendedores: true,
+      },
+      {
         key: 'produtos.precos',
         label: 'Alterar Preços',
         path: '/produtos/alterar-precos',
