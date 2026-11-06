@@ -469,7 +469,7 @@ export function generatePropostaHtml(
 
           if (inclusos.length > 0) {
             out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-             <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(sectionCounter.nextLevel1('Acessórios Opcionais Inclusos no Preço'))}</div>
+             <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(sectionCounter.nextLevel1('Acessórios Opcionais Inclusos no Preço abaixo'))}</div>
               <ul style="list-style:none;padding:0;margin:0;font-size:9.5pt;line-height:1.45;color:#0f172a;font-weight:500;">
                 ${inclusos
                   .map(

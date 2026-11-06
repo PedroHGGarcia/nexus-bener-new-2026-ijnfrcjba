@@ -1001,7 +1001,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     }
     doc.y += 6
   }
-  drawAccList('Acessórios Opcionais Inclusos no Preço', inclusos, false)
+  drawAccList('Acessórios Opcionais Inclusos no Preço abaixo', inclusos, false)
 
   // ===== COMMERCIAL TABLE =====
   ensureSpace(120)

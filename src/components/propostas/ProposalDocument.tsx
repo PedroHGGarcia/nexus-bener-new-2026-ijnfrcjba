@@ -1163,7 +1163,7 @@ export function ProposalDocument({ proposal }: Props) {
                                     {accInclusos.length > 0 && (
                                       <div>
                                         <h4 className="font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
-                                          Acessórios Opcionais Inclusos no Preço
+                                          Acessórios Opcionais Inclusos no Preço abaixo
                                         </h4>
                                         <ul className="leading-[1.45] text-[9.5pt] font-medium text-[#0f172a] space-y-0.5 break-words">
                                           {accInclusos.map((a, accIdx) => (
@@ -1293,7 +1293,7 @@ export function ProposalDocument({ proposal }: Props) {
                             <div className="mb-3.5 break-inside-avoid">
                               <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
                                 {sectionCounter.nextLevel1(
-                                  'Acessórios Opcionais Inclusos no Preço',
+                                  'Acessórios Opcionais Inclusos no Preço abaixo',
                                 )}
                               </h3>
                               <ul className="leading-[1.45] text-[9.5pt] font-medium text-[#0f172a] space-y-1 break-words">

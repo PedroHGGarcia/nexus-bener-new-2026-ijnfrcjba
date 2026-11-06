@@ -263,7 +263,7 @@ function buildEquipmentSection(
         acessoriosHtml += `<div class="equipment-accessories" style="margin-top:10px;padding-top:8px;border-top:1px solid #e2e8f0;page-break-inside:avoid;break-inside:avoid;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
             <span style="display:inline-block;width:3px;height:12px;background:#0b3c26;border-radius:1px;"></span>
-            <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;">Acessórios Opcionais Inclusos no Preço</span>
+            <span style="font-size:10px;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;">Acessórios Opcionais Inclusos no Preço abaixo</span>
           </div>
           <ul style="list-style:none;padding:0 0 0 9px;margin:2px 0 0 0;font-size:11px;line-height:1.55;color:#1e293b;">
             ${inclusosPacote
@@ -1320,7 +1320,7 @@ export function buildProposalPdfHtml(
       out += `<div class="spec-block">
         <div class="spec-block-heading">
           <span class="spec-block-bar"></span>
-          <span>${escapeHtml(sectionCounter.nextLevel1('Acessórios Opcionais Inclusos no Preço'))}</span>
+          <span>${escapeHtml(sectionCounter.nextLevel1('Acessórios Opcionais Inclusos no Preço abaixo'))}</span>
         </div>
         <ul style="list-style:none;padding:0 0 0 12px;margin:0;font-size:11px;line-height:1.55;color:#1e293b;">
           ${inclusos

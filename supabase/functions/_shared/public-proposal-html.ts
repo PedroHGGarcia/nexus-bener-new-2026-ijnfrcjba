@@ -1216,7 +1216,7 @@ export function buildPublicProposalHtml(
             out += `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
               <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
                 <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-                <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">${sectionCounter.nextLevel1('Acessórios Opcionais Inclusos no Preço')}</span>
+                <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">${sectionCounter.nextLevel1('Acessórios Opcionais Inclusos no Preço abaixo')}</span>
               </div>
               <ul style="list-style:none;padding:0;margin:0;font-size:9.5pt;line-height:1.45;color:#0f172a;font-weight:500;">
                 ${inclusos
