@@ -710,41 +710,24 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       'EQUIPAMENTO INDUSTRIAL',
   ).toUpperCase()
 
+  // Concatenação de garantias (garantia principal + garantia de acessórios/cobertura)
+  const combinedGarantia = [p.garantia_acessorios || tp?.garantia, p.cobertura_garantia]
+    .filter((v) => v && String(v).trim())
+    .join('\n\n')
+
   const terms: Array<[string, string]> = []
   const addTerm = (label: string, val: unknown) => {
     const s = val == null ? '' : String(val)
     if (s.trim()) terms.push([label, s])
   }
-  addTerm('Condições de Pagamento', p.condicoes_pagamento || tp?.condicoes_pagamento)
+  // Ajuste 7: Subtítulos dos Termos numerados na ordem exata 7.1 a 7.7
   addTerm('Prazo de Entrega', p.prazo_entrega || tp?.prazo_entrega)
-  addTerm('Validade da Oferta', p.validade_oferta || tp?.validade_oferta)
-  addTerm('Cobertura de Garantia', p.cobertura_garantia)
-  addTerm('Garantia de Acessórios', p.garantia_acessorios || tp?.garantia)
-  addTerm('Normas Aplicáveis', p.normas_aplicaveis)
-  addTerm('Normas de Segurança', p.normas_seguranca)
-  addTerm('Certificações', p.certificacoes)
-  addTerm('Certificações de Segurança', p.certificacoes_seguranca)
+  addTerm('Condições de Pagamento', p.condicoes_pagamento || tp?.condicoes_pagamento)
+  addTerm('Garantia', combinedGarantia || null)
   addTerm('Assistência Técnica', p.assistencia_tecnica_detalhada || tp?.assistencia_tecnica)
-  addTerm('Critérios de Aceitação', p.criterios_aceitacao)
-  addTerm('Materiais Utilizados', p.materiais_utilizados)
-  addTerm('Transporte/Seguro', p.transporte_seguro || tp?.transporte_seguro)
-  addTerm(
-    'Imposto IPI',
-    p.imposto_ipi != null && p.imposto_ipi !== 0
-      ? `${p.imposto_ipi}%`
-      : tp?.imposto_ipi
-        ? `${tp.imposto_ipi}%`
-        : null,
-  )
-  addTerm(
-    'Imposto ICMS',
-    p.imposto_icms != null && p.imposto_icms !== 0
-      ? `${p.imposto_icms}%`
-      : tp?.imposto_icmi
-        ? `${tp.imposto_icms}%`
-        : null,
-  )
   addTerm('Treinamento Técnico', p.treinamento_tecnico || tp?.treinamento_tecnico)
+  addTerm('Transporte / Seguro', p.transporte_seguro || tp?.transporte_seguro)
+  addTerm('Validade da Oferta', p.validade_oferta || tp?.validade_oferta)
 
   const hasAdditionalContent =
     Boolean(
@@ -789,11 +772,9 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     })
 
     // Sigla | N° Oferta | Mês | Ano box (right-aligned)
-    // Encostado no bloco empresa/data: a BASE do quadro alinha com a BASE da
-    // logo (y0 + 77) — a logo cobre a altura dos dois blocos à direita, como
-    // no print de referência. Sem vão grande entre a data e o quadro.
-    const boxW = 270
-    const colW = [50, 130, 45, 45]
+    // Ajuste 3: Tabela Sigla/Nº Oferta/Mês/Ano mais larga (~420px / 320pt)
+    const boxW = 320
+    const colW = [60, 160, 50, 50]
     const boxX = PAGE_W - M_RIGHT - boxW
     const rowH = 15
     const boxY = y0 + 77 - rowH * 2
@@ -812,7 +793,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
       })
       const isOffer = i === 1
       const offerLen = String(vals[i]).length
-      const offerFontSize = isOffer ? (offerLen > 18 ? 7 : offerLen > 13 ? 8 : 9) : 9
+      const offerFontSize = isOffer ? (offerLen > 22 ? 7.5 : offerLen > 16 ? 8.5 : 9.5) : 9
       doc.txt(curX, boxY + rowH + 3, vals[i], {
         font: 'F1',
         size: offerFontSize,
@@ -915,15 +896,22 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   doc.y += 6
 
   // Machine image (fits in the remaining cover space: target approx 145mm width, 92-100mm height)
-  // 145mm ≈ 411pt, 92mm ≈ 260pt. Content width on A4 with 34pt margins is ~527pt.
-  const remaining = doc.bottomLimit - 15 - doc.y
-  if (input.machineImage && remaining > 90) {
-    const targetW = Math.min(411, doc.contentW - 40) // ~145mm
-    const maxH = Math.min(270, remaining - 20) // ~95mm max height
-    const imgX = M_LEFT + (doc.contentW - targetW) / 2
+  // Ajuste 2: Foto da máquina na capa ocupa o espaço restante da primeira página
+  // sem container fixo de 105mm, proporção preservada, centralizada, título acima e legenda abaixo.
+  const remaining = doc.bottomLimit - 18 - doc.y
+  if (input.machineImage && remaining > 60) {
+    const captionReserved = 16
+    const availH = remaining - captionReserved
+    const origW = input.machineImage.width || 1
+    const origH = input.machineImage.height || 1
+    const maxW = doc.contentW
+    const scale = Math.min(maxW / origW, availH / origH)
+    const drawW = Math.round(origW * scale)
+    const drawH = Math.round(origH * scale)
+    const imgX = M_LEFT + (doc.contentW - drawW) / 2
     const name = doc.registerImage(input.machineImage)
-    doc.drawImage(name, imgX, doc.y, targetW, maxH, input.machineImage)
-    doc.y += maxH + 4
+    doc.drawImage(name, imgX, doc.y, drawW, drawH, input.machineImage)
+    doc.y += drawH + 4
     doc.txt(M_LEFT, doc.y, 'Imagem meramente ilustrativa', {
       font: 'F3',
       size: 8,
@@ -946,13 +934,15 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   }
 
   // ===== TECHNICAL SECTIONS =====
+  // Ajuste 5: Ordem das descrições de cada máquina:
+  // 1. Configuração Standard, 2. Características Construtivas, 3. Especificações Técnicas
   const specs =
     primaryV?.especificacoes_tecnicas || p.especificacoes_tecnicas || p.descricao_proposta
   const descFontSizePt = resolveDescricaoFontSizePdfNum((primaryV as any)?.descricao_tamanho)
 
-  if (specs) {
-    sectionHeading(sectionCounter.nextLevel1('Especificações Técnicas'))
-    renderRichContent(doc, String(specs), ensureSpace, descFontSizePt)
+  if (primaryV?.acessorios_standards) {
+    sectionHeading(sectionCounter.nextLevel1('Configuração Standard'))
+    renderRichContent(doc, String(primaryV.acessorios_standards), ensureSpace, descFontSizePt)
     doc.y += 8
   }
   if (primaryV?.caracteristicas_construtivas) {
@@ -965,9 +955,9 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     )
     doc.y += 8
   }
-  if (primaryV?.acessorios_standards) {
-    sectionHeading(sectionCounter.nextLevel1('Configuração Standard'))
-    renderRichContent(doc, String(primaryV.acessorios_standards), ensureSpace, descFontSizePt)
+  if (specs) {
+    sectionHeading(sectionCounter.nextLevel1('Especificações Técnicas'))
+    renderRichContent(doc, String(specs), ensureSpace, descFontSizePt)
     doc.y += 8
   }
 
@@ -1004,9 +994,10 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   drawAccList('Acessórios Opcionais Inclusos no Preço abaixo', inclusos, false)
 
   // ===== COMMERCIAL TABLE =====
+  // Ajuste 8: Seção 5: título "Condições Comerciais" -> "Preços"
   ensureSpace(120)
   doc.rect(M_LEFT, doc.y, 3, 12, { fill: INK })
-  doc.txt(M_LEFT + 8, doc.y + 2, sectionCounter.nextLevel1('CONDIÇÕES COMERCIAIS'), {
+  doc.txt(M_LEFT + 8, doc.y + 2, sectionCounter.nextLevel1('PREÇOS'), {
     font: 'F2',
     size: 12.5,
   })
@@ -1498,37 +1489,22 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
   }
 
   // ===== TERMS =====
+  // Ajuste 6 e 7: Termos de Fornecimento com a tipografia da apresentação (corpo 9.5pt, line-height 12pt)
+  // e subtítulos destacados (10pt bold verde) numerados na ordem 7.1 a 7.7
   if (terms.length > 0) {
-    ensureSpace(70)
-    doc.rect(M_LEFT, doc.y, doc.contentW, 20, { fill: GREEN })
-    doc.txt(
-      M_LEFT + 8,
-      doc.y + 5,
-      sectionCounter.nextLevel1('TERMOS DE FORNECIMENTO & INFORMAÇÕES COMERCIAIS'),
-      {
-        font: 'F2',
-        size: 12,
-        color: [1, 1, 1],
-      },
-    )
-    doc.y += 20
-    const labelW = 170
+    sectionHeading(sectionCounter.nextLevel1('Termos de Fornecimento'))
     for (const [label, value] of terms) {
-      const valLines = doc.wrap(value, doc.contentW - labelW - 12, 8.5)
-      const rowH = Math.max(14, valLines.length * 10 + 5)
-      ensureSpace(rowH)
-      doc.rect(M_LEFT, doc.y, doc.contentW, rowH, { stroke: [0.85, 0.86, 0.88], lw: 0.4 })
-      doc.txt(M_LEFT + 6, doc.y + 4, sectionCounter.nextLevel2(label.toUpperCase()), {
+      ensureSpace(28)
+      doc.txt(M_LEFT, doc.y, sectionCounter.nextLevel2(label), {
         font: 'F2',
-        size: 7,
-        color: [0.3, 0.33, 0.38],
+        size: 10,
+        color: GREEN,
       })
-      valLines.forEach((l, li) =>
-        doc.txt(M_LEFT + labelW, doc.y + 4 + li * 10, l, { font: 'F1', size: 8.5 }),
-      )
-      doc.y += rowH
+      doc.y += 13
+      renderRichContent(doc, value, ensureSpace, 9.5)
+      doc.y += 6
     }
-    doc.y += 10
+    doc.y += 6
   }
 
   // Regra 9 / Ponto 25: Campos do Tipo de Proposta e Informações Adicionais.
@@ -1642,31 +1618,33 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     const footerOps: string[] = []
     const savedOps = doc.ops
     doc.ops = footerOps
-    const fy = PAGE_H - 46
+    // Ajuste 1: Rodapé de endereços Bener com fonte aumentada para 9pt (~12px),
+    // igual em todas as páginas, sem invadir conteúdo nem paginação; preservar todas as informações.
+    const fy = PAGE_H - 48
     doc.hline(M_LEFT, PAGE_W - M_RIGHT, fy, { lw: 0.6, color: [0.7, 0.72, 0.75] })
-    doc.txt(M_LEFT, fy + 4, 'Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial', {
+    doc.txt(M_LEFT, fy + 3, 'Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial', {
       font: 'F1',
-      size: 7.5,
+      size: 9,
       color: GRAY,
       align: 'center',
       w: doc.contentW,
     })
     doc.txt(
       M_LEFT,
-      fy + 13,
+      fy + 14,
       'Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373',
-      { font: 'F1', size: 7.5, color: GRAY, align: 'center', w: doc.contentW },
+      { font: 'F1', size: 9, color: GRAY, align: 'center', w: doc.contentW },
     )
-    doc.txt(M_LEFT, fy + 22, 'E-mail: vendas@bener.com.br - Site: www.bener.com.br', {
+    doc.txt(M_LEFT, fy + 25, 'E-mail: vendas@bener.com.br - Site: www.bener.com.br', {
       font: 'F1',
-      size: 7.5,
+      size: 9,
       color: GRAY,
       align: 'center',
       w: doc.contentW,
     })
     doc.txt(M_LEFT, fy - 12, `Página ${i + 1} de ${totalPages}`, {
       font: 'F2',
-      size: 8,
+      size: 8.5,
       align: 'right',
       w: doc.contentW,
     })

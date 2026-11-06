@@ -404,26 +404,26 @@ export function buildPublicProposalHtml(
         ? `${tpSnapshot.imposto_icms}${String(tpSnapshot.imposto_icms).includes('%') ? '' : '%'}`
         : null
 
-  // Regra 9: Termos do Tipo de Proposta
+  // Concatenação de garantias (garantia principal + garantia de acessórios/cobertura) para respeitar os 7 subtítulos exatos (Item 7)
+  const combinedGarantiaPublic = [
+    proposta.garantia_acessorios || tpSnapshot?.garantia,
+    proposta.cobertura_garantia,
+  ]
+    .filter((v) => v && String(v).trim())
+    .join('\n\n')
+
+  // Ajuste 7: Subtítulos dos Termos numerados na ordem exata 7.1 a 7.7
   const terms: Array<[string, string | null | undefined]> = [
-    ['Condições de Pagamento', proposta.condicoes_pagamento || tpSnapshot?.condicoes_pagamento],
     ['Prazo de Entrega', proposta.prazo_entrega || tpSnapshot?.prazo_entrega],
-    ['Validade da Oferta', proposta.validade_oferta || tpSnapshot?.validade_oferta],
-    ['Cobertura de Garantia', proposta.cobertura_garantia],
-    ['Garantia de Acessórios', proposta.garantia_acessorios || tpSnapshot?.garantia],
-    ['Normas Aplicáveis', proposta.normas_aplicaveis],
-    ['Normas de Segurança', proposta.normas_seguranca],
-    ['Certificações', proposta.certificacoes],
+    ['Condições de Pagamento', proposta.condicoes_pagamento || tpSnapshot?.condicoes_pagamento],
+    ['Garantia', combinedGarantiaPublic || null],
     [
       'Assistência Técnica',
       proposta.assistencia_tecnica_detalhada || tpSnapshot?.assistencia_tecnica,
     ],
-    ['Critérios de Aceitação', proposta.criterios_aceitacao],
-    ['Materiais Utilizados', proposta.materiais_utilizados],
-    ['Transporte/Seguro', proposta.transporte_seguro || tpSnapshot?.transporte_seguro],
-    ['Imposto IPI', rawIpiVal],
-    ['Imposto ICMS', rawIcmsVal],
     ['Treinamento Técnico', proposta.treinamento_tecnico || tpSnapshot?.treinamento_tecnico],
+    ['Transporte / Seguro', proposta.transporte_seguro || tpSnapshot?.transporte_seguro],
+    ['Validade da Oferta', proposta.validade_oferta || tpSnapshot?.validade_oferta],
   ]
 
   if (tpSnapshot?.campos_adicionais) {
@@ -595,21 +595,21 @@ export function buildPublicProposalHtml(
           <div style="font-weight:bold;font-size:12px;">Bener Comercial Importadora Exportadora Ltda.</div>
           <div style="margin-top:2px;">${esc(formattedDateWithCity)}</div>
           <div style="margin-top:auto;padding-top:8px;">
-        <table style="width:auto;min-width:280px;max-width:340px;border-collapse:collapse;border:1px solid #000;margin:0;font-size:9.5px;line-height:1.2;background:#fff;">
+        <table style="width:auto;min-width:340px;max-width:420px;border-collapse:collapse;border:1px solid #000;margin:0;font-size:9.5px;line-height:1.2;background:#fff;">
           <thead>
             <tr style="background:#fff;border-bottom:1px solid #000;">
-              <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:55px;">Sigla</th>
-              <th style="padding:2px 8px;text-align:center;font-weight:bold;border:1px solid #000;min-width:130px;width:130px;">N° Oferta</th>
-              <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:40px;">Mês</th>
-              <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:45px;">Ano</th>
+              <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:65px;">Sigla</th>
+              <th style="padding:2px 8px;text-align:center;font-weight:bold;border:1px solid #000;min-width:180px;width:180px;">N° Oferta</th>
+              <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:85px;">Mês</th>
+              <th style="padding:2px 6px;text-align:center;font-weight:bold;border:1px solid #000;width:90px;">Ano</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td style="padding:3px 6px;text-align:center;border:1px solid #000;">${esc(siglaRepr)}</td>
-              <td style="padding:3px 8px;text-align:center;font-weight:bold;border:1px solid #000;white-space:nowrap;min-width:130px;font-size:${numeroCompleto.length > 18 ? '7.5px' : numeroCompleto.length > 13 ? '8.5px' : '9.5px'};">${esc(numeroCompleto)}</td>
-              <td style="padding:3px 6px;text-align:center;border:1px solid #000;">${esc(mesOferta)}</td>
-              <td style="padding:3px 6px;text-align:center;border:1px solid #000;">${esc(anoOferta)}</td>
+              <td style="padding:3px 6px;text-align:center;border:1px solid #000;white-space:nowrap;">${esc(siglaRepr)}</td>
+              <td style="padding:3px 8px;text-align:center;font-weight:bold;border:1px solid #000;white-space:nowrap;min-width:180px;font-size:${numeroCompleto.length > 22 ? '7.5px' : numeroCompleto.length > 16 ? '8.5px' : '9.5px'};">${esc(numeroCompleto)}</td>
+              <td style="padding:3px 6px;text-align:center;border:1px solid #000;white-space:nowrap;">${esc(mesOferta)}</td>
+              <td style="padding:3px 6px;text-align:center;border:1px solid #000;white-space:nowrap;">${esc(anoOferta)}</td>
             </tr>
           </tbody>
         </table>
@@ -794,42 +794,43 @@ export function buildPublicProposalHtml(
     }
     .proposal-cover .image-container {
       width: 100% !important;
-      height: 105mm !important;
-      min-height: 105mm !important;
-      max-height: 105mm !important;
+      flex: 1 1 auto !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: 120mm !important;
       display: flex !important;
       flex-direction: column !important;
       align-items: center !important;
       justify-content: center !important;
       text-align: center !important;
-      margin: 6mm 0 2mm !important;
+      margin: 3mm 0 2mm !important;
       page-break-before: avoid !important;
       page-break-inside: avoid !important;
       break-before: avoid !important;
       break-inside: avoid !important;
-      overflow: hidden !important;
+      overflow: visible !important;
     }
     .proposal-cover .machine-img {
       display: block !important;
       width: auto !important;
-      max-width: 145mm !important;
+      max-width: 170mm !important;
       height: auto !important;
-      max-height: 92mm !important;
+      max-height: 110mm !important;
       object-fit: contain !important;
       margin: 0 auto !important;
     }
     .image-caption,
     .proposal-cover .image-caption {
-      font-size: 9px !important;
+      font-size: 10px !important;
       font-style: italic;
       color: #444;
-      margin-top: 3mm !important;
+      margin-top: 2mm !important;
     }
     .footer {
       border-top: 1px solid #000;
       padding-top: 6px;
       text-align: center;
-      font-size: 9.5px;
+      font-size: 12px;
       line-height: 1.35;
       margin-top: auto;
       page-break-inside: avoid;
@@ -962,14 +963,14 @@ export function buildPublicProposalHtml(
         bottom: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        height: 16mm !important;
+        height: 18mm !important;
         background: #ffffff !important;
         z-index: 9999 !important;
         box-sizing: border-box !important;
         border-top: 1px solid #000 !important;
         padding-top: 4px !important;
         text-align: center !important;
-        font-size: 8.5px !important;
+        font-size: 12px !important;
         line-height: 1.35 !important;
         color: #000 !important;
       }
@@ -1027,35 +1028,36 @@ export function buildPublicProposalHtml(
 
       .proposal-cover .image-container {
         width: 100% !important;
-        height: 105mm !important;
-        min-height: 105mm !important;
-        max-height: 105mm !important;
+        flex: 1 1 auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: 120mm !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
         text-align: center !important;
-        margin: 6mm 0 2mm !important;
+        margin: 3mm 0 2mm !important;
         page-break-before: avoid !important;
         page-break-inside: avoid !important;
         break-before: avoid !important;
         break-inside: avoid !important;
-        overflow: hidden !important;
+        overflow: visible !important;
       }
 
       .proposal-cover .machine-img {
         display: block !important;
         width: auto !important;
-        max-width: 145mm !important;
+        max-width: 170mm !important;
         height: auto !important;
-        max-height: 92mm !important;
+        max-height: 110mm !important;
         object-fit: contain !important;
         margin: 0 auto !important;
       }
 
       .proposal-cover .image-caption {
-        margin-top: 3mm !important;
-        font-size: 9px !important;
+        margin-top: 2mm !important;
+        font-size: 10px !important;
       }
     }
   </style>
@@ -1164,13 +1166,17 @@ export function buildPublicProposalHtml(
           ${renderInstitutionalHeaderHtml()}
         </div>
 
-        <div style="margin-bottom:12px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-            <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-            <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">${sectionCounter.nextLevel1('Especificações Técnicas')}</span>
-          </div>
-          <div class="term-desc-content" style="display:block;width:100%;font-size:${primaryDescFontSize};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme catálogo e especificações técnicas de fábrica.')}</div>
-        </div>
+        ${
+          primaryVersao?.acessorios_standards
+            ? `<div style="margin-bottom:12px;">
+                 <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                   <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+                   <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">${sectionCounter.nextLevel1('Configuração Standard')}</span>
+                 </div>
+                 <div class="term-desc-content" style="display:block;width:100%;font-size:${primaryDescFontSize};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao.acessorios_standards)}</div>
+               </div>`
+            : ''
+        }
 
         ${
           primaryVersao?.caracteristicas_construtivas
@@ -1184,17 +1190,13 @@ export function buildPublicProposalHtml(
             : ''
         }
 
-        ${
-          primaryVersao?.acessorios_standards
-            ? `<div style="margin-bottom:12px;">
-                 <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
-                   <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-                   <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">${sectionCounter.nextLevel1('Acessórios Standards Inclusos')}</span>
-                 </div>
-                 <div class="term-desc-content" style="display:block;width:100%;font-size:${primaryDescFontSize};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao.acessorios_standards)}</div>
-               </div>`
-            : ''
-        }
+        <div style="margin-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-top:16px;margin-bottom:5px;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+            <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
+            <span style="font-size:12.5pt;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;color:#0b3c26;">${sectionCounter.nextLevel1('Especificações Técnicas')}</span>
+          </div>
+          <div class="term-desc-content" style="display:block;width:100%;font-size:${primaryDescFontSize};font-weight:500;line-height:1.45;color:#0f172a;word-break:break-word;white-space:pre-wrap;">${renderBulletList(primaryVersao?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme catálogo e especificações técnicas de fábrica.')}</div>
+        </div>
         ${(() => {
           // Regra 7: Acessórios com 3 estados mutuamente exclusivos
           const rawAcc = Array.isArray(proposta.acessorios_proposta)
@@ -1235,7 +1237,7 @@ export function buildPublicProposalHtml(
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-            <span>${sectionCounter.nextLevel1('Condições Comerciais')}</span>
+            <span>${sectionCounter.nextLevel1('Preços')}</span>
           </div>
           <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">${proposta.is_pacote ? 'Pacote de Máquinas' : 'Fornecimento Unitário'}</span>
         </div>

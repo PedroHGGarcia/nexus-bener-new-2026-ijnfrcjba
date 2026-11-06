@@ -291,14 +291,15 @@ function buildEquipmentSection(
       const itemTech =
         v?.especificacoes_tecnicas ||
         (idx === 0 ? proposta.descricao_proposta || proposta.especificacoes_tecnicas : null)
-      if (itemTech)
+      // Ajuste 5: Ordem 1. Configuração Standard, 2. Características Construtivas, 3. Especificações Técnicas
+      if (v?.acessorios_standards)
         techLines.push(
           `<div class="equipment-tech-block">
              <div class="equipment-tech-heading">
                <span class="equipment-tech-bar"></span>
-               <span>Especificações Técnicas</span>
+               <span>Configuração Standard</span>
              </div>
-             <pre>${escapeHtml(itemTech)}</pre>
+             <pre>${escapeHtml(v.acessorios_standards)}</pre>
            </div>`,
         )
       if (v?.caracteristicas_construtivas)
@@ -311,14 +312,14 @@ function buildEquipmentSection(
              <pre>${escapeHtml(v.caracteristicas_construtivas)}</pre>
            </div>`,
         )
-      if (v?.acessorios_standards)
+      if (itemTech)
         techLines.push(
           `<div class="equipment-tech-block">
              <div class="equipment-tech-heading">
                <span class="equipment-tech-bar"></span>
-               <span>Configuração Standard</span>
+               <span>Especificações Técnicas</span>
              </div>
-             <pre>${escapeHtml(v.acessorios_standards)}</pre>
+             <pre>${escapeHtml(itemTech)}</pre>
            </div>`,
         )
 
@@ -464,26 +465,26 @@ export function buildProposalPdfHtml(
         ? `${tpSnapshot.imposto_icms}${String(tpSnapshot.imposto_icms).includes('%') ? '' : '%'}`
         : null
 
-  // Regra 9: Campos do Tipo de Proposta
+  // Concatenação de garantias (garantia principal + garantia de acessórios/cobertura) para respeitar os 7 subtítulos exatos (Item 7)
+  const combinedGarantiaBuilder = [
+    proposta.garantia_acessorios || tpSnapshot?.garantia,
+    proposta.cobertura_garantia,
+  ]
+    .filter((v) => v && String(v).trim())
+    .join('\n\n')
+
+  // Ajuste 7: Subtítulos dos Termos numerados na ordem exata 7.1 a 7.7
   const termsList: Array<[string, string | null | undefined]> = [
-    ['Condições de Pagamento', proposta.condicoes_pagamento || tpSnapshot?.condicoes_pagamento],
     ['Prazo de Entrega', proposta.prazo_entrega || tpSnapshot?.prazo_entrega],
-    ['Validade da Oferta', proposta.validade_oferta || tpSnapshot?.validade_oferta],
-    ['Cobertura de Garantia', proposta.cobertura_garantia],
-    ['Garantia', proposta.garantia_acessorios || tpSnapshot?.garantia],
-    ['Normas Aplicáveis', proposta.normas_aplicaveis],
-    ['Normas de Segurança', proposta.normas_seguranca],
-    ['Certificações', proposta.certificacoes],
+    ['Condições de Pagamento', proposta.condicoes_pagamento || tpSnapshot?.condicoes_pagamento],
+    ['Garantia', combinedGarantiaBuilder || null],
     [
       'Assistência Técnica',
       proposta.assistencia_tecnica_detalhada || tpSnapshot?.assistencia_tecnica,
     ],
-    ['Critérios de Aceitação', proposta.criterios_aceitacao],
-    ['Materiais Utilizados', proposta.materiais_utilizados],
-    ['Transporte/Seguro', proposta.transporte_seguro || tpSnapshot?.transporte_seguro],
-    ['Imposto IPI', rawIpiEdge],
-    ['Imposto ICMS', rawIcmsEdge],
     ['Treinamento Técnico', proposta.treinamento_tecnico || tpSnapshot?.treinamento_tecnico],
+    ['Transporte / Seguro', proposta.transporte_seguro || tpSnapshot?.transporte_seguro],
+    ['Validade da Oferta', proposta.validade_oferta || tpSnapshot?.validade_oferta],
   ]
 
   // Campos adicionais do tipo de proposta
@@ -542,7 +543,7 @@ export function buildProposalPdfHtml(
       ? `
     <div class="section-title" style="display:flex;align-items:center;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
       <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-      <span>${escapeHtml(sectionCounter.nextLevel1('Termos de Fornecimento & Informações Comerciais'))}</span>
+      <span>${escapeHtml(sectionCounter.nextLevel1('Termos de Fornecimento'))}</span>
     </div>
     <div class="terms-section" style="width:100%;display:block;margin-bottom:16px;">
       ${filteredTerms
@@ -817,18 +818,18 @@ export function buildProposalPdfHtml(
         <table class="header-offer-table">
           <thead>
             <tr>
-              <th style="width:55px;">Sigla</th>
-              <th style="min-width:130px;width:130px;">N° Oferta</th>
-              <th style="width:40px;">Mês</th>
-              <th style="width:45px;">Ano</th>
+              <th style="width:65px;">Sigla</th>
+              <th style="min-width:180px;width:180px;">N° Oferta</th>
+              <th style="width:85px;">Mês</th>
+              <th style="width:90px;">Ano</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td>${escapeHtml(siglaRepr)}</td>
-              <td class="offer-num" style="min-width:130px;white-space:nowrap;font-size:${numeroCompleto.length > 18 ? '7.5px' : numeroCompleto.length > 13 ? '8.5px' : '9.5px'};">${escapeHtml(numeroCompleto)}</td>
-              <td>${escapeHtml(mesOferta)}</td>
-              <td>${escapeHtml(anoOferta)}</td>
+              <td style="white-space:nowrap;">${escapeHtml(siglaRepr)}</td>
+              <td class="offer-num" style="min-width:180px;white-space:nowrap;font-size:${numeroCompleto.length > 22 ? '7.5px' : numeroCompleto.length > 16 ? '8.5px' : '9.5px'};">${escapeHtml(numeroCompleto)}</td>
+              <td style="white-space:nowrap;">${escapeHtml(mesOferta)}</td>
+              <td style="white-space:nowrap;">${escapeHtml(anoOferta)}</td>
             </tr>
           </tbody>
         </table>
@@ -921,8 +922,8 @@ export function buildProposalPdfHtml(
     }
     .header-offer-table {
       width: auto !important;
-      min-width: 280px;
-      max-width: 340px;
+      min-width: 340px;
+      max-width: 420px;
       border-collapse: collapse;
       border: 1px solid #000;
       margin: 0 !important;
@@ -1119,8 +1120,8 @@ export function buildProposalPdfHtml(
       border-top: 1px solid #e2e8f0;
       padding-top: 15px;
       text-align: center;
-      font-size: 10px;
-      color: #888;
+      font-size: 12px;
+      color: #475569;
       page-break-inside: avoid;
       break-inside: avoid;
     }
@@ -1136,8 +1137,8 @@ export function buildProposalPdfHtml(
       left: 0;
       right: 0;
       text-align: center;
-      font-size: 9px;
-      color: #666;
+      font-size: 12px;
+      color: #475569;
       line-height: 1.4;
       padding: 8px 40px 10px 40px;
       border-top: 1px solid #d1d5db;
@@ -1190,16 +1191,16 @@ export function buildProposalPdfHtml(
         bottom: 0 !important;
         left: 0 !important;
         right: 0 !important;
-        height: 16mm !important;
+        height: 18mm !important;
         background: #ffffff !important;
         z-index: 9999 !important;
         box-sizing: border-box !important;
         border-top: 1px solid #cbd5e1 !important;
         padding-top: 4px !important;
         text-align: center !important;
-        font-size: 8.5px !important;
+        font-size: 12px !important;
         line-height: 1.35 !important;
-        color: #64748b !important;
+        color: #475569 !important;
       }
       body > :first-child,
       .header,
@@ -1269,24 +1270,6 @@ export function buildProposalPdfHtml(
     </div>
   </div>
 
-  <div class="spec-block">
-  <div class="spec-block-heading">
-    <span class="spec-block-bar"></span>
-    <span>${escapeHtml(sectionCounter.nextLevel1('Especificações Técnicas'))}</span>
-  </div>
-    <div class="spec-block-content">${escapeHtml(proposta.versoes?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme especificações padrão do catálogo.')}</div>
-  </div>
-  ${
-    proposta.versoes?.caracteristicas_construtivas
-      ? `<div class="spec-block">
-           <div class="spec-block-heading">
-           <span class="spec-block-bar"></span>
-           <span>${escapeHtml(sectionCounter.nextLevel1('Características Construtivas'))}</span>
-         </div>
-           <div class="spec-block-content">${escapeHtml(proposta.versoes.caracteristicas_construtivas)}</div>
-         </div>`
-      : ''
-  }
   ${
     proposta.versoes?.acessorios_standards
       ? `<div class="spec-block">
@@ -1298,6 +1281,24 @@ export function buildProposalPdfHtml(
          </div>`
       : ''
   }
+  ${
+    proposta.versoes?.caracteristicas_construtivas
+      ? `<div class="spec-block">
+           <div class="spec-block-heading">
+           <span class="spec-block-bar"></span>
+           <span>${escapeHtml(sectionCounter.nextLevel1('Características Construtivas'))}</span>
+         </div>
+           <div class="spec-block-content">${escapeHtml(proposta.versoes.caracteristicas_construtivas)}</div>
+         </div>`
+      : ''
+  }
+  <div class="spec-block">
+  <div class="spec-block-heading">
+    <span class="spec-block-bar"></span>
+    <span>${escapeHtml(sectionCounter.nextLevel1('Especificações Técnicas'))}</span>
+  </div>
+    <div class="spec-block-content">${escapeHtml(proposta.versoes?.especificacoes_tecnicas || proposta.especificacoes_tecnicas || proposta.descricao_proposta || 'Conforme especificações padrão do catálogo.')}</div>
+  </div>
 
   ${(() => {
     // Regra 7: Acessórios com 3 estados mutuamente exclusivos
@@ -1407,7 +1408,7 @@ export function buildProposalPdfHtml(
           <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5pt;font-weight:bold;color:#0b3c26;text-transform:uppercase;letter-spacing:0.8px;margin:16px 0 5px 0;padding-bottom:5px;border-bottom:0.5pt solid #cbd5e1;page-break-after:avoid;break-after:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
             <div style="display:flex;align-items:center;gap:8px;">
               <span style="display:inline-block;width:3.5pt;height:14pt;background:#0b3c26;border-radius:1px;"></span>
-              <span>${escapeHtml(sectionCounter.nextLevel1('Condições Comerciais'))}</span>
+              <span>${escapeHtml(sectionCounter.nextLevel1('Preços'))}</span>
             </div>
             <span style="font-size:10pt;color:#64748b;font-weight:500;text-transform:none;">Fornecimento Unitário</span>
           </div>
