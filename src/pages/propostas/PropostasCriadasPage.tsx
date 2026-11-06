@@ -24,6 +24,7 @@ import {
   Search,
   Eye,
   Printer,
+  Download,
   Trash2,
   Pencil,
   Link as LinkIcon,
@@ -48,6 +49,7 @@ import { fetchPropostas, deleteProposta } from '@/services/propostas'
 import { PropostaWithRelations, STATUS_LABELS } from '@/types/proposta'
 import { useCurrencyRates } from '@/hooks/use-currency-rates'
 import { formatBrlEquivalent } from '@/services/currency-rates'
+import { generateProposalPdf } from '@/services/proposal-pdf'
 
 const PAGE_SIZE = 50
 
@@ -519,6 +521,40 @@ export default function PropostasCriadasPage() {
                             className="h-8 w-8"
                           >
                             <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={async () => {
+                              // Baixa o PDF salvo na emissão/atualização; só gera se ainda não existir.
+                              let url = (p as { pdf_anexo?: string | null }).pdf_anexo || null
+                              if (!url) {
+                                const r = await generateProposalPdf(p.id)
+                                if (!r.ok) {
+                                  toast({
+                                    title: 'Falha ao gerar PDF',
+                                    description: (r as { ok: false; error: string }).error,
+                                    variant: 'destructive',
+                                  })
+                                  return
+                                }
+                                url = r.data?.pdfUrl ?? null
+                              }
+                              if (url) {
+                                window.open(url, '_blank')
+                              } else {
+                                toast({
+                                  title: 'PDF não disponível',
+                                  description: 'O arquivo não foi salvo no storage.',
+                                  variant: 'destructive',
+                                })
+                              }
+                            }}
+                            aria-label={`Baixar PDF da proposta ${p.numero_proposta || ''}`}
+                            title="Baixar PDF"
+                            className="h-8 w-8"
+                          >
+                            <Download className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="ghost"

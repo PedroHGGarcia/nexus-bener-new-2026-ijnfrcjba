@@ -11,7 +11,15 @@ import {
   SelectItem,
   SelectValue,
 } from '@/components/ui/select'
-import { Printer, ArrowLeft, Link as LinkIcon, Check, Send, MessageSquare } from 'lucide-react'
+import {
+  Printer,
+  ArrowLeft,
+  Link as LinkIcon,
+  Check,
+  Send,
+  MessageSquare,
+  Download,
+} from 'lucide-react'
 import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 import { LoadingState, ErrorState } from '@/components/StateViews'
@@ -21,6 +29,7 @@ import { ReenviarNotificacaoDialog } from '@/components/propostas/ReenviarNotifi
 import { EnviarWhatsAppDialog } from '@/components/propostas/EnviarWhatsAppDialog'
 import { fetchPropostaById, updatePropostaStatus } from '@/services/propostas'
 import { sendProposalEmail } from '@/services/proposal-email'
+import { getProposalPdfUrl } from '@/services/proposal-pdf'
 import { useProposalPrintTitle } from '@/hooks/use-proposal-print-title'
 import { PropostaWithRelations, STATUS_FLOW, STATUS_LABELS } from '@/types/proposta'
 
@@ -118,6 +127,20 @@ export default function PropostaPdfPage() {
     } catch (err) {
       toast({
         title: 'Erro ao atualizar status',
+        description: err instanceof Error ? err.message : '',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleDownloadPdf = async () => {
+    if (!proposal) return
+    try {
+      const url = await getProposalPdfUrl(proposal.id, proposal.pdf_anexo)
+      window.open(url, '_blank')
+    } catch (err) {
+      toast({
+        title: 'Falha ao baixar PDF',
         description: err instanceof Error ? err.message : '',
         variant: 'destructive',
       })
@@ -257,6 +280,14 @@ export default function PropostaPdfPage() {
           >
             <Printer className="w-4 h-4" /> Imprimir
           </Button>
+          <Button
+            variant="outline"
+            onClick={handleDownloadPdf}
+            className="gap-2"
+            title="Baixar o PDF salvo desta proposta"
+          >
+            <Download className="w-4 h-4" /> Baixar PDF
+          </Button>
         </div>
       </div>
 
@@ -330,6 +361,14 @@ export default function PropostaPdfPage() {
             title={pacotePdfBlockReason || 'Imprimir proposta'}
           >
             <Printer className="w-4 h-4" /> Imprimir
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleDownloadPdf}
+            className="gap-2"
+            title="Baixar o PDF salvo desta proposta"
+          >
+            <Download className="w-4 h-4" /> Baixar PDF
           </Button>
         </div>
       </div>

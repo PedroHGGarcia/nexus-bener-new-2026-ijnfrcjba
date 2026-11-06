@@ -402,9 +402,10 @@ Deno.serve(async (req: Request) => {
         }
 
         const { data: urlData } = adminClient.storage.from('propostas-pdf').getPublicUrl(fileName)
-        pdfUrl = urlData.publicUrl
+        // Versão na URL evita que o cache do CDN devolva o PDF anterior após uma regeneração
+        pdfUrl = `${urlData.publicUrl}?v=${Date.now()}`
 
-        // Tenta persistir a URL no registro da proposta
+        // Persiste a URL do PDF salvo no registro da proposta (fonte do botão "Baixar PDF")
         await adminClient.from('propostas').update({ pdf_anexo: pdfUrl }).eq('id', proposalData.id)
       } catch (storageErr: any) {
         const storageMessage =

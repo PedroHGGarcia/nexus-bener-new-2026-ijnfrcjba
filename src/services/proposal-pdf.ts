@@ -67,6 +67,26 @@ export async function generateProposalPdf(
   }
 }
 
+/**
+ * Fluxo oficial de download do PDF: devolve o PDF SALVO na emissão/atualização
+ * (pdf_anexo). Só gera pelo fluxo do servidor quando a proposta ainda não tem
+ * PDF salvo (propostas antigas), e aí o arquivo fica salvo para os próximos downloads.
+ */
+export async function getProposalPdfUrl(
+  propostaId: string,
+  pdfAnexo?: string | null,
+): Promise<string> {
+  if (pdfAnexo) return pdfAnexo
+  const result = await generateProposalPdf(propostaId)
+  if (!result.ok) {
+    throw new Error((result as { ok: false; error: string }).error)
+  }
+  if (!result.data?.pdfUrl) {
+    throw new Error('O arquivo não foi salvo no storage.')
+  }
+  return result.data.pdfUrl
+}
+
 export async function printProposalPdf(propostaId: string): Promise<void> {
   // Rather than document.write on an empty window (which has an empty origin or about:blank route),
   // navigate directly to the dedicated printable route which mounts only the ProposalDocument.
