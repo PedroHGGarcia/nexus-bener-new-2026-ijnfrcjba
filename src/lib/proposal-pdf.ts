@@ -187,25 +187,25 @@ export function generatePropostaHtml(
     (proposal as { frase_preco?: string | null }).frase_preco || tipoProposta?.frase_preco
 
   const terms: Array<[string, string | null | undefined]> = [
-    ['Condições de Pagamento', proposal.condicoes_pagamento],
-    ['Prazo de Entrega', proposal.prazo_entrega],
-    ['Validade da Oferta', proposal.validade_oferta],
-    ['Cobertura de Garantia', proposal.cobertura_garantia],
+    ['Prazo de entrega', proposal.prazo_entrega],
+    ['Condições de pagamento', proposal.condicoes_pagamento],
+    ['Garantia', proposal.cobertura_garantia],
+    ['Assistência técnica', proposal.assistencia_tecnica_detalhada],
+    [
+      'Treinamento técnico',
+      (proposal as { treinamento_tecnico?: string | null }).treinamento_tecnico ||
+        tipoProposta?.treinamento_tecnico,
+    ],
+    ['Transporte/Seguro', proposal.transporte_seguro],
+    ['Validade da oferta', proposal.validade_oferta],
     ['Garantia de Acessórios', proposal.garantia_acessorios],
     ['Normas Aplicáveis', proposal.normas_aplicaveis],
     ['Normas de Segurança', proposal.normas_seguranca],
     ['Certificações', proposal.certificacoes],
-    ['Assistência Técnica', proposal.assistencia_tecnica_detalhada],
     ['Critérios de Aceitação', proposal.criterios_aceitacao],
     ['Materiais Utilizados', proposal.materiais_utilizados],
-    ['Transporte/Seguro', proposal.transporte_seguro],
     ['Imposto IPI', rawIpiVal],
     ['Imposto ICMS', rawIcmsVal],
-    [
-      'Treinamento Técnico',
-      (proposal as { treinamento_tecnico?: string | null }).treinamento_tecnico ||
-        tipoProposta?.treinamento_tecnico,
-    ],
   ]
 
   if (tipoProposta?.campos_adicionais) {
@@ -369,18 +369,34 @@ export function generatePropostaHtml(
             <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;">
               <img src="${benerLogo}" alt="BENER - MÁQUINAS QUE TRANSFORMAM" class="bener-logo-img" />
             </div>
-            <div class="proposal-number-box">
-              <p class="prop-title">${proposal.numero_proposta ? `Proposta Nº ${esc(proposal.numero_proposta)}` : 'Proposta Comercial'}</p>
-              ${proposal.revisao ? `<p>Revisão: ${esc(proposal.revisao)}</p>` : ''}
-              <p>Data: ${esc(proposal.dt_cad || new Date().toLocaleDateString('pt-BR'))}</p>
-              <p>Modalidade: ${proposal.modelo_licitacao ? 'Licitação' : 'Proposta Comercial'}</p>
+            <div class="header-company-info">
+              <div class="company-name">BENER COMÉRCIO IMPORTAÇÃO E EXPORTAÇÃO LTDA</div>
+              <div class="header-offer-table-wrapper">
+                <table class="header-offer-table">
+                  <thead>
+                    <tr>
+                      <th>Sigla</th>
+                      <th>Nº Oferta</th>
+                      <th>Mês</th>
+                      <th>Ano</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>${esc(userSigla)}</td>
+                      <td class="offer-num">${esc(proposal.numero_proposta || '—')}</td>
+                      <td>${esc(formattedMonth)}</td>
+                      <td>${esc(formattedYear)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
           <div class="client-header">
             <p>À</p>
             <p class="client-name">${esc(clientCompanyName)}</p>
-            ${clientAddressLine ? `<p>${esc(clientAddressLine)}</p>` : ''}
             ${clientPhone ? `<p>Telefone: ${esc(clientPhone)}</p>` : ''}
             ${clientEmail ? `<p>E-mail: ${esc(clientEmail)}</p>` : ''}
             <p style="padding-top: 8px;">A/C: <strong>${esc(contactName || 'Diretor / Gerente de Compras')}</strong></p>
@@ -421,10 +437,10 @@ export function generatePropostaHtml(
       <div>
 
         ${
-          technicalSpecsHtml
+          acessoriosStandardsHtml
             ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                 <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(sectionCounter.nextLevel1('Especificações Técnicas'))}</div>
-                 ${technicalSpecsHtml}
+                 <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(sectionCounter.nextLevel1('Configuração Standard'))}</div>
+                 ${acessoriosStandardsHtml}
                </div>`
             : ''
         }
@@ -439,10 +455,10 @@ export function generatePropostaHtml(
         }
 
         ${
-          acessoriosStandardsHtml
+          technicalSpecsHtml
             ? `<div style="margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                 <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(sectionCounter.nextLevel1('Configuração Standard'))}</div>
-                 ${acessoriosStandardsHtml}
+                 <div style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(sectionCounter.nextLevel1('Especificações Técnicas'))}</div>
+                 ${technicalSpecsHtml}
                </div>`
             : ''
         }
@@ -543,7 +559,7 @@ export function generatePropostaHtml(
         }
 
         <div style="background:#0b3c26;color:#ffffff;padding:6px 10px;border-radius:3px;display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px 0;">
-          <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">${esc(sectionCounter.nextLevel1('Condições Comerciais'))}</span>
+          <span style="font-size:11px;font-weight:bold;letter-spacing:0.8px;text-transform:uppercase;">${esc(sectionCounter.nextLevel1('Preços'))}</span>
           <span style="font-size:10px;opacity:0.9;">${proposal.is_pacote ? 'Pacote de Máquinas' : 'Fornecimento Unitário'}</span>
         </div>
 
@@ -775,9 +791,9 @@ export function generatePropostaHtml(
                  ${filteredTerms
                    .map(
                      ([lbl, val]) => `
-                   <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
-                    <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${esc(sectionCounter.nextLevel2(lbl))}</div>
-                    <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderMultilinhaHtml(val)}</div>
+                   <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;font-size:11px;line-height:1.45;">
+                    <div class="term-title" style="display:block;font-size:11px;font-weight:700;color:#000000;margin-bottom:2px;page-break-after:avoid;break-after:avoid;">${esc(sectionCounter.nextLevel2(lbl))}</div>
+                    <div class="term-content" style="display:block;width:100%;color:#000000;font-size:11px;font-weight:normal;line-height:1.45;word-break:break-word;text-align:justify;">${renderMultilinhaHtml(val, { fontSizePt: '11px' })}</div>
                   </div>`,
                    )
                    .join('')}

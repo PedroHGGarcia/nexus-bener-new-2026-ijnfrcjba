@@ -61,24 +61,48 @@ export const A4_PRINT_STYLES = `
     max-height: 27mm;
     object-fit: contain;
   }
-  .proposal-number-box {
-    border: 1px solid #000;
-    padding: 6px 10px;
+  .header-company-info {
     text-align: right;
-    font-size: 10px;
-    color: #000;
-    min-width: 180px;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    font-size: 11px;
+    line-height: 1.35;
+    flex-shrink: 0;
   }
-  .proposal-number-box p {
-    margin: 1px 0;
-    font-size: 10px;
-  }
-  .proposal-number-box .prop-title {
+  .header-company-info .company-name {
+    font-weight: bold;
     font-size: 12px;
-    font-weight: 700;
-    margin-bottom: 2px;
+  }
+  .header-offer-table-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 3px;
+    width: 100%;
+    min-width: 340px;
+    max-width: 420px;
+  }
+  .header-offer-table {
+    width: 100% !important;
+    min-width: 340px !important;
+    max-width: 420px !important;
+    border-collapse: collapse;
+    border: 1px solid #000;
+    margin: 0 !important;
+    font-size: 9.5px;
+    line-height: 1.2;
+    background: #fff;
+  }
+  .header-offer-table th, .header-offer-table td {
+    border: 1px solid #000 !important;
+    padding: 2px 6px !important;
+    text-align: center !important;
+  }
+  .header-offer-table th {
+    background: #fff !important;
+    font-weight: bold !important;
+  }
+  .header-offer-table td.offer-num {
+    font-weight: bold;
+    white-space: nowrap;
+    padding: 3px 8px !important;
   }
   .reception-text {
     margin-top: 10px !important;
@@ -121,15 +145,16 @@ export const A4_PRINT_STYLES = `
   }
   .proposal-cover .image-container {
     width: 100% !important;
-    height: 105mm !important;
-    min-height: 105mm !important;
-    max-height: 105mm !important;
+    flex: 1 1 auto !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: 140mm !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
-    margin: 6mm 0 2mm !important;
+    margin: 4mm 0 2mm !important;
     page-break-before: avoid !important;
     page-break-inside: avoid !important;
     break-before: avoid !important;
@@ -139,9 +164,9 @@ export const A4_PRINT_STYLES = `
   .proposal-cover .machine-img {
     display: block !important;
     width: auto !important;
-    max-width: 145mm !important;
+    max-width: 155mm !important;
     height: auto !important;
-    max-height: 92mm !important;
+    max-height: 125mm !important;
     object-fit: contain !important;
     margin: 0 auto !important;
   }
@@ -150,13 +175,13 @@ export const A4_PRINT_STYLES = `
     font-size: 9px !important;
     font-style: italic;
     color: #555;
-    margin-top: 3mm !important;
+    margin-top: 2mm !important;
   }
   .footer {
     border-top: 1px solid #000;
     padding-top: 6px;
     text-align: center;
-    font-size: 9.5px;
+    font-size: 12px;
     line-height: 1.35;
     margin-top: auto;
     page-break-inside: avoid;
