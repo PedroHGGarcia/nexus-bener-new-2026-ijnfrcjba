@@ -22,6 +22,7 @@ interface Props {
   value: string | null
   onChange: (value: string | null) => void
   placeholder?: string
+  selectedLabel?: string | null
   searchPlaceholder?: string
   fetchOptions: (
     query: string,
@@ -36,6 +37,7 @@ export function SearchableCombobox({
   value,
   onChange,
   placeholder = 'Selecionar...',
+  selectedLabel,
   searchPlaceholder = 'Buscar...',
   fetchOptions,
   disabled,
@@ -84,6 +86,7 @@ export function SearchableCombobox({
   const [selectedLabelFallback, setSelectedLabelFallback] = useState<string | null>(null)
 
   const selected = options.find((o) => o.value === value)
+  const displayedLabel = selected?.label || selectedLabelFallback || selectedLabel || null
 
   // Keep fallback label when option was found so it doesn't blink out when reopening
   useEffect(() => {
@@ -111,15 +114,15 @@ export function SearchableCombobox({
           variant="outline"
           role="combobox"
           disabled={disabled}
-          title={selected ? selected.label : selectedLabelFallback || placeholder}
+          title={displayedLabel || placeholder}
           className={cn(
             'w-full justify-between font-normal text-left h-10 px-3',
-            !selected && 'text-muted-foreground',
+            !selected && !displayedLabel && 'text-muted-foreground',
             className,
           )}
         >
           <span className="truncate flex-1 min-w-0 pr-2">
-            {selected ? selected.label : selectedLabelFallback || placeholder}
+            {displayedLabel || placeholder}
             {loading && <Loader2 className="w-3 h-3 inline ml-1.5 animate-spin" />}
           </span>
           <div className="flex items-center gap-1 shrink-0">

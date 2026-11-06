@@ -53,6 +53,7 @@ import { EnviarWhatsAppDialog } from '@/components/propostas/EnviarWhatsAppDialo
 import { MessageSquare } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { ClienteFormDialog } from '@/components/clientes/ClienteFormDialog'
+import { ClienteContatoFormDialog } from '@/components/propostas/ClienteContatoFormDialog'
 import { toast } from '@/hooks/use-toast'
 import { insertProposta, createPropostaVersion, uploadSignatureDataUrl } from '@/services/propostas'
 import { preOpenProposalPrintTab } from '@/lib/proposal-auto-open'
@@ -239,6 +240,7 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
   const [contatosCliente, setContatosCliente] = useState<ClienteContato[]>([])
   const [loadingContatos, setLoadingContatos] = useState(false)
   const [contatoId, setContatoId] = useState<string | null>(editProposta?.contato_id || null)
+  const [contatoDialogOpen, setContatoDialogOpen] = useState(false)
   const [clienteFormTab, setClienteFormTab] = useState<
     'principais' | 'contato' | 'endereco' | 'contatos_multiplos'
   >('principais')
@@ -1601,8 +1603,12 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       return
     }
 
-    // Se possui contatos mas nenhum foi selecionado
-    if (contatosCliente.length > 0 && !contatoId) {
+    // Se possui contatos mas nenhum válido foi selecionado (valida que o contato
+    // informado pertence ao cliente atual)
+    if (
+      contatosCliente.length > 0 &&
+      (!contatoId || !contatosCliente.some((c) => c.id === contatoId))
+    ) {
       toast({
         title: 'Selecione um contato',
         description: 'Selecione o contato destinatário da proposta.',
@@ -1781,133 +1787,218 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
       <Card>
         <CardContent className="p-5 space-y-4">
           <div className="space-y-4">
-            {/* Linha 1: Cliente em linha própria (campo principal e obrigatório com largura total) */}
-            <div className="w-full">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Cliente *
-              </Label>
-              <div className="mt-1 flex items-center gap-2">
-                <div className="flex-1 min-w-0">
-                  <SearchableCombobox
-                    value={form.cliente || null}
-                    onChange={(v) => upd('cliente', v || '')}
-                    placeholder="Selecione um cliente..."
-                    searchPlaceholder="Buscar por nome, razão social ou CNPJ..."
-                    disabled={isEditing}
-                    fetchOptions={async (query, page) => {
-                      const from = (page - 1) * 20
-                      const to = page * 20 - 1
+            {/* Linha 1: Cliente + Contato da proposta (2 colunas em md+, empilha em telas estreitas) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="w-full min-w-0">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Cliente *
+                </Label>
+                <div className="mt-1 flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <SearchableCombobox
+                      value={form.cliente || null}
+                      onChange={(v) => {
+                        // Troca de cliente: limpa o contato imediatamente; o efeito de
+                        // contatos recarrega a lista e pré-seleciona o principal do novo cliente.
+                        setContatoId(null)
+                        upd('cliente', v || '')
+                      }}
+                      placeholder="Selecione um cliente..."
+                      searchPlaceholder="Buscar por nome, razão social ou CNPJ..."
+                      disabled={isEditing}
+                      fetchOptions={async (query, page) => {
+                        const from = (page - 1) * 20
+                        const to = page * 20 - 1
 
-                      let q = supabase
-                        .from('clientes')
-                        .select(
-                          'id, fantasia, razao_social, documento, cidade, estado, maquina_interesse',
-                          {
-                            count: 'exact',
-                          },
-                        )
-                        .eq('status', 'Ativo')
+                        let q = supabase
+                          .from('clientes')
+                          .select(
+                            'id, fantasia, razao_social, documento, cidade, estado, maquina_interesse',
+                            {
+                              count: 'exact',
+                            },
+                          )
+                          .eq('status', 'Ativo')
 
-                      // Se o usuário logado for vendedor ou representante, filtra clientes criados por ele OU de seus estados de atuação
-                      const roleLower = (user?.role || '').toLowerCase()
-                      const isVendedorOuRep =
-                        roleLower.includes('vendedor') || roleLower.includes('representante')
+                        // Se o usuário logado for vendedor ou representante, filtra clientes criados por ele OU de seus estados de atuação
+                        const roleLower = (user?.role || '').toLowerCase()
+                        const isVendedorOuRep =
+                          roleLower.includes('vendedor') || roleLower.includes('representante')
 
-                      if (isVendedorOuRep) {
-                        if (!user?.id) {
+                        if (isVendedorOuRep) {
+                          if (!user?.id) {
+                            return { items: [], hasMore: false }
+                          }
+                          const rawEstadoAtuacao =
+                            (userRepresentante?.estado && userRepresentante.estado.trim()) ||
+                            (user.estado_atuacao && user.estado_atuacao.trim()) ||
+                            null
+
+                          const estadosList = rawEstadoAtuacao
+                            ? Array.from(
+                                new Set(
+                                  rawEstadoAtuacao
+                                    .split(',')
+                                    .map((s) => s.trim().toUpperCase())
+                                    .filter((s) => s.length > 0),
+                                ),
+                              )
+                            : []
+
+                          if (estadosList.length > 0) {
+                            const estadoClauses = estadosList
+                              .map((uf) => `estado.ilike.${uf}`)
+                              .join(',')
+                            q = q.or(`criado_por.eq.${user.id},${estadoClauses}`)
+                          } else {
+                            q = q.eq('criado_por', user.id)
+                          }
+                        }
+
+                        if (query && query.trim()) {
+                          const trimmed = query.trim()
+                          q = q.or(
+                            `fantasia.ilike.%${trimmed}%,razao_social.ilike.%${trimmed}%,documento.ilike.%${trimmed}%`,
+                          )
+                        }
+
+                        const { data, count, error } = await q.order('fantasia').range(from, to)
+
+                        if (error || !data) {
                           return { items: [], hasMore: false }
                         }
-                        const rawEstadoAtuacao =
-                          (userRepresentante?.estado && userRepresentante.estado.trim()) ||
-                          (user.estado_atuacao && user.estado_atuacao.trim()) ||
-                          null
 
-                        const estadosList = rawEstadoAtuacao
-                          ? Array.from(
-                              new Set(
-                                rawEstadoAtuacao
-                                  .split(',')
-                                  .map((s) => s.trim().toUpperCase())
-                                  .filter((s) => s.length > 0),
-                              ),
-                            )
-                          : []
+                        const items = data.map(
+                          (c: {
+                            id: string
+                            fantasia: string
+                            razao_social?: string | null
+                            documento: string | null
+                            cidade?: string | null
+                            estado?: string | null
+                            maquina_interesse?: string | null
+                          }) => {
+                            const nomePrincipal = c.fantasia || c.razao_social || 'Cliente sem nome'
+                            const subParts: string[] = []
+                            if (c.documento) subParts.push(`Doc: ${c.documento}`)
+                            const local = [c.cidade, c.estado].filter(Boolean).join(' - ')
+                            if (local) subParts.push(local)
+                            if (c.maquina_interesse)
+                              subParts.push(`Interesse: ${c.maquina_interesse}`)
 
-                        if (estadosList.length > 0) {
-                          const estadoClauses = estadosList
-                            .map((uf) => `estado.ilike.${uf}`)
-                            .join(',')
-                          q = q.or(`criado_por.eq.${user.id},${estadoClauses}`)
-                        } else {
-                          q = q.eq('criado_por', user.id)
-                        }
-                      }
-
-                      if (query && query.trim()) {
-                        const trimmed = query.trim()
-                        q = q.or(
-                          `fantasia.ilike.%${trimmed}%,razao_social.ilike.%${trimmed}%,documento.ilike.%${trimmed}%`,
+                            return {
+                              value: c.id,
+                              label: c.maquina_interesse
+                                ? `${nomePrincipal} — Interesse: ${c.maquina_interesse}`
+                                : nomePrincipal,
+                              sublabel: subParts.join(' • '),
+                            }
+                          },
                         )
-                      }
 
-                      const { data, count, error } = await q.order('fantasia').range(from, to)
-
-                      if (error || !data) {
-                        return { items: [], hasMore: false }
-                      }
-
-                      const items = data.map(
-                        (c: {
-                          id: string
-                          fantasia: string
-                          razao_social?: string | null
-                          documento: string | null
-                          cidade?: string | null
-                          estado?: string | null
-                          maquina_interesse?: string | null
-                        }) => {
-                          const nomePrincipal = c.fantasia || c.razao_social || 'Cliente sem nome'
-                          const subParts: string[] = []
-                          if (c.documento) subParts.push(`Doc: ${c.documento}`)
-                          const local = [c.cidade, c.estado].filter(Boolean).join(' - ')
-                          if (local) subParts.push(local)
-                          if (c.maquina_interesse)
-                            subParts.push(`Interesse: ${c.maquina_interesse}`)
-
-                          return {
-                            value: c.id,
-                            label: c.maquina_interesse
-                              ? `${nomePrincipal} — Interesse: ${c.maquina_interesse}`
-                              : nomePrincipal,
-                            sublabel: subParts.join(' • '),
-                          }
-                        },
-                      )
-
-                      const hasMore = count != null ? to + 1 < count : items.length === 20
-                      return { items, hasMore }
-                    }}
-                  />
+                        const hasMore = count != null ? to + 1 < count : items.length === 20
+                        return { items, hasMore }
+                      }}
+                    />
+                  </div>
+                  {!isEditing && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground border-slate-200 dark:border-slate-800"
+                            onClick={() => setClienteDialogOpen(true)}
+                            aria-label="Cadastrar novo cliente"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Cadastrar novo cliente</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
-                {!isEditing && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon"
-                          className="h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground border-slate-200 dark:border-slate-800"
-                          onClick={() => setClienteDialogOpen(true)}
-                          aria-label="Cadastrar novo cliente"
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Cadastrar novo cliente</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+              </div>
+
+              {/* Coluna 2: Contato da proposta */}
+              <div className="w-full min-w-0">
+                <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Contato da proposta
+                </Label>
+                <div className="mt-1">
+                  {form.cliente && !loadingContatos && contatosCliente.length === 0 ? (
+                    <div className="h-10 px-3 flex items-center border rounded-md bg-muted/30 text-sm text-muted-foreground">
+                      Nenhum contato cadastrado
+                    </div>
+                  ) : (
+                    <SearchableCombobox
+                      value={contatoId}
+                      onChange={(v) => setContatoId(v)}
+                      placeholder={
+                        !form.cliente
+                          ? 'Selecione um cliente primeiro'
+                          : loadingContatos
+                            ? 'Carregando contatos...'
+                            : 'Selecione o contato...'
+                      }
+                      searchPlaceholder="Buscar contato por nome, cargo ou e-mail..."
+                      disabled={!form.cliente || loadingContatos}
+                      selectedLabel={contatosCliente.find((c) => c.id === contatoId)?.nome ?? null}
+                      fetchOptions={async (query) => {
+                        const q = query.trim().toLowerCase()
+                        const items = contatosCliente
+                          .filter((c) => {
+                            if (!q) return true
+                            return [c.nome, c.cargo, c.email].some((f) =>
+                              (f || '').toLowerCase().includes(q),
+                            )
+                          })
+                          .sort(
+                            (a, b) =>
+                              Number(b.is_principal) - Number(a.is_principal) ||
+                              a.nome.localeCompare(b.nome),
+                          )
+                          .map((c) => ({
+                            value: c.id,
+                            label: c.nome,
+                            sublabel: [
+                              c.is_principal ? 'Principal' : null,
+                              c.cargo || null,
+                              c.email || null,
+                            ]
+                              .filter(Boolean)
+                              .join(' • '),
+                          }))
+                        return { items, hasMore: false }
+                      }}
+                    />
+                  )}
+                </div>
+                {!loadingContatos && form.cliente && contatosCliente.length === 0 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Cadastre um contato para vinculá-lo como destinatário da proposta.
+                  </p>
                 )}
+                {!loadingContatos && form.cliente && contatosCliente.length > 0 && !contatoId && (
+                  <p className="mt-1 text-xs text-destructive flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    Selecione o contato destinatário da proposta.
+                  </p>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="mt-1 h-7 px-2 text-xs text-primary hover:text-primary hover:bg-primary/5 gap-1"
+                  disabled={!form.cliente}
+                  onClick={() => setContatoDialogOpen(true)}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Adicionar contato
+                </Button>
               </div>
             </div>
 
@@ -3181,6 +3272,22 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
           }
         }}
       />
+
+      {/* ============================================================
+          CONTATO FORM DIALOG — Novo contato do cliente selecionado
+      ============================================================ */}
+      {form.cliente && (
+        <ClienteContatoFormDialog
+          open={contatoDialogOpen}
+          onOpenChange={setContatoDialogOpen}
+          clienteId={form.cliente}
+          clienteNome={clienteCompleto?.fantasia || clienteCompleto?.razao_social || null}
+          onSaved={(novoContato) => {
+            setContatosCliente((prev) => [...prev, novoContato])
+            setContatoId(novoContato.id)
+          }}
+        />
+      )}
 
       {/* Diálogo de Envio por WhatsApp */}
       <EnviarWhatsAppDialog
