@@ -17,6 +17,7 @@ import {
 } from '@/lib/paragraphs'
 import { TechnicalDataDisplay } from '@/components/produtos/TechnicalDataDisplay'
 import { resolveDescricaoFontSizeScreen } from '@/lib/descricao-tamanho'
+import { ProposalSectionCounter } from '@/lib/proposal-section-numbering'
 import benerLogo from '@/assets/image-f448b.png'
 
 interface Props {
@@ -758,6 +759,9 @@ export function ProposalDocument({ proposal }: Props) {
     hasComparison ||
     hasTiposPropostaDetails
 
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
+  const sectionCounter = new ProposalSectionCounter()
+
   return (
     <div
       className="proposal-document bg-white text-black mx-auto print:min-h-0 print:h-auto print:w-full"
@@ -993,7 +997,7 @@ export function ProposalDocument({ proposal }: Props) {
                           <div className="flex items-center gap-2">
                             <span className="w-[3.5pt] h-[14pt] bg-[#0b3c26] rounded-xs inline-block" />
                             <h2 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12.5pt]">
-                              Equipamentos e Acessórios do Pacote
+                              {sectionCounter.nextLevel1('Equipamentos e Acessórios do Pacote')}
                             </h2>
                           </div>
                           <span className="text-[10pt] text-slate-500 font-medium">
@@ -1050,9 +1054,6 @@ export function ProposalDocument({ proposal }: Props) {
                                 a.inclusao === 'incluir' ||
                                 a.inclusao === 'preco' ||
                                 a.inclusao === undefined,
-                            )
-                            const accNaoInclusos = itemAcc.filter(
-                              (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
                             )
 
                             return (
@@ -1155,8 +1156,8 @@ export function ProposalDocument({ proposal }: Props) {
                                   </div>
                                 )}
 
-                                {/* 3. ACESSÓRIOS SELECIONADOS DESTA MÁQUINA (Inclusos e Não Inclusos separados) */}
-                                {(accInclusos.length > 0 || accNaoInclusos.length > 0) && (
+                                {/* 3. ACESSÓRIOS SELECIONADOS DESTA MÁQUINA (Inclusos; Não Inclusos virou seção própria após as Condições Comerciais) */}
+                                {accInclusos.length > 0 && (
                                   <div className="mt-3 pt-2.5 border-t border-dashed border-slate-300 space-y-2.5">
                                     {/* Acessórios Opcionais Inclusos no Preço daquela máquina */}
                                     {accInclusos.length > 0 && (
@@ -1182,45 +1183,6 @@ export function ProposalDocument({ proposal }: Props) {
                                         </ul>
                                       </div>
                                     )}
-
-                                    {/* Acessórios Opcionais Não Inclusos no Preço daquela máquina */}
-                                    {accNaoInclusos.length > 0 && (
-                                      <div>
-                                        <h4 className="font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
-                                          Acessórios Opcionais Não Inclusos no Preço
-                                        </h4>
-                                        <ul className="leading-[1.45] text-[9.5pt] font-medium text-[#0f172a] space-y-0.5 break-words">
-                                          {accNaoInclusos.map((a, accIdx) => {
-                                            const accMoeda = a.moeda || itemMoeda
-                                            const precoFormatted =
-                                              a.valor != null
-                                                ? formatCurrencyByMoeda(a.valor, accMoeda)
-                                                : null
-                                            return (
-                                              <li
-                                                key={a.id || accIdx}
-                                                className="flex items-start justify-between gap-2"
-                                              >
-                                                <div className="flex items-start gap-1.5">
-                                                  <span className="text-[#0b3c26] select-none font-bold">
-                                                    •
-                                                  </span>
-                                                  <span>
-                                                    {a.quantidade ? `${a.quantidade}x ` : ''}
-                                                    {a.nome || '—'}
-                                                  </span>
-                                                </div>
-                                                {precoFormatted && (
-                                                  <span className="font-semibold text-slate-900 shrink-0">
-                                                    {precoFormatted}
-                                                  </span>
-                                                )}
-                                              </li>
-                                            )
-                                          })}
-                                        </ul>
-                                      </div>
-                                    )}
                                   </div>
                                 )}
                               </div>
@@ -1237,27 +1199,31 @@ export function ProposalDocument({ proposal }: Props) {
                           )
                           return (
                             <>
-                              {primaryVersao?.acessorios_standards && (
-                                <div className="mb-3.5 break-inside-avoid">
-                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
-                                    Configuração Standard
-                                  </h3>
-                                  <div
-                                    className="font-medium text-[#0f172a] leading-[1.45] break-words"
-                                    style={{ fontSize: primaryDescFontSize }}
-                                  >
-                                    <TechnicalDataDisplay
-                                      content={primaryVersao.acessorios_standards}
-                                      compact
-                                    />
+                              {(() => {
+                                const desc =
+                                  primaryVersao?.especificacoes_tecnicas ||
+                                  proposal.especificacoes_tecnicas ||
+                                  proposal.descricao_proposta
+                                if (!desc) return null
+                                return (
+                                  <div className="mb-3.5 break-inside-avoid">
+                                    <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                                      {sectionCounter.nextLevel1('Especificações Técnicas')}
+                                    </h3>
+                                    <div
+                                      className="font-medium text-[#0f172a] leading-[1.45] break-words"
+                                      style={{ fontSize: primaryDescFontSize }}
+                                    >
+                                      <TechnicalDataDisplay content={desc} compact />
+                                    </div>
                                   </div>
-                                </div>
-                              )}
+                                )
+                              })()}
 
                               {primaryVersao?.caracteristicas_construtivas && (
                                 <div className="mb-3.5 break-inside-avoid">
                                   <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
-                                    Características Construtivas
+                                    {sectionCounter.nextLevel1('Características Construtivas')}
                                   </h3>
                                   <div
                                     className="font-medium text-[#0f172a] leading-[1.45] break-words"
@@ -1271,31 +1237,28 @@ export function ProposalDocument({ proposal }: Props) {
                                 </div>
                               )}
 
-                              {(() => {
-                                const desc =
-                                  primaryVersao?.especificacoes_tecnicas ||
-                                  proposal.especificacoes_tecnicas ||
-                                  proposal.descricao_proposta
-                                if (!desc) return null
-                                return (
-                                  <div className="mb-3.5 break-inside-avoid">
-                                    <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
-                                      Especificações Técnicas
-                                    </h3>
-                                    <div
-                                      className="font-medium text-[#0f172a] leading-[1.45] break-words"
-                                      style={{ fontSize: primaryDescFontSize }}
-                                    >
-                                      <TechnicalDataDisplay content={desc} compact />
-                                    </div>
+                              {primaryVersao?.acessorios_standards && (
+                                <div className="mb-3.5 break-inside-avoid">
+                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                                    {sectionCounter.nextLevel1('Configuração Standard')}
+                                  </h3>
+                                  <div
+                                    className="font-medium text-[#0f172a] leading-[1.45] break-words"
+                                    style={{ fontSize: primaryDescFontSize }}
+                                  >
+                                    <TechnicalDataDisplay
+                                      content={primaryVersao.acessorios_standards}
+                                      compact
+                                    />
                                   </div>
-                                )
-                              })()}
+                                </div>
+                              )}
                             </>
                           )
                         })()}
 
-                        {/* Accessories sections: Inclusos no Preço & Não Inclusos no Preço (modo máquina única) */}
+                        {/* Acessórios Opcionais Inclusos no Preço (modo máquina única).
+                            Não Inclusos virou seção própria numerada após as Condições Comerciais. */}
                         {(() => {
                           if (
                             !proposal.acessorios_proposta ||
@@ -1323,72 +1286,28 @@ export function ProposalDocument({ proposal }: Props) {
                               a.inclusao === 'preco' ||
                               a.inclusao === undefined,
                           )
-                          const naoInclusos = rawItems.filter(
-                            (a) => a.inclusao === 'opcional' || a.inclusao === 'exibir',
-                          )
-                          const propMoeda = normalizeMoedaCode(proposal.moeda || 'BRL')
+
+                          if (inclusos.length === 0) return null
 
                           return (
-                            <>
-                              {inclusos.length > 0 && (
-                                <div className="mb-3.5 break-inside-avoid">
-                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
-                                    Acessórios Opcionais Inclusos no Preço
-                                  </h3>
-                                  <ul className="leading-[1.45] text-[9.5pt] font-medium text-[#0f172a] space-y-1 break-words">
-                                    {inclusos.map((a, i) => (
-                                      <li key={a.id || i} className="flex items-start gap-1.5">
-                                        <span className="text-[#0b3c26] select-none font-bold">
-                                          •
-                                        </span>
-                                        <span>
-                                          {a.quantidade ? `${a.quantidade}x ` : ''}
-                                          {a.nome || '—'}
-                                        </span>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-
-                              {naoInclusos.length > 0 && (
-                                <div className="mb-3.5 break-inside-avoid">
-                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
-                                    Acessórios Opcionais Não Inclusos no Preço
-                                  </h3>
-                                  <ul className="leading-[1.45] text-[9.5pt] font-medium text-[#0f172a] space-y-1 break-words">
-                                    {naoInclusos.map((a, i) => {
-                                      const itemMoeda = a.moeda || propMoeda
-                                      const precoFormatted =
-                                        a.valor != null
-                                          ? formatCurrencyByMoeda(a.valor, itemMoeda)
-                                          : null
-                                      return (
-                                        <li
-                                          key={a.id || i}
-                                          className="flex items-start justify-between gap-2"
-                                        >
-                                          <div className="flex items-start gap-1.5">
-                                            <span className="text-[#0b3c26] select-none font-bold">
-                                              •
-                                            </span>
-                                            <span>
-                                              {a.quantidade ? `${a.quantidade}x ` : ''}
-                                              {a.nome || '—'}
-                                            </span>
-                                          </div>
-                                          {precoFormatted && (
-                                            <span className="font-semibold text-slate-900 shrink-0">
-                                              {precoFormatted}
-                                            </span>
-                                          )}
-                                        </li>
-                                      )
-                                    })}
-                                  </ul>
-                                </div>
-                              )}
-                            </>
+                            <div className="mb-3.5 break-inside-avoid">
+                              <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                                {sectionCounter.nextLevel1(
+                                  'Acessórios Opcionais Inclusos no Preço',
+                                )}
+                              </h3>
+                              <ul className="leading-[1.45] text-[9.5pt] font-medium text-[#0f172a] space-y-1 break-words">
+                                {inclusos.map((a, i) => (
+                                  <li key={a.id || i} className="flex items-start gap-1.5">
+                                    <span className="text-[#0b3c26] select-none font-bold">•</span>
+                                    <span>
+                                      {a.quantidade ? `${a.quantidade}x ` : ''}
+                                      {a.nome || '—'}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
                           )
                         })()}
                       </section>
@@ -1400,7 +1319,7 @@ export function ProposalDocument({ proposal }: Props) {
                         <div className="flex items-center gap-2">
                           <span className="w-[3.5pt] h-[14pt] bg-[#0b3c26] rounded-xs inline-block" />
                           <h2 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12.5pt]">
-                            Condições Comerciais
+                            {sectionCounter.nextLevel1('Condições Comerciais')}
                           </h2>
                         </div>
                         <span className="text-[10pt] text-slate-500 font-medium">
@@ -1638,6 +1557,71 @@ export function ProposalDocument({ proposal }: Props) {
                       </div>
                     </section>
 
+                    {/* Acessórios Opcionais Não Inclusos no Preço Acima: seção própria numerada,
+                        imediatamente após Valor Total / Condições Comerciais (espelho do servidor) */}
+                    {(() => {
+                      type AccItem = {
+                        id?: string
+                        nome?: string
+                        valor?: number
+                        moeda?: string
+                        inclusao?: string
+                        quantidade?: number
+                      }
+                      const rawAcc = Array.isArray(proposal.acessorios_proposta)
+                        ? (proposal.acessorios_proposta as AccItem[])
+                        : []
+                      const naoInclusos = rawAcc.filter(
+                        (a) =>
+                          a &&
+                          a.inclusao !== 'nao_exibir' &&
+                          (a.inclusao === 'opcional' || a.inclusao === 'exibir'),
+                      )
+                      if (naoInclusos.length === 0) return null
+                      const propMoeda = normalizeMoedaCode(proposal.moeda || 'BRL')
+
+                      return (
+                        <section className="proposal-section mb-5 text-xs break-inside-avoid print:break-inside-auto">
+                          <div className="flex items-center justify-between gap-2 mt-4 mb-1.5 pb-1.5 border-b border-slate-300 break-after-avoid">
+                            <div className="flex items-center gap-2">
+                              <span className="w-[3.5pt] h-[14pt] bg-[#0b3c26] rounded-xs inline-block" />
+                              <h2 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12.5pt]">
+                                {sectionCounter.nextLevel1(
+                                  'Acessórios Opcionais Não Inclusos no Preço Acima',
+                                )}
+                              </h2>
+                            </div>
+                          </div>
+                          <ul className="leading-[1.45] text-[9.5pt] font-medium text-[#0f172a] space-y-1 break-words">
+                            {naoInclusos.map((a, i) => {
+                              const itemMoeda = a.moeda || propMoeda
+                              const precoFormatted =
+                                a.valor != null ? formatCurrencyByMoeda(a.valor, itemMoeda) : null
+                              return (
+                                <li
+                                  key={a.id || i}
+                                  className="flex items-start justify-between gap-2"
+                                >
+                                  <div className="flex items-start gap-1.5">
+                                    <span className="text-[#0b3c26] select-none font-bold">•</span>
+                                    <span>
+                                      {a.quantidade ? `${a.quantidade}x ` : ''}
+                                      {a.nome || '—'}
+                                    </span>
+                                  </div>
+                                  {precoFormatted && (
+                                    <span className="font-semibold text-slate-900 shrink-0">
+                                      {precoFormatted}
+                                    </span>
+                                  )}
+                                </li>
+                              )
+                            })}
+                          </ul>
+                        </section>
+                      )
+                    })()}
+
                     {/* Terms and conditions - layout vertical */}
                     {filteredTerms.length > 0 && (
                       <section className="proposal-section mb-5 print:mt-4 text-xs">
@@ -1645,7 +1629,7 @@ export function ProposalDocument({ proposal }: Props) {
                           <div className="flex items-center gap-2">
                             <span className="w-[3.5pt] h-[14pt] bg-[#0b3c26] rounded-xs inline-block" />
                             <h2 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12.5pt]">
-                              Termos de Fornecimento
+                              {sectionCounter.nextLevel1('Termos de Fornecimento')}
                             </h2>
                           </div>
                           <span className="text-[10pt] text-slate-500 font-medium">
@@ -1659,7 +1643,7 @@ export function ProposalDocument({ proposal }: Props) {
                               className="term-item block w-full mb-3 break-inside-avoid"
                             >
                               <div className="term-title block font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
-                                {label}
+                                {sectionCounter.nextLevel2(label)}
                               </div>
                               <div className="term-content block w-full text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words text-[9.5pt] font-sans">
                                 {renderMultilinhaParagraphs(value)}
@@ -1677,7 +1661,7 @@ export function ProposalDocument({ proposal }: Props) {
                           <div className="flex items-center gap-2">
                             <span className="w-[3.5pt] h-[14pt] bg-[#0b3c26] rounded-xs inline-block" />
                             <h2 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12.5pt]">
-                              Informações Adicionais
+                              {sectionCounter.nextLevel1('Informações Adicionais')}
                             </h2>
                           </div>
                           <span className="text-[10pt] text-slate-500 font-medium">
@@ -1696,7 +1680,7 @@ export function ProposalDocument({ proposal }: Props) {
                                 className="term-item block w-full mb-3 break-inside-avoid"
                               >
                                 <div className="term-title block font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
-                                  {fieldTitle}
+                                  {sectionCounter.nextLevel2(fieldTitle)}
                                 </div>
                                 <div className="term-content block w-full text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words text-[9.5pt] font-sans">
                                   {renderMultilinhaParagraphs(fieldVal)}
@@ -1770,7 +1754,7 @@ export function ProposalDocument({ proposal }: Props) {
                     {/* Signatures section */}
                     <section className="proposal-signatures mt-6 break-inside-avoid">
                       <h2 className="font-bold uppercase tracking-wider text-black border-b border-black/40 pb-1 mb-3 text-xs break-after-avoid">
-                        De Acordo e Assinaturas
+                        {sectionCounter.nextLevel1('De Acordo e Assinaturas')}
                       </h2>
                       <div className="grid grid-cols-3 gap-4 text-center">
                         <SignatureBlock

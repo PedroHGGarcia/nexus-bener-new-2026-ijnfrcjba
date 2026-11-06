@@ -510,7 +510,6 @@ export function ClienteFormDialog({
     if (principalContato) {
       if (principalContato.nome?.trim()) values.contato = principalContato.nome.trim()
       if (principalContato.telefone?.trim()) values.telefone = principalContato.telefone.trim()
-      if (principalContato.celular?.trim()) values.celular = principalContato.celular.trim()
       if (principalContato.email?.trim()) values.email = principalContato.email.trim()
     }
 
