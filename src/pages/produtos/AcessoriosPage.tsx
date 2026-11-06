@@ -34,6 +34,8 @@ import { LoadingState, EmptyState, ErrorState } from '@/components/StateViews'
 import { formatDate, formatCurrency } from '@/lib/format'
 import { Acessorio } from '@/types/acessorio'
 import { fetchAcessorios, deleteAcessorio } from '@/services/acessorios'
+import { fetchVersoes } from '@/services/versoes'
+import { MachineCombobox } from '@/components/produtos/MachineCombobox'
 import { AcessorioForm } from '@/components/produtos/AcessorioForm'
 import { AcessorioDetalhesDialog } from '@/components/produtos/AcessorioDetalhesDialog'
 import { PaginationBar } from '@/components/shared/table-controls'
@@ -47,6 +49,8 @@ export default function AcessoriosPage() {
   const [search, setSearch] = useState('')
   const [tipoFilter, setTipoFilter] = useState('Todos')
   const [statusFilter, setStatusFilter] = useState('Todos')
+  const [versaoFilter, setVersaoFilter] = useState<string | null>(null)
+  const [versoes, setVersoes] = useState<{ id: string; nome: string }[]>([])
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Acessorio | null>(null)
   const [viewing, setViewing] = useState<Acessorio | null>(null)
@@ -71,6 +75,40 @@ export default function AcessoriosPage() {
     loadData()
   }, [loadData])
 
+  useEffect(() => {
+    let active = true
+    fetchVersoes({ lightweight: true })
+      .then((res) => {
+        if (!active) return
+        const seen = new Set<string>()
+        const unique: { id: string; nome: string }[] = []
+        for (const v of res) {
+          const nome = (v.nome ?? '').trim()
+          if (!nome) continue
+          const key = nome.toLowerCase()
+          if (seen.has(key)) continue
+          seen.add(key)
+          unique.push({ id: v.id, nome })
+        }
+        unique.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+        setVersoes(unique)
+      })
+      .catch(() => {
+        if (active) setVersoes([])
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const versaoOptions = useMemo(
+    () => [
+      { value: '__todas__', label: 'Todas as versões' },
+      ...versoes.map((v) => ({ value: v.nome, label: v.nome })),
+    ],
+    [versoes],
+  )
+
   const tipos = useMemo(() => {
     const set = new Set(data.filter((d) => d.tipo).map((d) => d.tipo!))
     return ['Todos', ...Array.from(set)]
@@ -78,13 +116,21 @@ export default function AcessoriosPage() {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
+    const mv =
+      !versaoFilter || versaoFilter === '__todas__' ? null : versaoFilter.trim().toLowerCase()
     return data.filter((d) => {
       const ms = !q || d.nome.toLowerCase().includes(q)
       const mt = tipoFilter === 'Todos' || d.tipo === tipoFilter
       const mst = statusFilter === 'Todos' || d.status === statusFilter
-      return ms && mt && mst
+      const mvv =
+        !mv ||
+        (Array.isArray(d.versao_nomes) &&
+          d.versao_nomes.some((n) => (n ?? '').trim().toLowerCase() === mv))
+      return ms && mt && mst && mvv
     })
-  }, [data, search, tipoFilter, statusFilter])
+  }, [data, search, tipoFilter, statusFilter, versaoFilter])
+
+  const versaoFilterAtivo = !!versaoFilter && versaoFilter !== '__todas__'
 
   const handleNew = () => {
     if (!canEdit) return
@@ -161,6 +207,19 @@ export default function AcessoriosPage() {
             className="pl-9"
           />
         </div>
+        <div className="w-full sm:w-56">
+          <MachineCombobox
+            value={versaoFilterAtivo ? versaoFilter : '__todas__'}
+            onChange={(val) => {
+              setVersaoFilter(val ?? '__todas__')
+              setPage(1)
+            }}
+            options={versaoOptions}
+            placeholder="Filtrar por versão..."
+            searchPlaceholder="Buscar versão..."
+            emptyMessage="Nenhuma versão encontrada."
+          />
+        </div>
         <Select
           value={tipoFilter}
           onValueChange={(val) => {
@@ -196,6 +255,18 @@ export default function AcessoriosPage() {
           </SelectContent>
         </Select>
       </div>
+
+      <p className="text-sm text-muted-foreground">
+        {!loading &&
+          !error &&
+          (versaoFilterAtivo
+            ? filtered.length === 1
+              ? `1 acessório encontrado na versão ${versaoFilter}`
+              : `${filtered.length} acessórios encontrados na versão ${versaoFilter}`
+            : filtered.length === 1
+              ? '1 acessório encontrado'
+              : `${filtered.length} acessórios encontrados`)}
+      </p>
 
       {loading ? (
         <LoadingState count={5} />
@@ -249,7 +320,22 @@ export default function AcessoriosPage() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs">
-                      {Array.isArray(d.versoes) && d.versoes.length > 0 ? (
+                      {versaoFilterAtivo &&
+                      Array.isArray(d.versao_nomes) &&
+                      d.versao_nomes.length > 0 ? (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <Badge className="font-mono text-xs font-semibold">{versaoFilter}</Badge>
+                          {d.versao_nomes.length > 1 && (
+                            <Badge
+                              variant="outline"
+                              className="font-mono text-xs font-semibold"
+                              title={`+${d.versao_nomes.length - 1} ${d.versao_nomes.length - 1 === 1 ? 'versão' : 'versões'} vinculadas`}
+                            >
+                              +{d.versao_nomes.length - 1}
+                            </Badge>
+                          )}
+                        </div>
+                      ) : Array.isArray(d.versoes) && d.versoes.length > 0 ? (
                         <Badge variant="outline" className="font-mono text-xs font-semibold">
                           {d.versoes.length} {d.versoes.length === 1 ? 'versão' : 'versões'}
                         </Badge>
