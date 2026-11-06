@@ -255,30 +255,29 @@ export function ProposalDocument({ proposal }: Props) {
   const frasePreco =
     rawFrasePreco && String(rawFrasePreco).trim() !== '' ? String(rawFrasePreco).trim() : null
 
+  // Concatenação inteligente de garantias (garantia principal + garantia de acessórios/cobertura) para respeitar os 7 subtítulos exatos (Item 7)
+  const combinedGarantia = [
+    proposal.garantia_acessorios || tipoProposta?.garantia,
+    proposal.cobertura_garantia,
+  ]
+    .filter((v) => v && String(v).trim())
+    .join('\n\n')
+
   const terms: Array<[string, string | null | undefined]> = [
-    ['Condições de Pagamento', proposal.condicoes_pagamento || tipoProposta?.condicoes_pagamento],
-    ['Prazo de Entrega', proposal.prazo_entrega || tipoProposta?.prazo_entrega],
-    ['Validade da Oferta', proposal.validade_oferta || tipoProposta?.validade_oferta],
-    ['Garantia', proposal.garantia_acessorios || tipoProposta?.garantia],
+    ['Prazo de entrega', proposal.prazo_entrega || tipoProposta?.prazo_entrega],
+    ['Condições de pagamento', proposal.condicoes_pagamento || tipoProposta?.condicoes_pagamento],
+    ['Garantia', combinedGarantia || null],
     [
-      'Assistência Técnica',
+      'Assistência técnica',
       proposal.assistencia_tecnica_detalhada || tipoProposta?.assistencia_tecnica,
     ],
     [
-      'Treinamento Técnico',
+      'Treinamento técnico',
       (proposal as { treinamento_tecnico?: string | null }).treinamento_tecnico ||
         tipoProposta?.treinamento_tecnico,
     ],
-    ['Transporte / Seguro', proposal.transporte_seguro || tipoProposta?.transporte_seguro],
-    ['Cobertura de Garantia', proposal.cobertura_garantia],
-    ['Normas Aplicáveis', proposal.normas_aplicaveis],
-    ['Normas de Segurança', proposal.normas_seguranca],
-    ['Certificações', proposal.certificacoes],
-    ['Certificações de Segurança', proposal.certificacoes_seguranca],
-    ['Critérios de Aceitação', proposal.criterios_aceitacao],
-    ['Materiais Utilizados', proposal.materiais_utilizados],
-    ['Imposto IPI', isTaxValueEmpty(rawIpiVal, 'Imposto IPI') ? null : rawIpiVal],
-    ['Imposto ICMS', isTaxValueEmpty(rawIcmsVal, 'Imposto ICMS') ? null : rawIcmsVal],
+    ['Transporte/seguro', proposal.transporte_seguro || tipoProposta?.transporte_seguro],
+    ['Validade da oferta', proposal.validade_oferta || tipoProposta?.validade_oferta],
   ]
 
   if (tipoProposta?.campos_adicionais) {
@@ -394,20 +393,20 @@ export function ProposalDocument({ proposal }: Props) {
     ? dataPorExtenso.charAt(0).toUpperCase() + dataPorExtenso.slice(1)
     : ''
   const siglaBox = (
-    <div className="border border-black text-[9.5px] leading-tight text-black shrink-0 break-inside-avoid min-w-[280px] max-w-[340px] w-auto">
+    <div className="border border-black text-[9.5px] leading-tight text-black shrink-0 break-inside-avoid min-w-[340px] max-w-[420px] w-full">
       <table className="w-full border-collapse m-0 text-[9.5px] leading-tight bg-white">
         <thead>
           <tr className="border-b border-black">
-            <th className="p-0.5 px-1.5 text-center font-bold border-r border-black w-[55px]">
+            <th className="p-0.5 px-1.5 text-center font-bold border-r border-black w-[65px]">
               Sigla
             </th>
-            <th className="p-0.5 px-2 text-center font-bold border-r border-black min-w-[130px] w-[130px]">
+            <th className="p-0.5 px-2 text-center font-bold border-r border-black w-[180px]">
               N° Oferta
             </th>
-            <th className="p-0.5 px-1.5 text-center font-bold border-r border-black w-[40px]">
+            <th className="p-0.5 px-1.5 text-center font-bold border-r border-black w-[85px]">
               Mês
             </th>
-            <th className="p-0.5 px-1.5 text-center font-bold w-[45px]">Ano</th>
+            <th className="p-0.5 px-1.5 text-center font-bold w-[90px]">Ano</th>
           </tr>
         </thead>
         <tbody>
@@ -416,10 +415,10 @@ export function ProposalDocument({ proposal }: Props) {
               {repPrimeiroNome}
             </td>
             <td
-              className="p-1 text-center font-bold border-r border-black whitespace-nowrap min-w-[130px]"
+              className="p-1 text-center font-bold border-r border-black whitespace-nowrap"
               style={{
                 fontSize:
-                  numeroOferta.length > 18 ? '7.5px' : numeroOferta.length > 13 ? '8.5px' : '9.5px',
+                  numeroOferta.length > 22 ? '7.5px' : numeroOferta.length > 16 ? '8.5px' : '9.5px',
               }}
             >
               {numeroOferta}
@@ -452,20 +451,11 @@ export function ProposalDocument({ proposal }: Props) {
         <p className="font-bold text-[12px] sm:text-[13px]">
           Bener Comercial Importadora Exportadora Ltda.
         </p>
-        <p className="mt-1">Vinhedo, {dataPorExtensoCap}</p>
+        <p className="mt-1 print:hidden">Vinhedo, {dataPorExtensoCap}</p>
         <div className="mt-auto pt-1.5">{siglaBox}</div>
       </div>
     </div>
   )
-  const clientStreet = [c?.logradouro, c?.numero].filter(Boolean).join(', ')
-  const clientAddressLine = [
-    clientStreet,
-    c?.complementos,
-    c?.bairro,
-    c?.cidade ? `${c.cidade}${c.estado ? ` - ${c.estado}` : ''}` : c?.estado,
-  ]
-    .filter(Boolean)
-    .join(' - ')
   const clientPhone = c?.telefone || proposal.telefone || ''
   const clientEmail = c?.email || ''
   const contactName = c?.contato || proposal.contato || ''
@@ -779,7 +769,7 @@ export function ProposalDocument({ proposal }: Props) {
       </div>
 
       {/* Running Footer Nativo para @media print (aparece no rodapé de TODAS as páginas impressas via fixed footer) */}
-      <div className="proposal-running-footer hidden print:block print:fixed print:bottom-0 print:left-0 print:right-0 print:h-[16mm] print:bg-white print:z-[9999] border-t border-black pt-1 text-center text-[8.5px] leading-tight text-black">
+      <div className="proposal-running-footer hidden print:block print:fixed print:bottom-0 print:left-0 print:right-0 print:h-[16mm] print:bg-white print:z-[9999] border-t border-black pt-1 text-center text-[12px] leading-[1.15] text-black">
         <p className="font-normal">
           Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial
         </p>
@@ -830,16 +820,15 @@ export function ProposalDocument({ proposal }: Props) {
                     <div className="text-left text-xs sm:text-[13px] leading-relaxed tracking-tight text-black space-y-0.5">
                       <p className="font-normal">À</p>
                       <p className="font-bold text-sm sm:text-[14px]">{clientCompanyName}</p>
-                      {clientAddressLine && <p className="font-normal">{clientAddressLine}</p>}
                       {clientPhone && <p className="font-normal">Telefone: {clientPhone}</p>}
                       {clientEmail && <p className="font-normal">E-mail: {clientEmail}</p>}
 
                       {contactName ? (
-                        <p className="font-normal pt-2">
+                        <p className="font-normal pt-1">
                           A/C: <span className="font-bold">{contactName}</span>
                         </p>
                       ) : (
-                        <p className="font-normal pt-2">A/C: Diretor / Gerente de Compras</p>
+                        <p className="font-normal pt-1">A/C: Diretor / Gerente de Compras</p>
                       )}
                     </div>
 
@@ -922,23 +911,23 @@ export function ProposalDocument({ proposal }: Props) {
                       </p>
                     </div>
                   ) : (
-                    /* Modo Normal (máquina única): Título e Foto grandes centralizados — bloco indivisível para nunca separar título na pág 1 e imagem na pág 2 */
-                    <div className="break-inside-avoid print:break-inside-avoid machine-presentation-block">
+                    /* Modo Normal (máquina única): Título e Foto grandes centralizados — ocupa espaço restante da 1ª página (Item 2) */
+                    <div className="break-inside-avoid print:break-inside-avoid machine-presentation-block flex-1 min-h-0 flex flex-col">
                       {/* Section 3: Machine Title (Bold, Uppercase, Centered) */}
-                      <div className="my-2 sm:my-2 text-center px-4 break-after-avoid machine-title">
+                      <div className="my-1 sm:my-2 text-center px-4 break-after-avoid machine-title shrink-0">
                         <h1 className="text-sm md:text-[14px] font-bold text-black tracking-wide uppercase leading-tight">
                           {machineTitle}
                         </h1>
                       </div>
 
                       {/* Section 4: Machine Image (Large centered image with small caption below) */}
-                      <div className="flex flex-col items-center justify-center break-before-avoid break-inside-avoid image-container overflow-hidden w-full h-[105mm] min-h-[105mm] max-h-[105mm] my-[6mm_0_2mm] text-center">
+                      <div className="flex-1 min-h-0 flex flex-col items-center justify-center break-before-avoid break-inside-avoid image-container overflow-hidden w-full my-1 text-center">
                         {machineImage ? (
-                          <div className="w-full flex items-center justify-center">
+                          <div className="w-full flex-1 min-h-0 flex items-center justify-center">
                             <img
                               src={machineImage}
                               alt={machineTitle}
-                              className="w-auto max-w-[145mm] h-auto max-h-[92mm] object-contain machine-img block mx-auto"
+                              className="w-auto max-w-full h-auto max-h-full object-contain machine-img block mx-auto"
                               loading="eager"
                             />
                           </div>
@@ -947,7 +936,7 @@ export function ProposalDocument({ proposal }: Props) {
                             Foto do equipamento indisponível no catálogo
                           </div>
                         )}
-                        <p className="text-[9px] text-black/70 italic text-center mt-[3mm] image-caption">
+                        <p className="text-[9px] text-black/70 italic text-center mt-1 image-caption shrink-0">
                           Imagem meramente ilustrativa
                         </p>
                       </div>
@@ -1113,7 +1102,7 @@ export function ProposalDocument({ proposal }: Props) {
                                   </div>
                                 </div>
 
-                                {/* Detalhes Técnicos / Construtivos / Standard da Máquina (se preenchidos) */}
+                                {/* Detalhes Técnicos / Construtivos / Standard da Máquina: 1. Standard, 2. Construtivas, 3. Specs (Item 5) */}
                                 {itemAcessStandards && (
                                   <div className="mt-2.5 pt-2 border-t border-slate-100 break-inside-avoid">
                                     <h4 className="font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
@@ -1199,6 +1188,41 @@ export function ProposalDocument({ proposal }: Props) {
                           )
                           return (
                             <>
+                              {/* Ordem das descrições: 1. Configuração Standard, 2. Características Construtivas, 3. Especificações Técnicas (Item 5) */}
+                              {primaryVersao?.acessorios_standards && (
+                                <div className="mb-3.5 break-inside-avoid">
+                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                                    {sectionCounter.nextLevel1('Configuração Standard')}
+                                  </h3>
+                                  <div
+                                    className="font-medium text-[#0f172a] leading-[1.45] break-words"
+                                    style={{ fontSize: primaryDescFontSize }}
+                                  >
+                                    <TechnicalDataDisplay
+                                      content={primaryVersao.acessorios_standards}
+                                      compact
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
+                              {primaryVersao?.caracteristicas_construtivas && (
+                                <div className="mb-3.5 break-inside-avoid">
+                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
+                                    {sectionCounter.nextLevel1('Características Construtivas')}
+                                  </h3>
+                                  <div
+                                    className="font-medium text-[#0f172a] leading-[1.45] break-words"
+                                    style={{ fontSize: primaryDescFontSize }}
+                                  >
+                                    <TechnicalDataDisplay
+                                      content={primaryVersao.caracteristicas_construtivas}
+                                      compact
+                                    />
+                                  </div>
+                                </div>
+                              )}
+
                               {(() => {
                                 const desc =
                                   primaryVersao?.especificacoes_tecnicas ||
@@ -1219,40 +1243,6 @@ export function ProposalDocument({ proposal }: Props) {
                                   </div>
                                 )
                               })()}
-
-                              {primaryVersao?.caracteristicas_construtivas && (
-                                <div className="mb-3.5 break-inside-avoid">
-                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
-                                    {sectionCounter.nextLevel1('Características Construtivas')}
-                                  </h3>
-                                  <div
-                                    className="font-medium text-[#0f172a] leading-[1.45] break-words"
-                                    style={{ fontSize: primaryDescFontSize }}
-                                  >
-                                    <TechnicalDataDisplay
-                                      content={primaryVersao.caracteristicas_construtivas}
-                                      compact
-                                    />
-                                  </div>
-                                </div>
-                              )}
-
-                              {primaryVersao?.acessorios_standards && (
-                                <div className="mb-3.5 break-inside-avoid">
-                                  <h3 className="mt-3 mb-1 font-bold uppercase text-[#0b3c26] text-[10.5pt] tracking-[0.5px] break-after-avoid">
-                                    {sectionCounter.nextLevel1('Configuração Standard')}
-                                  </h3>
-                                  <div
-                                    className="font-medium text-[#0f172a] leading-[1.45] break-words"
-                                    style={{ fontSize: primaryDescFontSize }}
-                                  >
-                                    <TechnicalDataDisplay
-                                      content={primaryVersao.acessorios_standards}
-                                      compact
-                                    />
-                                  </div>
-                                </div>
-                              )}
                             </>
                           )
                         })()}
@@ -1319,7 +1309,7 @@ export function ProposalDocument({ proposal }: Props) {
                         <div className="flex items-center gap-2">
                           <span className="w-[3.5pt] h-[14pt] bg-[#0b3c26] rounded-xs inline-block" />
                           <h2 className="font-bold uppercase tracking-wider text-[#0b3c26] text-[12.5pt]">
-                            {sectionCounter.nextLevel1('Condições Comerciais')}
+                            {sectionCounter.nextLevel1('Preços')}
                           </h2>
                         </div>
                         <span className="text-[10pt] text-slate-500 font-medium">
@@ -1645,7 +1635,7 @@ export function ProposalDocument({ proposal }: Props) {
                               <div className="term-title block font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
                                 {sectionCounter.nextLevel2(label)}
                               </div>
-                              <div className="term-content block w-full text-slate-900 font-medium whitespace-pre-wrap leading-relaxed break-words text-[9.5pt] font-sans">
+                              <div className="term-content block w-full text-black font-normal whitespace-pre-wrap leading-relaxed break-words text-xs sm:text-[13px]">
                                 {renderMultilinhaParagraphs(value)}
                               </div>
                             </div>

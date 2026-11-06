@@ -323,6 +323,8 @@
     background: #fff !important;
     z-index: 9999 !important;
     box-sizing: border-box !important;
+    font-size: 12px !important;
+    line-height: 1.15 !important;
   }
 
   /* Tabela de paginação para impressão: thead/tfoot repetem em todas as páginas
@@ -582,15 +584,16 @@
   .proposal-cover .image-container,
   .proposal-document .proposal-cover .image-container {
     width: 100% !important;
-    height: 105mm !important;
-    min-height: 105mm !important;
-    max-height: 105mm !important;
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: 100% !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     justify-content: center !important;
     text-align: center !important;
-    margin: 6mm 0 2mm !important;
+    margin: 2mm 0 2mm !important;
     page-break-before: avoid !important;
     page-break-inside: avoid !important;
     break-before: avoid !important;
@@ -601,9 +604,9 @@
   .proposal-document .proposal-cover .machine-img {
     display: block !important;
     width: auto !important;
-    max-width: 145mm !important;
+    max-width: 100% !important;
     height: auto !important;
-    max-height: 92mm !important;
+    max-height: 100% !important;
     object-fit: contain !important;
     margin: 0 auto !important;
   }
