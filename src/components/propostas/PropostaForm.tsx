@@ -2946,17 +2946,17 @@ export function PropostaForm({ userId, userName, editProposta, onSaved, onCancel
                               : 'R$'
                       }
                     />
-                    {formatPrecoEspecialDiscountBadge(valorFinal, form.preco_especial) && (
-                      <span className="shrink-0 rounded-lg bg-[#0b3c26] px-3 py-2 text-sm font-bold text-white">
-                        {formatPrecoEspecialDiscountBadge(valorFinal, form.preco_especial)}
+                    {formatPrecoEspecialDiscountBadge(valorAtual, form.preco_especial) && (
+                      <span className="shrink-0 whitespace-nowrap text-sm font-bold text-[#0b3c26] dark:text-emerald-400">
+                        {formatPrecoEspecialDiscountBadge(valorAtual, form.preco_especial)}
                       </span>
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-1">
-                    Na proposta gerada, o valor cheio ({fmtCurrency(valorFinal)}) será mostrado
+                    Na proposta gerada, o valor cheio ({fmtCurrency(valorAtual)}) será mostrado
                     cortado e este preço especial aparecerá abaixo em destaque
-                    {formatPrecoEspecialDiscountBadge(valorFinal, form.preco_especial)
-                      ? ` com a indicação de ${formatPrecoEspecialDiscountBadge(valorFinal, form.preco_especial)} de desconto.`
+                    {formatPrecoEspecialDiscountBadge(valorAtual, form.preco_especial)
+                      ? ` com a indicação de ${formatPrecoEspecialDiscountBadge(valorAtual, form.preco_especial)} de desconto.`
                       : '.'}
                   </p>
                   {form.moeda !== 'BRL' &&
