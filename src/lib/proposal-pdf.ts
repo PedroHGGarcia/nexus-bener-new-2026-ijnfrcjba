@@ -15,7 +15,11 @@ import benerLogo from '@/assets/image-f448b.png'
 
 const esc = escapeHtml
 
-export function renderMultilinhaHtml(raw: string | null | undefined, extraClass = ''): string {
+export function renderMultilinhaHtml(
+  raw: string | null | undefined,
+  extraClassOrOptions: string | { fontSizePt?: string } = '',
+): string {
+  const extraClass = typeof extraClassOrOptions === 'string' ? extraClassOrOptions : ''
   return renderParagraphsHtml(raw, extraClass, esc)
 }
 
@@ -142,6 +146,25 @@ export function generatePropostaHtml(
   const primaryItem = equipmentItems && equipmentItems[0] ? equipmentItems[0] : null
   const primaryVersao = primaryFromSnapshot || primaryItem?.versoes || proposal.versoes || null
 
+  // Derivação de sigla, mês e ano para o cabeçalho
+  const rawRepNome =
+    proposal.representantes?.fantasia ||
+    proposal.nome_representante_comercial ||
+    proposal.representante_original ||
+    (proposal as any).user ||
+    ''
+  const firstWord = rawRepNome.trim().split(/\s+/)[0] || ''
+  const userSigla = firstWord
+    ? firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase()
+    : '—'
+  const rawCad = proposal.dt_cad ? String(proposal.dt_cad).trim() : ''
+  const parsedDate = rawCad
+    ? new Date(rawCad.includes('T') ? rawCad : `${rawCad}T12:00:00`)
+    : new Date()
+  const dataEmissao = isNaN(parsedDate.getTime()) ? new Date() : parsedDate
+  const formattedMonth = String(dataEmissao.getMonth() + 1).padStart(2, '0')
+  const formattedYear = String(dataEmissao.getFullYear())
+
   // Numeração hierárquica de títulos de seção (espelho do gerador do servidor)
   const sectionCounter = new ProposalSectionCounter()
 
@@ -186,26 +209,31 @@ export function generatePropostaHtml(
   const proposalFrasePreco =
     (proposal as { frase_preco?: string | null }).frase_preco || tipoProposta?.frase_preco
 
+  // Concatenação de garantias para respeitar os 7 subtítulos exatos (Ajuste 8):
+  // 7.1 Prazo de entrega, 7.2 Condições de pagamento, 7.3 Garantia, 7.4 Assistência técnica,
+  // 7.5 Treinamento técnico, 7.6 Transporte/Seguro, 7.7 Validade da oferta
+  const combinedGarantiaPdf = [
+    proposal.garantia_acessorios || tipoProposta?.garantia,
+    proposal.cobertura_garantia,
+  ]
+    .filter((v) => v && String(v).trim())
+    .join('\n\n')
+
   const terms: Array<[string, string | null | undefined]> = [
-    ['Prazo de entrega', proposal.prazo_entrega],
-    ['Condições de pagamento', proposal.condicoes_pagamento],
-    ['Garantia', proposal.cobertura_garantia],
-    ['Assistência técnica', proposal.assistencia_tecnica_detalhada],
+    ['Prazo de entrega', proposal.prazo_entrega || tipoProposta?.prazo_entrega],
+    ['Condições de pagamento', proposal.condicoes_pagamento || tipoProposta?.condicoes_pagamento],
+    ['Garantia', combinedGarantiaPdf || null],
+    [
+      'Assistência técnica',
+      proposal.assistencia_tecnica_detalhada || tipoProposta?.assistencia_tecnica,
+    ],
     [
       'Treinamento técnico',
       (proposal as { treinamento_tecnico?: string | null }).treinamento_tecnico ||
         tipoProposta?.treinamento_tecnico,
     ],
-    ['Transporte/Seguro', proposal.transporte_seguro],
-    ['Validade da oferta', proposal.validade_oferta],
-    ['Garantia de Acessórios', proposal.garantia_acessorios],
-    ['Normas Aplicáveis', proposal.normas_aplicaveis],
-    ['Normas de Segurança', proposal.normas_seguranca],
-    ['Certificações', proposal.certificacoes],
-    ['Critérios de Aceitação', proposal.criterios_aceitacao],
-    ['Materiais Utilizados', proposal.materiais_utilizados],
-    ['Imposto IPI', rawIpiVal],
-    ['Imposto ICMS', rawIcmsVal],
+    ['Transporte/Seguro', proposal.transporte_seguro || tipoProposta?.transporte_seguro],
+    ['Validade da oferta', proposal.validade_oferta || tipoProposta?.validade_oferta],
   ]
 
   if (tipoProposta?.campos_adicionais) {
