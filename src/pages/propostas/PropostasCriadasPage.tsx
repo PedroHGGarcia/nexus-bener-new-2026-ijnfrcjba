@@ -280,51 +280,58 @@ export default function PropostasCriadasPage() {
       ) : (
         <>
           <div className="w-full border rounded-lg bg-card overflow-x-auto shadow-sm">
-            <Table className="w-full min-w-[1060px] table-auto">
+            <Table className="w-full table-fixed">
               <colgroup>
-                <col className="w-[185px]" />
-                <col className="w-[200px]" />
-                <col className="w-[240px]" />
-                <col className="w-[150px]" />
-                <col className="w-[140px]" />
-                <col className="w-[150px]" />
+                {/* Nº Oferta */}
+                <col className="w-[145px]" />
+                {/* Cliente (fluido) */}
+                <col className="w-[18%]" />
+                {/* Máquina / Versão (fluido) */}
+                <col className="w-[20%]" />
+                {/* Tipo Proposta */}
                 <col className="w-[110px]" />
-                <col className="w-[100px]" />
-                <col className="w-[170px]" />
+                {/* Criado por */}
+                <col className="w-[110px]" />
+                {/* Valor Final */}
+                <col className="w-[125px]" />
+                {/* Status */}
+                <col className="w-[95px]" />
+                {/* Data */}
+                <col className="w-[85px]" />
+                {/* Ações (compactas e fixas) */}
+                <col className="w-[160px]" />
               </colgroup>
               <TableHeader>
                 <TableRow className="bg-muted/40 hover:bg-muted/40">
-                  <TableHead className="w-[185px] min-w-[170px] whitespace-nowrap">
-                    Nº Oferta
-                  </TableHead>
-                  <TableHead className="w-[200px] min-w-[170px]">Cliente</TableHead>
-                  <TableHead className="w-[240px] min-w-[190px]">
+                  <TableHead className="whitespace-nowrap">Nº Oferta</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>
                     <div className="flex items-center gap-1.5">
-                      <Cpu className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>Máquina / Versão</span>
+                      <Cpu className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate">Máquina / Versão</span>
                     </div>
                   </TableHead>
-                  <TableHead className="w-[150px] min-w-[120px]">
+                  <TableHead>
                     <div className="flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>Tipo Proposta</span>
+                      <Layers className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate">Tipo</span>
                     </div>
                   </TableHead>
-                  <TableHead className="w-[140px] min-w-[120px]">
+                  <TableHead>
                     <div className="flex items-center gap-1.5">
-                      <UserIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span>Criado por</span>
+                      <UserIcon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate">Criado por</span>
                     </div>
                   </TableHead>
-                  <TableHead className="w-[150px] min-w-[130px]">Valor Final</TableHead>
-                  <TableHead className="w-[110px] min-w-[100px]">Status</TableHead>
-                  <TableHead className="w-[100px] min-w-[90px]">
+                  <TableHead className="whitespace-nowrap">Valor Final</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
+                  <TableHead>
                     <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                      <Calendar className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                       <span>Data</span>
                     </div>
                   </TableHead>
-                  <TableHead className="w-[170px] min-w-[160px] text-right">Ações</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -336,16 +343,19 @@ export default function PropostasCriadasPage() {
                   return (
                     <TableRow key={p.id} className="align-top">
                       {/* Nº Oferta */}
-                      <TableCell data-label="Nº Oferta" className="font-bold text-primary py-3">
-                        <div className="flex flex-col gap-1 min-w-[160px]">
-                          <span className="font-mono text-xs sm:text-sm font-semibold tracking-tight break-all text-slate-900 dark:text-slate-100 select-all">
+                      <TableCell
+                        data-label="Nº Oferta"
+                        className="font-bold text-primary py-2.5 px-2.5"
+                      >
+                        <div className="flex flex-col gap-1 overflow-hidden">
+                          <span className="font-mono text-xs sm:text-[13px] font-semibold tracking-tight text-slate-900 dark:text-slate-100 select-all truncate">
                             {displayNumero(p.numero_proposta, p.revisao)}
                           </span>
                           <div className="flex flex-wrap items-center gap-1">
                             {projetoNome && (
                               <Badge
                                 variant="outline"
-                                className="inline-flex items-center gap-1 text-[10.5px] font-normal px-1.5 py-0.5 rounded text-muted-foreground bg-muted/50 border-muted-foreground/20 max-w-[190px] truncate"
+                                className="inline-flex items-center gap-1 text-[10px] font-normal px-1 py-0.5 rounded text-muted-foreground bg-muted/50 border-muted-foreground/20 max-w-full truncate"
                                 title={`Projeto: ${projetoNome}`}
                               >
                                 <FolderKanban className="w-3 h-3 text-muted-foreground/70 shrink-0" />
@@ -355,7 +365,7 @@ export default function PropostasCriadasPage() {
                             {p.modelo_licitacao && (
                               <Badge
                                 variant="outline"
-                                className="bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700 text-[10.5px] py-0 px-1.5 font-medium shrink-0"
+                                className="bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700 text-[10px] py-0 px-1 font-medium shrink-0"
                               >
                                 Licitação
                               </Badge>
@@ -363,7 +373,7 @@ export default function PropostasCriadasPage() {
                             {p.is_pacote && (
                               <Badge
                                 variant="outline"
-                                className="bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-700 text-[10.5px] py-0 px-1.5 font-medium shrink-0"
+                                className="bg-blue-50 text-blue-700 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-700 text-[10px] py-0 px-1 font-medium shrink-0"
                               >
                                 Pacote
                               </Badge>
@@ -373,25 +383,34 @@ export default function PropostasCriadasPage() {
                       </TableCell>
 
                       {/* Cliente */}
-                      <TableCell data-label="Cliente" className="text-xs py-3">
+                      <TableCell
+                        data-label="Cliente"
+                        className="text-xs py-2.5 px-2.5 overflow-hidden"
+                      >
                         <div
-                          className="font-medium text-foreground leading-snug break-words line-clamp-3 select-text"
+                          className="font-medium text-foreground leading-snug truncate select-text"
                           title={clienteNome}
                         >
                           {clienteNome}
                         </div>
                         {p.clientes?.cidade && p.clientes?.estado && (
-                          <span className="text-[11px] text-muted-foreground block mt-0.5">
+                          <span
+                            className="text-[11px] text-muted-foreground block mt-0.5 truncate"
+                            title={`${p.clientes.cidade}/${p.clientes.estado}`}
+                          >
                             {p.clientes.cidade}/{p.clientes.estado}
                           </span>
                         )}
                       </TableCell>
 
                       {/* Máquina / Versão */}
-                      <TableCell data-label="Máquina" className="text-xs py-3">
-                        <div className="flex flex-col gap-1">
+                      <TableCell
+                        data-label="Máquina"
+                        className="text-xs py-2.5 px-2.5 overflow-hidden"
+                      >
+                        <div className="flex flex-col gap-0.5 overflow-hidden">
                           <span
-                            className="font-medium text-foreground leading-snug break-words line-clamp-3"
+                            className="font-medium text-foreground leading-snug truncate"
                             title={maquinaInfo.primary !== '—' ? maquinaInfo.primary : undefined}
                           >
                             {maquinaInfo.primary}
@@ -399,18 +418,22 @@ export default function PropostasCriadasPage() {
                           {maquinaInfo.secondary && (
                             <Badge
                               variant="secondary"
-                              className="w-fit text-[10px] px-1.5 py-0 font-normal text-muted-foreground bg-muted"
+                              className="w-fit text-[10px] px-1 py-0 font-normal text-muted-foreground bg-muted truncate max-w-full"
+                              title={maquinaInfo.secondary}
                             >
-                              {maquinaInfo.secondary}
+                              <span className="truncate">{maquinaInfo.secondary}</span>
                             </Badge>
                           )}
                         </div>
                       </TableCell>
 
                       {/* Tipo de Proposta */}
-                      <TableCell data-label="Tipo" className="text-xs py-3">
+                      <TableCell
+                        data-label="Tipo"
+                        className="text-xs py-2.5 px-2.5 overflow-hidden"
+                      >
                         <span
-                          className="block text-muted-foreground leading-snug break-words line-clamp-2"
+                          className="block text-muted-foreground leading-snug truncate"
                           title={p.tipo_proposta || undefined}
                         >
                           {p.tipo_proposta || '—'}
@@ -418,9 +441,12 @@ export default function PropostasCriadasPage() {
                       </TableCell>
 
                       {/* Criado por */}
-                      <TableCell data-label="Criado por" className="text-xs py-3">
+                      <TableCell
+                        data-label="Criado por"
+                        className="text-xs py-2.5 px-2.5 overflow-hidden"
+                      >
                         <span
-                          className="block font-medium text-foreground leading-snug break-words line-clamp-2"
+                          className="block font-medium text-foreground leading-snug truncate"
                           title={criadoPor !== '—' ? criadoPor : undefined}
                         >
                           {criadoPor}
@@ -430,17 +456,17 @@ export default function PropostasCriadasPage() {
                       {/* Valor Final */}
                       <TableCell
                         data-label="Valor Final"
-                        className="font-semibold py-3 whitespace-nowrap"
+                        className="font-semibold py-2.5 px-2.5 whitespace-nowrap"
                       >
                         <div className="flex flex-col leading-tight">
-                          <span className="text-sm font-bold text-foreground">
+                          <span className="text-xs sm:text-[13px] font-bold text-foreground">
                             {formatValor(p.valor_final, p.moeda)}
                           </span>
                           {p.moeda &&
                             p.moeda !== 'BRL' &&
                             p.valor_final &&
                             formatBrlEquivalent(p.valor_final, p.moeda, rates) && (
-                              <span className="text-[11px] text-muted-foreground tabular-nums mt-0.5">
+                              <span className="text-[10px] text-muted-foreground tabular-nums mt-0.5 truncate">
                                 {formatBrlEquivalent(p.valor_final, p.moeda, rates)}
                               </span>
                             )}
@@ -448,10 +474,10 @@ export default function PropostasCriadasPage() {
                       </TableCell>
 
                       {/* Status */}
-                      <TableCell data-label="Status" className="py-3 whitespace-nowrap">
+                      <TableCell data-label="Status" className="py-2.5 px-2.5 whitespace-nowrap">
                         <Badge
                           variant={statusVariant(p.status)}
-                          className="font-semibold text-[11px]"
+                          className="font-semibold text-[10.5px] px-1.5 py-0"
                         >
                           {STATUS_LABELS[p.status] || p.status}
                         </Badge>
@@ -460,23 +486,26 @@ export default function PropostasCriadasPage() {
                       {/* Data */}
                       <TableCell
                         data-label="Data"
-                        className="text-xs text-muted-foreground py-3 whitespace-nowrap"
+                        className="text-xs text-muted-foreground py-2.5 px-2.5 whitespace-nowrap"
                       >
                         {formatDate(p.created_at)}
                       </TableCell>
 
                       {/* Ações */}
-                      <TableCell data-label="Ações" className="text-right py-3 whitespace-nowrap">
-                        <div className="flex justify-end items-center gap-0.5">
+                      <TableCell
+                        data-label="Ações"
+                        className="text-right py-2.5 px-1.5 whitespace-nowrap"
+                      >
+                        <div className="flex justify-end items-center gap-0">
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => setSelectedProposalForWhatsApp(p)}
                             aria-label={`Enviar proposta ${p.numero_proposta || ''} por WhatsApp`}
                             title="Enviar Proposta por WhatsApp"
-                            className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
+                            className="h-7 w-7 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40"
                           >
-                            <MessageSquare className="w-4 h-4 fill-emerald-600/20" />
+                            <MessageSquare className="w-3.5 h-3.5 fill-emerald-600/20" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -484,9 +513,9 @@ export default function PropostasCriadasPage() {
                             onClick={() => setSelectedProposalForNotify(p)}
                             aria-label={`Reenviar notificação da proposta ${p.numero_proposta || ''}`}
                             title="Enviar ao Cliente (E-mail)"
-                            className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                            className="h-7 w-7 text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                           >
-                            <Send className="w-4 h-4" />
+                            <Send className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -494,12 +523,12 @@ export default function PropostasCriadasPage() {
                             onClick={() => handleCopyPublicLink(p)}
                             aria-label={`Copiar link público da proposta ${p.numero_proposta || ''}`}
                             title="Copiar link público da proposta"
-                            className="h-8 w-8"
+                            className="h-7 w-7"
                           >
                             {copiedId === p.id ? (
-                              <Check className="w-4 h-4 text-emerald-600" />
+                              <Check className="w-3.5 h-3.5 text-emerald-600" />
                             ) : (
-                              <LinkIcon className="w-4 h-4 text-primary" />
+                              <LinkIcon className="w-3.5 h-3.5 text-primary" />
                             )}
                           </Button>
                           <Button
@@ -508,9 +537,9 @@ export default function PropostasCriadasPage() {
                             onClick={() => navigate(`/controle-propostas/editar-proposta/${p.id}`)}
                             aria-label={`Editar proposta ${p.numero_proposta || ''}`}
                             title="Editar Proposta"
-                            className="h-8 w-8"
+                            className="h-7 w-7"
                           >
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -518,9 +547,9 @@ export default function PropostasCriadasPage() {
                             onClick={() => navigate(`/controle-propostas/proposta-pdf/${p.id}`)}
                             aria-label={`Visualizar proposta ${p.numero_proposta || ''}`}
                             title="Visualizar Proposta (PDF)"
-                            className="h-8 w-8"
+                            className="h-7 w-7"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -557,9 +586,9 @@ export default function PropostasCriadasPage() {
                             }}
                             aria-label={`Baixar PDF da proposta ${p.numero_proposta || ''}`}
                             title="Baixar PDF"
-                            className="h-8 w-8"
+                            className="h-7 w-7"
                           >
-                            <Download className="w-4 h-4" />
+                            <Download className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -567,19 +596,19 @@ export default function PropostasCriadasPage() {
                             onClick={() => window.open(`/proposta/${p.id}/imprimir`, '_blank')}
                             aria-label={`Imprimir proposta ${p.numero_proposta || ''}`}
                             title="Imprimir Proposta"
-                            className="h-8 w-8"
+                            className="h-7 w-7"
                           >
-                            <Printer className="w-4 h-4" />
+                            <Printer className="w-3.5 h-3.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                            className="h-7 w-7 text-destructive hover:bg-destructive/10"
                             onClick={() => handleDelete(p.id)}
                             aria-label={`Excluir proposta ${p.numero_proposta || ''}`}
                             title="Excluir Proposta"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </div>
                       </TableCell>
