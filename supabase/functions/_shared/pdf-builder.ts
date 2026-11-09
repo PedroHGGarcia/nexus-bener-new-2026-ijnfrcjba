@@ -549,9 +549,9 @@ export function buildProposalPdfHtml(
       ${filteredTerms
         .map(
           ([lbl, val]) => `
-        <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
+        <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:auto;break-inside:auto;">
           <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(sectionCounter.nextLevel2(lbl))}</div>
-          <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderCommercialFieldHtml(val)}</div>
+          <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;orphans:3;widows:3;">${renderCommercialFieldHtml(val)}</div>
         </div>`,
         )
         .join('')}
@@ -609,9 +609,9 @@ export function buildProposalPdfHtml(
         ${validCampos
           .map(
             (c: any) => `
-          <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:avoid;break-inside:avoid;">
+          <div class="term-item" style="display:block;width:100%;margin-bottom:12px;page-break-inside:auto;break-inside:auto;">
             <div class="term-title" style="display:block;font-size:10.5pt;font-weight:700;color:#0b3c26;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;page-break-after:avoid;break-after:avoid;">${escapeHtml(sectionCounter.nextLevel2(String(c.titulo || c.chave || '').trim()))}</div>
-            <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;">${renderCommercialFieldHtml(c.conteudo != null ? c.conteudo : c.valor)}</div>
+            <div class="term-content" style="display:block;width:100%;color:#0f172a;font-size:9.5pt;font-weight:500;line-height:1.45;word-break:break-word;orphans:3;widows:3;">${renderCommercialFieldHtml(c.conteudo != null ? c.conteudo : c.valor)}</div>
           </div>`,
           )
           .join('')}

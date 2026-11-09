@@ -1632,7 +1632,7 @@ export function ProposalDocument({ proposal }: Props) {
                           {filteredTerms.map(([label, value]) => (
                             <div
                               key={label}
-                              className="term-item block w-full mb-3 break-inside-avoid"
+                              className="term-item block w-full mb-3 print:break-inside-auto"
                             >
                               <div className="term-title block font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
                                 {sectionCounter.nextLevel2(label)}
@@ -1669,7 +1669,7 @@ export function ProposalDocument({ proposal }: Props) {
                             return (
                               <div
                                 key={i}
-                                className="term-item block w-full mb-3 break-inside-avoid"
+                                className="term-item block w-full mb-3 print:break-inside-auto"
                               >
                                 <div className="term-title block font-bold text-[#0b3c26] uppercase text-[10.5pt] tracking-[0.5px] mb-1 break-after-avoid">
                                   {sectionCounter.nextLevel2(fieldTitle)}

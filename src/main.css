@@ -717,4 +717,30 @@
     break-after: avoid !important;
     page-break-after: avoid !important;
   }
+
+  /* Termos de Fornecimento e Informações Adicionais:
+   * Permite que o texto de um termo quebre entre páginas preenchendo o espaço disponível,
+   * sem empurrar o bloco inteiro (título + texto) para a página seguinte.
+   * O título fica preso às primeiras linhas do conteúdo (break-after: avoid)
+   * e orphans/widows impedem menos de 3 linhas isoladas no início ou fim da página. */
+  .proposal-document .term-item {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  .proposal-document .term-title {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  .proposal-document .term-content,
+  .proposal-document .term-content p,
+  .proposal-document .term-content > div {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    break-before: auto !important;
+    page-break-before: auto !important;
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
 }
