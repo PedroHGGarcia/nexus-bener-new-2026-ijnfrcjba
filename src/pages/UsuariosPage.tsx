@@ -1058,90 +1058,102 @@ export default function UsuariosPage() {
                     </Badge>
                   </div>
                   <div className="overflow-x-auto">
-                  <Table className="w-full table-fixed">
-                    <colgroup>
-                      <col className="w-[28%]" />
-                      <col className="w-[28%]" />
-                      <col className="w-[110px]" />
-                      <col className="w-[12%]" />
-                      <col className="w-[70px]" />
-                      <col className="w-[100px]" />
-                      <col className="w-[60px]" />
-                    </colgroup>
-                    <TableHeader>
-                      <TableRow className="bg-muted/40 hover:bg-muted/40">
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead className="whitespace-nowrap">Role</TableHead>
-                        <TableHead>Setor</TableHead>
-                        <TableHead className="whitespace-nowrap">Estado</TableHead>
-                        <TableHead className="whitespace-nowrap">Data Criação</TableHead>
-                        <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {group.users.map((u) => (
-                        <TableRow key={u.id}>
-                          <TableCell className="font-semibold py-2.5 px-3 truncate" title={u.name || undefined}>
-                            {u.name || '—'}
-                            {u.id === currentUser?.id && (
-                              <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">(Você)</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm py-2.5 px-3 truncate" title={u.email}>{u.email}</TableCell>
-                          <TableCell className="py-2.5 px-3 whitespace-nowrap">
-                            <Badge
-                              variant={u.role === 'Admin Completo' ? 'default' : 'secondary'}
-                              className={u.status === 'Inativo' ? 'opacity-50' : ''}
-                            >
-                              {u.role}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-sm py-2.5 px-3 truncate" title={u.setor || undefined}>{u.setor || '—'}</TableCell>
-                          <TableCell className="text-sm py-2.5 px-3">
-                            {u.estado_atuacao ? (
-                              <Badge variant="outline" className="font-mono text-xs">
-                                {u.estado_atuacao}
-                              </Badge>
-                            ) : (
-                              '—'
-                            )}
-                          </TableCell>
-                          <TableCell className="text-xs font-mono py-2.5 px-3 whitespace-nowrap">
-                            {new Date(u.created_at).toLocaleDateString('pt-BR')}
-                          </TableCell>
-                          <TableCell className="text-right py-2.5 px-3 whitespace-nowrap">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreVertical className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => openEdit(u)}>
-                                  Editar Perfil
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleToggleStatus(u)}>
-                                  {u.status === 'Ativo' ? 'Desativar' : 'Ativar'}
-                                </DropdownMenuItem>
-                                {u.id !== currentUser?.id && (
-                                  <>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() => setDeleteTarget(u)}
-                                      className="text-destructive focus:text-destructive"
-                                    >
-                                      <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                                    </DropdownMenuItem>
-                                  </>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
+                    <Table className="w-full table-fixed">
+                      <colgroup>
+                        <col className="w-[28%]" />
+                        <col className="w-[28%]" />
+                        <col className="w-[110px]" />
+                        <col className="w-[12%]" />
+                        <col className="w-[70px]" />
+                        <col className="w-[100px]" />
+                        <col className="w-[60px]" />
+                      </colgroup>
+                      <TableHeader>
+                        <TableRow className="bg-muted/40 hover:bg-muted/40">
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead className="whitespace-nowrap">Role</TableHead>
+                          <TableHead>Setor</TableHead>
+                          <TableHead className="whitespace-nowrap">Estado</TableHead>
+                          <TableHead className="whitespace-nowrap">Data Criação</TableHead>
+                          <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {group.users.map((u) => (
+                          <TableRow key={u.id}>
+                            <TableCell
+                              className="font-semibold py-2.5 px-3 truncate"
+                              title={u.name || undefined}
+                            >
+                              {u.name || '—'}
+                              {u.id === currentUser?.id && (
+                                <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">
+                                  (Você)
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm py-2.5 px-3 truncate" title={u.email}>
+                              {u.email}
+                            </TableCell>
+                            <TableCell className="py-2.5 px-3 whitespace-nowrap">
+                              <Badge
+                                variant={u.role === 'Admin Completo' ? 'default' : 'secondary'}
+                                className={u.status === 'Inativo' ? 'opacity-50' : ''}
+                              >
+                                {u.role}
+                              </Badge>
+                            </TableCell>
+                            <TableCell
+                              className="text-sm py-2.5 px-3 truncate"
+                              title={u.setor || undefined}
+                            >
+                              {u.setor || '—'}
+                            </TableCell>
+                            <TableCell className="text-sm py-2.5 px-3">
+                              {u.estado_atuacao ? (
+                                <Badge variant="outline" className="font-mono text-xs">
+                                  {u.estado_atuacao}
+                                </Badge>
+                              ) : (
+                                '—'
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs font-mono py-2.5 px-3 whitespace-nowrap">
+                              {new Date(u.created_at).toLocaleDateString('pt-BR')}
+                            </TableCell>
+                            <TableCell className="text-right py-2.5 px-3 whitespace-nowrap">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => openEdit(u)}>
+                                    Editar Perfil
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleToggleStatus(u)}>
+                                    {u.status === 'Ativo' ? 'Desativar' : 'Ativar'}
+                                  </DropdownMenuItem>
+                                  {u.id !== currentUser?.id && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem
+                                        onClick={() => setDeleteTarget(u)}
+                                        className="text-destructive focus:text-destructive"
+                                      >
+                                        <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               ))}
@@ -1150,96 +1162,115 @@ export default function UsuariosPage() {
             /* Visualização Lista Única */
             <div className="border rounded-lg bg-card overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-              <Table className="w-full table-fixed">
-                <colgroup>
-                  <col className="w-[20%]" />
-                  <col className="w-[22%]" />
-                  <col className="w-[110px]" />
-                  <col className="w-[12%]" />
-                  <col className="w-[14%]" />
-                  <col className="w-[70px]" />
-                  <col className="w-[100px]" />
-                  <col className="w-[60px]" />
-                </colgroup>
-                <TableHeader>
-                  <TableRow className="bg-muted/40 hover:bg-muted/40">
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="whitespace-nowrap">Role</TableHead>
-                    <TableHead>Setor</TableHead>
-                    <TableHead>Gerente</TableHead>
-                    <TableHead className="whitespace-nowrap">Estado</TableHead>
-                    <TableHead className="whitespace-nowrap">Data Criação</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-semibold py-2.5 px-3 truncate" title={u.name || undefined}>
-                        {u.name || '—'}
-                        {u.id === currentUser?.id && (
-                          <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">(Você)</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm py-2.5 px-3 truncate" title={u.email}>{u.email}</TableCell>
-                      <TableCell className="py-2.5 px-3 whitespace-nowrap">
-                        <Badge
-                          variant={u.role === 'Admin Completo' ? 'default' : 'secondary'}
-                          className={u.status === 'Inativo' ? 'opacity-50' : ''}
-                        >
-                          {u.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm py-2.5 px-3 truncate" title={u.setor || undefined}>{u.setor || '—'}</TableCell>
-                      <TableCell className="text-sm py-2.5 px-3 truncate" title={u.gerente_nome || (u.gerente_id ? (gerenteMap.get(u.gerente_id) ?? undefined) : undefined)}>
-                        {u.gerente_nome ||
-                          (u.gerente_id ? (gerenteMap.get(u.gerente_id) ?? '—') : '—')}
-                      </TableCell>
-                      <TableCell className="text-sm py-2.5 px-3">
-                        {u.estado_atuacao ? (
-                          <Badge variant="outline" className="font-mono text-xs">
-                            {u.estado_atuacao}
-                          </Badge>
-                        ) : (
-                          '—'
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs font-mono py-2.5 px-3 whitespace-nowrap">
-                        {new Date(u.created_at).toLocaleDateString('pt-BR')}
-                      </TableCell>
-                      <TableCell className="text-right py-2.5 px-3 whitespace-nowrap">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEdit(u)}>
-                              Editar Perfil
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggleStatus(u)}>
-                              {u.status === 'Ativo' ? 'Desativar' : 'Ativar'}
-                            </DropdownMenuItem>
-                            {u.id !== currentUser?.id && (
-                              <>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => setDeleteTarget(u)}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                <Table className="w-full table-fixed">
+                  <colgroup>
+                    <col className="w-[20%]" />
+                    <col className="w-[22%]" />
+                    <col className="w-[110px]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[70px]" />
+                    <col className="w-[100px]" />
+                    <col className="w-[60px]" />
+                  </colgroup>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead className="whitespace-nowrap">Role</TableHead>
+                      <TableHead>Setor</TableHead>
+                      <TableHead>Gerente</TableHead>
+                      <TableHead className="whitespace-nowrap">Estado</TableHead>
+                      <TableHead className="whitespace-nowrap">Data Criação</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.map((u) => (
+                      <TableRow key={u.id}>
+                        <TableCell
+                          className="font-semibold py-2.5 px-3 truncate"
+                          title={u.name || undefined}
+                        >
+                          {u.name || '—'}
+                          {u.id === currentUser?.id && (
+                            <span className="text-xs text-muted-foreground ml-2 whitespace-nowrap">
+                              (Você)
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm py-2.5 px-3 truncate" title={u.email}>
+                          {u.email}
+                        </TableCell>
+                        <TableCell className="py-2.5 px-3 whitespace-nowrap">
+                          <Badge
+                            variant={u.role === 'Admin Completo' ? 'default' : 'secondary'}
+                            className={u.status === 'Inativo' ? 'opacity-50' : ''}
+                          >
+                            {u.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell
+                          className="text-sm py-2.5 px-3 truncate"
+                          title={u.setor || undefined}
+                        >
+                          {u.setor || '—'}
+                        </TableCell>
+                        <TableCell
+                          className="text-sm py-2.5 px-3 truncate"
+                          title={
+                            u.gerente_nome ||
+                            (u.gerente_id ? (gerenteMap.get(u.gerente_id) ?? undefined) : undefined)
+                          }
+                        >
+                          {u.gerente_nome ||
+                            (u.gerente_id ? (gerenteMap.get(u.gerente_id) ?? '—') : '—')}
+                        </TableCell>
+                        <TableCell className="text-sm py-2.5 px-3">
+                          {u.estado_atuacao ? (
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {u.estado_atuacao}
+                            </Badge>
+                          ) : (
+                            '—'
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs font-mono py-2.5 px-3 whitespace-nowrap">
+                          {new Date(u.created_at).toLocaleDateString('pt-BR')}
+                        </TableCell>
+                        <TableCell className="text-right py-2.5 px-3 whitespace-nowrap">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(u)}>
+                                Editar Perfil
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggleStatus(u)}>
+                                {u.status === 'Ativo' ? 'Desativar' : 'Ativar'}
+                              </DropdownMenuItem>
+                              {u.id !== currentUser?.id && (
+                                <>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => setDeleteTarget(u)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" /> Excluir
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
           )}
         </TabsContent>
