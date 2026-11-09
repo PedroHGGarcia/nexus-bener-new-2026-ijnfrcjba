@@ -654,7 +654,7 @@
     width: auto !important;
     max-width: 100% !important;
     height: auto !important;
-    max-height: calc(226mm - 40mm) !important;
+    max-height: 130mm !important;
     object-fit: contain !important;
     margin: 0 auto !important;
   }
