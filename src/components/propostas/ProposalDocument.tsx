@@ -451,8 +451,8 @@ export function ProposalDocument({ proposal }: Props) {
         <p className="font-bold text-[12px] sm:text-[13px]">
           Bener Comercial Importadora Exportadora Ltda.
         </p>
-        <p className="mt-1 print:hidden">Vinhedo, {dataPorExtensoCap}</p>
-        <div className="mt-auto pt-1.5">{siglaBox}</div>
+        <p className="mt-0.5 sm:mt-1">Vinhedo, {dataPorExtensoCap}</p>
+        <div className="mt-auto pt-1">{siglaBox}</div>
       </div>
     </div>
   )
