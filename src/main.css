@@ -293,13 +293,46 @@
 @page {
   size: A4 portrait;
   margin: 0 !important;
+
+  @bottom-right {
+    content: 'Página ' counter(page);
+    font-family: 'Courier New', Courier, monospace, 'Lucida Console', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #000;
+    vertical-align: bottom;
+    padding-right: 12mm;
+    padding-bottom: 6mm;
+  }
+}
+
+@page :first {
+  @bottom-right {
+    content: normal;
+  }
 }
 
 @page proposta {
   size: A4 portrait;
   margin: 0 !important;
+
+  @bottom-right {
+    content: 'Página ' counter(page);
+    font-family: 'Courier New', Courier, monospace, 'Lucida Console', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: #000;
+    vertical-align: bottom;
+    padding-right: 12mm;
+    padding-bottom: 6mm;
+  }
 }
 
+@page proposta:first {
+  @bottom-right {
+    content: normal;
+  }
+}
 @media print {
   .proposal-running-header {
     display: block !important;
