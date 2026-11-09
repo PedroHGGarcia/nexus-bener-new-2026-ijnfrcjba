@@ -798,7 +798,7 @@ export function ProposalDocument({ proposal }: Props) {
               <div
                 data-sheet-index="0"
                 data-page="1"
-                className="proposal-page proposal-sheet proposal-cover relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:h-auto print:border-none"
+                className="proposal-page proposal-sheet proposal-cover relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:h-[226mm] print:min-h-[226mm] print:max-h-[226mm] print:border-none"
                 style={{
                   boxSizing: 'border-box',
                   breakBefore: 'avoid',
@@ -808,9 +808,9 @@ export function ProposalDocument({ proposal }: Props) {
                 }}
               >
                 {/* Top & Main Body */}
-                <div>
+                <div className="flex-1 min-h-0 flex flex-col">
                   {/* Header + Client + Reception wrapped to avoid breaking apart */}
-                  <div className="break-inside-avoid">
+                  <div className="break-inside-avoid shrink-0">
                     {/* Section 0: Top Header (exibido na tela; no print fica a cargo do header nativo repetido) */}
                     <div className="border-b border-black pb-1.5 mb-2 print:hidden">
                       {headerInstitucional}

@@ -482,12 +482,40 @@
     border: none !important;
   }
 
-  /* Altura zero / auto: mata qualquer min-height que estoure a área útil da folha 1 e empurre a capa */
+  /* Altura zero / auto: mata qualquer min-height que estoure a área útil e empurre páginas seguintes.
+     A CAPA é excetuada abaixo para ter altura fixa de 226mm (A4 297mm - topo 35mm - rodapé 16mm - margens @page 20mm),
+     dando ao flex-1 do bloco da máquina espaço para crescer e exibir a foto grande. */
   .proposal-document,
-  .proposal-page,
-  .proposal-sheet {
+  .proposal-page:not(.proposal-cover):not([data-page='1']),
+  .proposal-sheet:not(.proposal-cover):not([data-page='1']) {
     min-height: auto !important;
     height: auto !important;
+  }
+
+  /* Capa (página 1) na impressão: altura exata de 226mm para que o flex-1 da foto ocupe todo o espaço restante */
+  [data-page='1'].proposal-cover,
+  .proposal-cover {
+    height: 226mm !important;
+    min-height: 226mm !important;
+    max-height: 226mm !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    overflow: hidden !important;
+  }
+
+  .proposal-cover > div:first-child,
+  .proposal-document .proposal-cover > div:first-child {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .proposal-cover > div:first-child > .break-inside-avoid,
+  .proposal-document .proposal-cover > div:first-child > .break-inside-avoid {
+    flex: 0 0 auto !important;
   }
 
   .proposal-page,
@@ -581,6 +609,19 @@
     max-width: 100% !important;
     object-fit: contain !important;
   }
+  .proposal-cover .machine-presentation-block,
+  .proposal-document .proposal-cover .machine-presentation-block {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .proposal-cover .machine-title,
+  .proposal-document .proposal-cover .machine-title {
+    flex: 0 0 auto !important;
+  }
+
   .proposal-cover .image-container,
   .proposal-document .proposal-cover .image-container {
     width: 100% !important;
