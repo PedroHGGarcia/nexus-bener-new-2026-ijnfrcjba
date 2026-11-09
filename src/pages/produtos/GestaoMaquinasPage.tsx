@@ -1206,50 +1206,58 @@ export default function GestaoMaquinasPage() {
       {/* Table */}
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
             <thead>
               <tr className="border-b bg-muted/40 text-left">
                 {nivel === 'categoria' && (
                   <>
-                    <Th className="text-foreground">Nome da Categoria</Th>
-                    <Th align="right">Ações</Th>
+                    <Th className="text-foreground w-[85%]">Nome da Categoria</Th>
+                    <Th align="right" className="w-[15%]">
+                      Ações
+                    </Th>
                   </>
                 )}
                 {nivel === 'produto' && (
                   <>
-                    <Th className="text-foreground">Nome do Produto</Th>
-                    <Th>Reg</Th>
-                    <Th>Cód</Th>
-                    <Th>Fabricante</Th>
-                    <Th>Categoria</Th>
-                    <Th align="right">Ações</Th>
+                    <Th className="text-foreground w-[35%]">Nome do Produto</Th>
+                    <Th className="w-[10%]">Reg</Th>
+                    <Th className="w-[12%]">Cód</Th>
+                    <Th className="w-[18%]">Fabricante</Th>
+                    <Th className="w-[15%]">Categoria</Th>
+                    <Th align="right" className="w-[10%]">
+                      Ações
+                    </Th>
                   </>
                 )}
                 {nivel === 'marca' && (
                   <>
-                    <Th className="text-foreground">Nome da Marca</Th>
-                    <Th>Reg</Th>
-                    <Th>Cód</Th>
-                    <Th>Site</Th>
-                    <Th>País</Th>
-                    <Th>Status</Th>
-                    <Th align="right">Ações</Th>
+                    <Th className="text-foreground w-[30%]">Nome da Marca</Th>
+                    <Th className="w-[10%]">Reg</Th>
+                    <Th className="w-[12%]">Cód</Th>
+                    <Th className="w-[18%]">Site</Th>
+                    <Th className="w-[12%]">País</Th>
+                    <Th className="w-[8%]">Status</Th>
+                    <Th align="right" className="w-[10%]">
+                      Ações
+                    </Th>
                   </>
                 )}
                 {nivel === 'modelo' && (
                   <>
-                    <Th className="text-foreground">Nome do Modelo</Th>
+                    <Th className="text-foreground w-[40%]">Nome do Modelo</Th>
                     {flow === 'flowA' ? (
                       <>
-                        <Th>Produto</Th>
-                        <Th>Categoria</Th>
+                        <Th className="w-[25%]">Produto</Th>
+                        <Th className="w-[23%]">Categoria</Th>
                       </>
                     ) : (
                       <>
-                        <Th>Marca</Th>
+                        <Th className="w-[48%]">Marca</Th>
                       </>
                     )}
-                    <Th align="right">Ações</Th>
+                    <Th align="right" className="w-[12%]">
+                      Ações
+                    </Th>
                   </>
                 )}
                 {nivel === 'versao' && (
@@ -1268,23 +1276,27 @@ export default function GestaoMaquinasPage() {
                       />
                     </Th>
                     <Th className="w-14 text-center">Imagem</Th>
-                    <Th className="text-foreground">Versão</Th>
-                    <Th>Tipos de Proposta</Th>
-                    <Th>Código ERP</Th>
-                    <Th>Moeda</Th>
-                    <Th>Modelo</Th>
+                    <Th className="text-foreground w-[18%]">Versão</Th>
+                    <Th className="w-[18%]">Tipos de Proposta</Th>
+                    <Th className="w-[90px]">Cód ERP</Th>
+                    <Th className="w-[65px]">Moeda</Th>
+                    <Th className="w-[11%]">Modelo</Th>
                     {flow === 'flowA' ? (
                       <>
-                        <Th>Produto</Th>
-                        <Th>Categoria</Th>
+                        <Th className="w-[11%]">Produto</Th>
+                        <Th className="w-[10%]">Categoria</Th>
                       </>
                     ) : (
                       <>
-                        <Th>Marca</Th>
+                        <Th className="w-[21%]">Marca</Th>
                       </>
                     )}
-                    <Th align="right">Preço</Th>
-                    <Th align="right">Ações</Th>
+                    <Th align="right" className="w-[100px]">
+                      Preço
+                    </Th>
+                    <Th align="right" className="w-[90px]">
+                      Ações
+                    </Th>
                   </>
                 )}
               </tr>
@@ -1426,14 +1438,14 @@ export default function GestaoMaquinasPage() {
                     )}
                     {nivel === 'versao' && (
                       <>
-                        <td className="px-4 py-2.5">
+                        <td className="px-3 py-2.5">
                           <Checkbox
                             checked={selectedVersaoIds.has(r.id)}
                             onCheckedChange={() => toggleVersaoSelected(r.id)}
                             aria-label={`Selecionar ${r.nome}`}
                           />
                         </td>
-                        <td className="px-2 py-2 text-center">
+                        <td className="px-1 py-2 text-center">
                           {r.imagem_preview && !brokenImageIds.has(r.id) ? (
                             <img
                               src={r.imagem_preview}
@@ -1445,32 +1457,37 @@ export default function GestaoMaquinasPage() {
                                   return next
                                 })
                               }
-                              className="w-12 h-12 object-contain rounded-md border bg-white p-0.5 mx-auto shadow-xs"
+                              className="w-10 h-10 object-contain rounded-md border bg-white p-0.5 mx-auto shadow-xs"
                             />
                           ) : (
                             <div
-                              className="w-12 h-12 rounded-md border border-dashed border-border/80 bg-muted/40 flex flex-col items-center justify-center text-[10px] text-muted-foreground mx-auto gap-0.5 select-none"
+                              className="w-10 h-10 rounded-md border border-dashed border-border/80 bg-muted/40 flex flex-col items-center justify-center text-[10px] text-muted-foreground mx-auto gap-0.5 select-none"
                               title="Sem imagem cadastrada ou indisponível"
                             >
                               <ImageIcon className="w-3.5 h-3.5 opacity-60" />
-                              <span className="leading-none text-[9px]">Sem imagem</span>
+                              <span className="leading-none text-[8px]">S/ foto</span>
                             </div>
                           )}
                         </td>
-                        <td className="px-4 py-2.5 font-semibold text-foreground">{r.nome}</td>
-                        <td className="px-4 py-2.5 max-w-[280px]">
+                        <td
+                          className="px-3 py-2.5 font-semibold text-foreground truncate"
+                          title={r.nome}
+                        >
+                          {r.nome}
+                        </td>
+                        <td className="px-2 py-2.5 overflow-hidden">
                           {loadingPageTipos ? (
                             <div className="flex flex-wrap gap-1">
                               <Skeleton className="h-5 w-20 rounded-md" />
-                              <Skeleton className="h-5 w-16 rounded-md" />
                             </div>
                           ) : pageTiposMap[r.id] && pageTiposMap[r.id].length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
+                            <div className="flex flex-wrap gap-1 max-h-12 overflow-hidden">
                               {pageTiposMap[r.id].map((tipo) => (
                                 <Badge
                                   key={tipo}
                                   variant="outline"
-                                  className="border-emerald-600/40 text-emerald-800 dark:text-emerald-300 bg-emerald-50/60 dark:bg-emerald-950/30 text-xs font-medium px-2 py-0.5 leading-tight hover:bg-emerald-100/70"
+                                  className="border-emerald-600/40 text-emerald-800 dark:text-emerald-300 bg-emerald-50/60 dark:bg-emerald-950/30 text-xs font-medium px-1.5 py-0.5 leading-tight truncate max-w-full"
+                                  title={tipo}
                                 >
                                   {tipo}
                                 </Badge>
@@ -1481,14 +1498,17 @@ export default function GestaoMaquinasPage() {
                               variant="outline"
                               className="border-muted text-muted-foreground bg-muted/30 text-[11px] font-normal px-2 py-0.5"
                             >
-                              Sem tipo vinculado
+                              Sem tipo
                             </Badge>
                           )}
                         </td>
-                        <td className="px-4 py-2.5 text-muted-foreground tabular-nums">
+                        <td
+                          className="px-2 py-2.5 text-muted-foreground tabular-nums truncate text-xs font-mono"
+                          title={r.cod_erp || undefined}
+                        >
                           {r.cod_erp || '—'}
                         </td>
-                        <td className="px-4 py-2.5">
+                        <td className="px-2 py-2.5 whitespace-nowrap">
                           <Badge
                             variant="outline"
                             className="font-mono text-[11px] font-semibold tracking-wider text-slate-700 bg-slate-50 border-slate-200"
@@ -1496,23 +1516,33 @@ export default function GestaoMaquinasPage() {
                             {r.moeda || 'BRL'}
                           </Badge>
                         </td>
-                        <td className="px-4 py-2.5">{r.modeloNome}</td>
+                        <td className="px-2.5 py-2.5 truncate" title={r.modeloNome}>
+                          {r.modeloNome}
+                        </td>
                         {flow === 'flowA' ? (
                           <>
-                            <td className="px-4 py-2.5">{r.produtoNome}</td>
-                            <td className="px-4 py-2.5">{r.categoriaNome}</td>
+                            <td className="px-2.5 py-2.5 truncate" title={r.produtoNome}>
+                              {r.produtoNome}
+                            </td>
+                            <td className="px-2.5 py-2.5 truncate" title={r.categoriaNome}>
+                              {r.categoriaNome}
+                            </td>
                           </>
                         ) : (
                           <>
-                            <td className="px-4 py-2.5">{r.marcaNome}</td>
+                            <td className="px-2.5 py-2.5 truncate" title={r.marcaNome}>
+                              {r.marcaNome}
+                            </td>
                           </>
                         )}
-                        <td className="px-4 py-2.5 text-right tabular-nums font-medium text-foreground">
+                        <td className="px-2 py-2.5 text-right font-medium tabular-nums text-foreground whitespace-nowrap">
                           {formatCurrencyByMoeda(r.valor, r.moeda)}
                         </td>
-                        <td className="px-4 py-2.5 text-right">{renderRowActions(r)}</td>
+                        <td className="px-2 py-2.5 text-right whitespace-nowrap">
+                          {renderRowActions(r)}
+                        </td>
                       </>
-                    )}
+                    )}{' '}
                   </tr>
                 ))
               )}

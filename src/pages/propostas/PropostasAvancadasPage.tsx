@@ -136,51 +136,74 @@ export default function PropostasAvancadasPage() {
           description="Ajuste os filtros para encontrar propostas."
         />
       ) : (
-        <div className="border rounded-lg bg-card overflow-x-auto">
-          <Table>
+        <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
+          <Table className="w-full table-fixed">
+            <colgroup>
+              <col className="w-[180px]" />
+              <col className="w-[32%]" />
+              <col className="w-[18%]" />
+              <col className="w-[130px]" />
+              <col className="w-[110px]" />
+              <col className="w-[95px]" />
+              <col className="w-[50px]" />
+            </colgroup>
             <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-[170px] whitespace-nowrap">Nº Oferta</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Valor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead className="text-right">Ação</TableHead>
+              <TableRow className="bg-muted/40 hover:bg-muted/40">
+                <TableHead className="whitespace-nowrap py-3 px-3">Nº Oferta</TableHead>
+                <TableHead className="py-3 px-3">Cliente</TableHead>
+                <TableHead className="py-3 px-3">Tipo</TableHead>
+                <TableHead className="py-3 px-3 whitespace-nowrap">Valor</TableHead>
+                <TableHead className="py-3 px-3 whitespace-nowrap">Status</TableHead>
+                <TableHead className="py-3 px-3 whitespace-nowrap">Data</TableHead>
+                <TableHead className="text-right py-3 px-3 whitespace-nowrap">Ação</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="font-bold text-primary min-w-[160px]">
-                    <span className="font-mono text-xs sm:text-sm font-semibold tracking-tight break-all text-slate-900 dark:text-slate-100 select-all">
-                      {p.numero_proposta || '—'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    {p.clientes?.fantasia || p.cliente_original || '—'}
-                  </TableCell>
-                  <TableCell className="text-xs">{p.tipo_proposta || '—'}</TableCell>
-                  <TableCell className="font-semibold">
-                    R$ {(p.valor_final || 0).toLocaleString('pt-BR')}
-                  </TableCell>
-                  <TableCell>
-                    <Badge>{STATUS_LABELS[p.status] || p.status}</Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {formatDate(p.created_at)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => navigate(`/controle-propostas/proposta-pdf/${p.id}`)}
+              {filtered.map((p) => {
+                const clienteNome = p.clientes?.fantasia || p.cliente_original || '—'
+                return (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-bold text-primary py-2.5 px-3">
+                      <span
+                        className="font-mono text-xs font-semibold tracking-tight truncate block text-slate-900 dark:text-slate-100 select-all"
+                        title={p.numero_proposta || undefined}
+                      >
+                        {p.numero_proposta || '—'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-xs py-2.5 px-3 truncate" title={clienteNome}>
+                      {clienteNome}
+                    </TableCell>
+                    <TableCell
+                      className="text-xs py-2.5 px-3 truncate"
+                      title={p.tipo_proposta || undefined}
                     >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+                      {p.tipo_proposta || '—'}
+                    </TableCell>
+                    <TableCell className="font-semibold text-xs sm:text-sm py-2.5 px-3 whitespace-nowrap">
+                      R$ {(p.valor_final || 0).toLocaleString('pt-BR')}
+                    </TableCell>
+                    <TableCell className="py-2.5 px-3 whitespace-nowrap">
+                      <Badge variant="outline" className="text-xs">
+                        {STATUS_LABELS[p.status] || p.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground py-2.5 px-3 whitespace-nowrap">
+                      {formatDate(p.created_at)}
+                    </TableCell>
+                    <TableCell className="text-right py-2.5 px-3 whitespace-nowrap">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => navigate(`/controle-propostas/proposta-pdf/${p.id}`)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
           <div className="p-2 text-xs text-muted-foreground text-right">

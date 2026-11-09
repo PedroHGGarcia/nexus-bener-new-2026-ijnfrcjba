@@ -150,18 +150,28 @@ export default function MarcasPage() {
               onAction={handleNew}
             />
           ) : (
-            <div className="border rounded-lg bg-card overflow-x-auto">
-              <Table>
+            <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
+              <Table className="w-full table-fixed">
+                <colgroup>
+                  <col className="w-[28%]" />
+                  <col className="w-[60px]" />
+                  <col className="w-[60px]" />
+                  <col className="w-[22%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[90px]" />
+                  <col className="w-[105px]" />
+                  <col className="w-[80px]" />
+                </colgroup>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Reg</TableHead>
-                    <TableHead>Cód</TableHead>
-                    <TableHead>Site</TableHead>
-                    <TableHead>País</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data Cadastro</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead className="py-3 px-3">Nome</TableHead>
+                    <TableHead className="py-3 px-3 whitespace-nowrap">Reg</TableHead>
+                    <TableHead className="py-3 px-3 whitespace-nowrap">Cód</TableHead>
+                    <TableHead className="py-3 px-3">Site</TableHead>
+                    <TableHead className="py-3 px-3">País</TableHead>
+                    <TableHead className="py-3 px-3 whitespace-nowrap">Status</TableHead>
+                    <TableHead className="py-3 px-3 whitespace-nowrap">Data Cadastro</TableHead>
+                    <TableHead className="text-right py-3 px-3 whitespace-nowrap">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -171,20 +181,23 @@ export default function MarcasPage() {
                       className="cursor-pointer hover:bg-accent/50"
                       onClick={() => handleEdit(m)}
                     >
-                      <TableCell className="font-semibold">{m.nome}</TableCell>
-                      <TableCell className="font-mono text-xs font-semibold text-[#0b3c26]">
+                      <TableCell className="font-semibold py-2.5 px-3 truncate" title={m.nome}>
+                        {m.nome}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs font-semibold text-[#0b3c26] py-2.5 px-3 whitespace-nowrap">
                         {m.reg !== null && m.reg !== undefined ? m.reg : '—'}
                       </TableCell>
-                      <TableCell className="font-mono text-xs text-muted-foreground">
+                      <TableCell className="font-mono text-xs text-muted-foreground py-2.5 px-3 whitespace-nowrap">
                         {m.cod !== null && m.cod !== undefined ? m.cod : '—'}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-700">
+                      <TableCell className="text-xs text-slate-700 py-2.5 px-3 truncate">
                         {m.site ? (
                           <a
                             href={m.site.startsWith('http') ? m.site : `https://${m.site}`}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-blue-600 hover:underline truncate max-w-[150px] inline-block"
+                            className="text-blue-600 hover:underline truncate block"
+                            title={m.site}
                             onClick={(e) => e.stopPropagation()}
                           >
                             {m.site}
@@ -193,14 +206,24 @@ export default function MarcasPage() {
                           '—'
                         )}
                       </TableCell>
-                      <TableCell className="text-xs text-slate-700">{m.pais || '—'}</TableCell>
-                      <TableCell>
+                      <TableCell
+                        className="text-xs text-slate-700 py-2.5 px-3 truncate"
+                        title={m.pais || undefined}
+                      >
+                        {m.pais || '—'}
+                      </TableCell>
+                      <TableCell className="py-2.5 px-3 whitespace-nowrap">
                         <Badge variant={m.status === 'Ativo' ? 'default' : 'secondary'}>
                           {m.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs">{formatDate(m.created_at)}</TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <TableCell className="text-xs py-2.5 px-3 whitespace-nowrap">
+                        {formatDate(m.created_at)}
+                      </TableCell>
+                      <TableCell
+                        className="text-right py-2.5 px-3 whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Button variant="ghost" size="icon" onClick={() => handleEdit(m)}>
                           <Edit className="w-4 h-4" />
                         </Button>

@@ -152,14 +152,20 @@ export default function ModelosPage() {
               onAction={handleNew}
             />
           ) : (
-            <div className="border rounded-lg bg-card overflow-x-auto">
-              <Table>
+            <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
+              <Table className="w-full table-fixed">
+                <colgroup>
+                  <col className="w-[60%]" />
+                  <col className="w-[120px]" />
+                  <col className="w-[140px]" />
+                  <col className="w-[120px]" />
+                </colgroup>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Data Cadastro</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead className="py-3 px-3">Nome</TableHead>
+                    <TableHead className="py-3 px-3 whitespace-nowrap">Status</TableHead>
+                    <TableHead className="py-3 px-3 whitespace-nowrap">Data Cadastro</TableHead>
+                    <TableHead className="text-right py-3 px-3 whitespace-nowrap">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -169,14 +175,21 @@ export default function ModelosPage() {
                       className="cursor-pointer hover:bg-accent/50"
                       onClick={() => handleEdit(m)}
                     >
-                      <TableCell className="font-semibold">{m.nome}</TableCell>
-                      <TableCell>
+                      <TableCell className="font-semibold py-2.5 px-3 truncate" title={m.nome}>
+                        {m.nome}
+                      </TableCell>
+                      <TableCell className="py-2.5 px-3 whitespace-nowrap">
                         <Badge variant={m.status === 'Ativo' ? 'default' : 'secondary'}>
                           {m.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs">{formatDate(m.created_at)}</TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      <TableCell className="text-xs py-2.5 px-3 whitespace-nowrap">
+                        {formatDate(m.created_at)}
+                      </TableCell>
+                      <TableCell
+                        className="text-right py-2.5 px-3 whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Button
                           variant="ghost"
                           size="icon"

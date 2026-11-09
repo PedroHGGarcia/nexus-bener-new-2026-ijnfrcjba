@@ -258,18 +258,36 @@ export default function ClientesPage() {
         />
       ) : (
         <>
-          <div className="border rounded-lg bg-card overflow-x-auto">
-            <Table className="responsive-table">
+          <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
+            <Table className="w-full table-fixed">
+              <colgroup>
+                {/* Nome Fantasia */}
+                <col className="w-[18%]" />
+                {/* Razão Social */}
+                <col className="w-[18%]" />
+                {/* CPF/CNPJ */}
+                <col className="w-[130px]" />
+                {/* Máquina de Interesse */}
+                <col className="w-[20%]" />
+                {/* Cidade / UF */}
+                <col className="w-[14%]" />
+                {/* Status */}
+                <col className="w-[85px]" />
+                {/* Telefone */}
+                <col className="w-[110px]" />
+                {/* Ações */}
+                <col className="w-[115px]" />
+              </colgroup>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Nome Fantasia</TableHead>
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="whitespace-nowrap">Nome Fantasia</TableHead>
                   <TableHead>Razão Social</TableHead>
-                  <TableHead>CPF/CNPJ</TableHead>
+                  <TableHead className="whitespace-nowrap">CPF/CNPJ</TableHead>
                   <TableHead>Máquina de Interesse</TableHead>
                   <TableHead>Cidade / UF</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Telefone</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
+                  <TableHead className="whitespace-nowrap">Telefone</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -279,19 +297,34 @@ export default function ClientesPage() {
                     className="cursor-pointer hover:bg-accent/50"
                     onClick={() => openEdit(c)}
                   >
-                    <TableCell data-label="Nome Fantasia" className="font-semibold">
+                    <TableCell
+                      data-label="Nome Fantasia"
+                      className="font-semibold truncate py-2.5 px-3"
+                      title={c.fantasia}
+                    >
                       {c.fantasia}
                     </TableCell>
-                    <TableCell data-label="Razão Social" className="text-xs text-muted-foreground">
+                    <TableCell
+                      data-label="Razão Social"
+                      className="text-xs text-muted-foreground truncate py-2.5 px-3"
+                      title={c.razao_social || undefined}
+                    >
                       {c.razao_social || '—'}
                     </TableCell>
-                    <TableCell data-label="CPF/CNPJ" className="text-xs font-mono">
+                    <TableCell
+                      data-label="CPF/CNPJ"
+                      className="text-xs font-mono truncate py-2.5 px-3"
+                      title={c.documento || undefined}
+                    >
                       {c.documento || '—'}
                     </TableCell>
-                    <TableCell data-label="Máquina de Interesse" className="text-xs max-w-[200px]">
+                    <TableCell
+                      data-label="Máquina de Interesse"
+                      className="text-xs py-2.5 px-3 overflow-hidden"
+                    >
                       {c.maquina_interesse ? (
                         <div
-                          className="flex items-center gap-1.5 text-foreground bg-primary/5 border border-primary/15 px-2 py-1 rounded text-[11px] font-medium"
+                          className="flex items-center gap-1.5 text-foreground bg-primary/5 border border-primary/15 px-2 py-1 rounded text-[11px] font-medium max-w-full"
                           title={c.maquina_interesse}
                         >
                           <Cpu className="w-3 h-3 text-primary shrink-0" />
@@ -301,21 +334,29 @@ export default function ClientesPage() {
                         <span className="text-muted-foreground/60 italic">—</span>
                       )}
                     </TableCell>
-                    <TableCell data-label="Cidade / UF" className="text-xs">
+                    <TableCell
+                      data-label="Cidade / UF"
+                      className="text-xs truncate py-2.5 px-3"
+                      title={`${c.cidade || ''}${c.estado ? ` / ${c.estado}` : ''}`}
+                    >
                       {c.cidade || '—'}
                       {c.estado ? ` / ${c.estado}` : ''}
                     </TableCell>
-                    <TableCell data-label="Status">
+                    <TableCell data-label="Status" className="py-2.5 px-3 whitespace-nowrap">
                       <Badge variant={c.status === 'Ativo' ? 'default' : 'secondary'}>
                         {c.status}
                       </Badge>
                     </TableCell>
-                    <TableCell data-label="Telefone" className="text-xs">
+                    <TableCell
+                      data-label="Telefone"
+                      className="text-xs truncate py-2.5 px-3"
+                      title={c.telefone || undefined}
+                    >
                       {c.telefone || '—'}
                     </TableCell>
                     <TableCell
                       data-label="Ações"
-                      className="text-right"
+                      className="text-right py-2.5 px-3 whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Button

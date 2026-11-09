@@ -363,11 +363,25 @@ export default function VersoesPage() {
             />
           ) : (
             <>
-              <div className="border rounded-lg bg-card overflow-x-auto">
-                <Table>
+              <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
+                <Table className="w-full table-fixed">
+                  <colgroup>
+                    {colVis.imagem && <col className="w-[56px]" />}
+                    {colVis.nome && <col className="w-[28%]" />}
+                    {colVis.categoria && <col className="w-[14%]" />}
+                    {colVis.modelo && <col className="w-[14%]" />}
+                    {colVis.reg && <col className="w-[85px]" />}
+                    {colVis.cod_erp && <col className="w-[85px]" />}
+                    {colVis.valor && <col className="w-[120px]" />}
+                    {colVis.moeda && <col className="w-[65px]" />}
+                    {colVis.status && <col className="w-[85px]" />}
+                    <col className="w-[90px]" />
+                  </colgroup>
                   <TableHeader>
-                    <TableRow>
-                      {colVis.imagem && <TableHead className="w-16 text-center">Imagem</TableHead>}
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      {colVis.imagem && (
+                        <TableHead className="w-[56px] text-center p-2">Foto</TableHead>
+                      )}
                       {colVis.nome && (
                         <TableHead
                           className="cursor-pointer select-none"
@@ -394,7 +408,7 @@ export default function VersoesPage() {
                       )}
                       {colVis.reg && (
                         <TableHead
-                          className="cursor-pointer select-none"
+                          className="cursor-pointer select-none whitespace-nowrap"
                           onClick={() => toggleSort('reg')}
                         >
                           REG{sortIcon('reg')}
@@ -402,7 +416,7 @@ export default function VersoesPage() {
                       )}
                       {colVis.cod_erp && (
                         <TableHead
-                          className="cursor-pointer select-none"
+                          className="cursor-pointer select-none whitespace-nowrap"
                           onClick={() => toggleSort('cod_erp')}
                         >
                           Cod ERP{sortIcon('cod_erp')}
@@ -410,7 +424,7 @@ export default function VersoesPage() {
                       )}
                       {colVis.valor && (
                         <TableHead
-                          className="cursor-pointer select-none"
+                          className="cursor-pointer select-none whitespace-nowrap text-right"
                           onClick={() => toggleSort('valor')}
                         >
                           Valor{sortIcon('valor')}
@@ -418,7 +432,7 @@ export default function VersoesPage() {
                       )}
                       {colVis.moeda && (
                         <TableHead
-                          className="cursor-pointer select-none"
+                          className="cursor-pointer select-none whitespace-nowrap"
                           onClick={() => toggleSort('moeda')}
                         >
                           Moeda{sortIcon('moeda')}
@@ -426,13 +440,13 @@ export default function VersoesPage() {
                       )}
                       {colVis.status && (
                         <TableHead
-                          className="cursor-pointer select-none"
+                          className="cursor-pointer select-none whitespace-nowrap"
                           onClick={() => toggleSort('status')}
                         >
                           Status{sortIcon('status')}
                         </TableHead>
                       )}
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -444,7 +458,7 @@ export default function VersoesPage() {
                       >
                         {colVis.imagem && (
                           <TableCell
-                            className="p-2 text-center"
+                            className="p-1.5 text-center"
                             onClick={(e) => {
                               if (v.imagem_preview && !brokenImages.has(v.id)) {
                                 e.stopPropagation()
@@ -453,7 +467,7 @@ export default function VersoesPage() {
                             }}
                           >
                             {v.imagem_preview && !brokenImages.has(v.id) ? (
-                              <div className="relative group w-11 h-11 mx-auto">
+                              <div className="relative group w-10 h-10 mx-auto">
                                 <img
                                   src={v.imagem_preview}
                                   alt={v.nome}
@@ -465,21 +479,21 @@ export default function VersoesPage() {
                                       return next
                                     })
                                   }
-                                  className="w-11 h-11 object-contain rounded-md border bg-white p-0.5 mx-auto shadow-xs transition-transform duration-150 group-hover:scale-105"
+                                  className="w-10 h-10 object-contain rounded-md border bg-white p-0.5 mx-auto shadow-xs transition-transform duration-150 group-hover:scale-105"
                                 />
                                 <div
                                   className="absolute inset-0 bg-black/40 rounded-md opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-zoom-in"
                                   title="Clique para ampliar a foto"
                                 >
-                                  <ZoomIn className="w-4 h-4 text-white drop-shadow" />
+                                  <ZoomIn className="w-3.5 h-3.5 text-white drop-shadow" />
                                 </div>
                               </div>
                             ) : (
                               <div
-                                className="w-11 h-11 rounded-md border border-dashed border-border/80 bg-muted/40 flex flex-col items-center justify-center text-[10px] text-muted-foreground mx-auto gap-0.5 select-none"
+                                className="w-10 h-10 rounded-md border border-dashed border-border/80 bg-muted/40 flex flex-col items-center justify-center text-[10px] text-muted-foreground mx-auto gap-0.5 select-none"
                                 title="Sem foto cadastrada"
                               >
-                                <ImageIcon className="w-4 h-4 opacity-50" />
+                                <ImageIcon className="w-3.5 h-3.5 opacity-50" />
                                 <span className="leading-none text-[8px] font-medium text-muted-foreground/80">
                                   S/ foto
                                 </span>
@@ -487,13 +501,18 @@ export default function VersoesPage() {
                             )}
                           </TableCell>
                         )}
-                        {colVis.nome && <TableCell className="font-semibold">{v.nome}</TableCell>}
+                        {colVis.nome && (
+                          <TableCell className="font-semibold py-2.5 px-3 truncate" title={v.nome}>
+                            {v.nome}
+                          </TableCell>
+                        )}
                         {colVis.categoria && (
-                          <TableCell>
+                          <TableCell className="py-2.5 px-3 truncate">
                             {v.categoria_id && catMap.get(v.categoria_id) ? (
                               <Badge
                                 variant="outline"
-                                className="border-emerald-600/30 text-emerald-800 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/30 text-xs font-normal"
+                                className="border-emerald-600/30 text-emerald-800 dark:text-emerald-300 bg-emerald-50/50 dark:bg-emerald-950/30 text-xs font-normal truncate max-w-full"
+                                title={catMap.get(v.categoria_id)}
                               >
                                 {catMap.get(v.categoria_id)}
                               </Badge>
@@ -503,32 +522,50 @@ export default function VersoesPage() {
                           </TableCell>
                         )}
                         {colVis.modelo && (
-                          <TableCell className="text-xs text-muted-foreground">
+                          <TableCell
+                            className="text-xs text-muted-foreground py-2.5 px-3 truncate"
+                            title={v.modelos?.nome ?? undefined}
+                          >
                             {v.modelos?.nome ?? '—'}
                           </TableCell>
                         )}
                         {colVis.reg && (
-                          <TableCell className="text-xs font-mono font-medium text-[#0b3c26]">
+                          <TableCell
+                            className="text-xs font-mono font-medium text-[#0b3c26] py-2.5 px-3 truncate"
+                            title={v.reg || v.cod_erp || undefined}
+                          >
                             {v.reg || v.cod_erp || '—'}
                           </TableCell>
                         )}
                         {colVis.cod_erp && (
-                          <TableCell className="text-xs">{v.cod_erp ?? '—'}</TableCell>
+                          <TableCell
+                            className="text-xs py-2.5 px-3 truncate font-mono text-muted-foreground"
+                            title={v.cod_erp ?? undefined}
+                          >
+                            {v.cod_erp ?? '—'}
+                          </TableCell>
                         )}
                         {colVis.valor && (
-                          <TableCell className="text-xs font-mono">
+                          <TableCell className="text-xs font-mono py-2.5 px-3 text-right whitespace-nowrap">
                             {formatValor(v.valor, v.moeda)}
                           </TableCell>
                         )}
-                        {colVis.moeda && <TableCell className="text-xs">{v.moeda}</TableCell>}
+                        {colVis.moeda && (
+                          <TableCell className="text-xs py-2.5 px-3 whitespace-nowrap">
+                            {v.moeda}
+                          </TableCell>
+                        )}
                         {colVis.status && (
-                          <TableCell>
+                          <TableCell className="py-2.5 px-3 whitespace-nowrap">
                             <Badge variant={v.status === 'Ativo' ? 'default' : 'secondary'}>
                               {v.status}
                             </Badge>
                           </TableCell>
                         )}
-                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                        <TableCell
+                          className="text-right py-2.5 px-3 whitespace-nowrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(v)}>
                             <Edit className="w-4 h-4" />
                           </Button>

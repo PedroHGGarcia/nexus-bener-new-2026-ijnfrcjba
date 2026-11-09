@@ -201,20 +201,32 @@ export default function GerentesPage() {
         />
       ) : (
         <>
-          <div className="border rounded-lg bg-card overflow-x-auto">
-            <Table>
+          <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
+            <Table className="w-full table-fixed">
+              <colgroup>
+                <col className="w-[18%]" />
+                <col className="w-[12%]" />
+                <col className="w-[140px]" />
+                <col className="w-[13%]" />
+                <col className="w-[16%]" />
+                <col className="w-[120px]" />
+                <col className="w-[100px]" />
+                <col className="w-[85px]" />
+                <col className="w-[100px]" />
+                <col className="w-[140px]" />
+              </colgroup>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead>Nome</TableHead>
                   <TableHead>Cargo</TableHead>
-                  <TableHead className="text-center">Representantes Vinculados</TableHead>
-                  <TableHead>Catálogo Restrito</TableHead>
+                  <TableHead className="text-center whitespace-nowrap">Reps. Vinculados</TableHead>
+                  <TableHead>Catálogo</TableHead>
                   <TableHead>E-mail</TableHead>
-                  <TableHead>Celular</TableHead>
-                  <TableHead>RD Station ID</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Data Cadastro</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="whitespace-nowrap">Celular</TableHead>
+                  <TableHead className="whitespace-nowrap">RD Station</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
+                  <TableHead className="whitespace-nowrap">Cadastro</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -224,22 +236,30 @@ export default function GerentesPage() {
                     className="cursor-pointer hover:bg-accent/50"
                     onClick={() => openEdit(g)}
                   >
-                    <TableCell className="font-semibold">{g.nome}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="font-semibold py-2.5 px-3 truncate" title={g.nome}>
+                      {g.nome}
+                    </TableCell>
+                    <TableCell
+                      className="text-xs text-muted-foreground py-2.5 px-3 truncate"
+                      title={g.cargo || undefined}
+                    >
                       {g.cargo || '—'}
                     </TableCell>
-                    <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                    <TableCell
+                      className="text-center py-2.5 px-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {(g.total_representantes ?? 0) > 0 ? (
                         <button
                           type="button"
                           onClick={() => setViewRepsGerente(g)}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer max-w-full truncate"
                           title="Clique para ver a lista de representantes vinculados"
                         >
-                          <Users className="w-3.5 h-3.5 text-emerald-700" />
-                          <span>
+                          <Users className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                          <span className="truncate">
                             {g.total_representantes}{' '}
-                            {g.total_representantes === 1 ? 'representante' : 'representantes'}
+                            {g.total_representantes === 1 ? 'rep.' : 'reps.'}
                           </span>
                         </button>
                       ) : (
@@ -248,35 +268,49 @@ export default function GerentesPage() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="text-xs py-2.5 px-3 overflow-hidden">
                       {g.categoria_restrita ? (
                         <Badge
                           variant="secondary"
-                          className="font-normal text-xs bg-muted text-foreground/80 border border-border"
+                          className="font-normal text-xs bg-muted text-foreground/80 border border-border truncate max-w-full"
                           title={`Vendedores vinculados só veem produtos da categoria ${g.categoria_restrita.nome}`}
                         >
-                          {g.categoria_restrita.nome}
+                          <span className="truncate">{g.categoria_restrita.nome}</span>
                         </Badge>
                       ) : (
                         <span className="text-xs text-muted-foreground/80">Livre</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell
+                      className="text-xs text-muted-foreground py-2.5 px-3 truncate"
+                      title={g.email || undefined}
+                    >
                       {g.email || '—'}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell
+                      className="text-xs text-muted-foreground py-2.5 px-3 truncate"
+                      title={g.celular || undefined}
+                    >
                       {g.celular || '—'}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell
+                      className="text-xs text-muted-foreground py-2.5 px-3 truncate"
+                      title={g.rd_station_id || undefined}
+                    >
                       {g.rd_station_id || '—'}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2.5 px-3 whitespace-nowrap">
                       <Badge variant={g.status === 'Ativo' ? 'default' : 'secondary'}>
                         {g.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs">{formatDate(g.created_at)}</TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="text-xs py-2.5 px-3 whitespace-nowrap">
+                      {formatDate(g.created_at)}
+                    </TableCell>
+                    <TableCell
+                      className="text-right py-2.5 px-3 whitespace-nowrap"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="flex items-center justify-end gap-1">
                         {isAdmin && (
                           <Button

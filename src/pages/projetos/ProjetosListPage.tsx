@@ -190,25 +190,33 @@ export default function ProjetosListPage() {
         />
       ) : (
         <div className="bg-card rounded-xl border border-border/80 shadow-sm overflow-x-auto">
-          <Table>
+          <Table className="w-full table-fixed">
+            <colgroup>
+              <col className="w-[38%]" />
+              <col className="w-[24%]" />
+              <col className="w-[18%]" />
+              <col className="w-[110px]" />
+              <col className="w-[100px]" />
+              <col className="w-[85px]" />
+            </colgroup>
             <TableHeader className="bg-transparent">
               <TableRow className="border-b border-border/60 hover:bg-transparent">
-                <TableHead className="font-semibold text-muted-foreground text-xs py-4">
+                <TableHead className="font-semibold text-muted-foreground text-xs py-3 px-3">
                   Nome do Projeto
                 </TableHead>
-                <TableHead className="font-semibold text-muted-foreground text-xs py-4">
+                <TableHead className="font-semibold text-muted-foreground text-xs py-3 px-3">
                   Cliente
                 </TableHead>
-                <TableHead className="font-semibold text-muted-foreground text-xs py-4 hidden md:table-cell">
+                <TableHead className="font-semibold text-muted-foreground text-xs py-3 px-3 hidden md:table-cell">
                   Criado por
                 </TableHead>
-                <TableHead className="font-semibold text-muted-foreground text-xs py-4">
+                <TableHead className="font-semibold text-muted-foreground text-xs py-3 px-3 whitespace-nowrap">
                   Status
                 </TableHead>
-                <TableHead className="font-semibold text-muted-foreground text-xs py-4">
+                <TableHead className="font-semibold text-muted-foreground text-xs py-3 px-3 whitespace-nowrap">
                   Criado em
                 </TableHead>
-                <TableHead className="w-20"></TableHead>
+                <TableHead className="w-[85px] py-3 px-3 text-right"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -218,23 +226,28 @@ export default function ProjetosListPage() {
                   className="hover:bg-muted/30 transition-colors border-b border-border/40"
                 >
                   <TableCell
-                    className="font-bold text-foreground cursor-pointer py-4"
+                    className="font-bold text-foreground cursor-pointer py-3 px-3"
                     onClick={() => navigate(`/projetos/${proj.id}`)}
                   >
-                    <div className="flex items-center gap-2">
-                      <span>{proj.nome}</span>
+                    <div className="flex items-center gap-2 truncate">
+                      <span className="truncate" title={proj.nome}>
+                        {proj.nome}
+                      </span>
                       {proj.has_licitacao && (
-                        <Badge className="bg-amber-50 text-amber-700 border border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700 font-medium px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide flex items-center gap-1">
+                        <Badge className="bg-amber-50 text-amber-700 border border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700 font-medium px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wide flex items-center gap-1 shrink-0">
                           <Scale className="w-3 h-3" />
                           Licitação
                         </Badge>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground py-4">
+                  <TableCell
+                    className="text-sm text-muted-foreground py-3 px-3 truncate"
+                    title={proj.clientes?.fantasia ?? undefined}
+                  >
                     {proj.clientes?.fantasia ?? '—'}
                   </TableCell>
-                  <TableCell className="py-4 hidden md:table-cell">
+                  <TableCell className="py-3 px-3 hidden md:table-cell truncate">
                     <CreatorDisplay
                       creator={proj.creator}
                       rawUser={proj.user}
@@ -242,21 +255,21 @@ export default function ProjetosListPage() {
                       size="sm"
                     />
                   </TableCell>
-                  <TableCell className="py-4">
+                  <TableCell className="py-3 px-3 whitespace-nowrap">
                     <Badge
                       className={
                         proj.status === 'Concluido' || proj.status === 'Concluído'
-                          ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-none font-medium px-3 py-1 rounded-full text-xs'
-                          : 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-none font-medium px-3 py-1 rounded-full text-xs'
+                          ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-none font-medium px-2.5 py-0.5 rounded-full text-xs'
+                          : 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-none font-medium px-2.5 py-0.5 rounded-full text-xs'
                       }
                     >
                       {proj.status === 'Concluido' ? 'Concluído' : proj.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground py-4">
+                  <TableCell className="text-sm text-muted-foreground py-3 px-3 whitespace-nowrap">
                     {formatDate(proj.created_at)}
                   </TableCell>
-                  <TableCell className="text-right py-4">
+                  <TableCell className="text-right py-3 px-3 whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1">
                       <Button
                         variant="ghost"

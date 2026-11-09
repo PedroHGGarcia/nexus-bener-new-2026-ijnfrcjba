@@ -181,16 +181,24 @@ export default function RegioesPage() {
         />
       ) : (
         <>
-          <div className="border rounded-lg bg-card overflow-x-auto">
-            <Table>
+          <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
+            <Table className="w-full table-fixed">
+              <colgroup>
+                <col className="w-[35%]" />
+                <col className="w-[70px]" />
+                <col className="w-[35%]" />
+                <col className="w-[90px]" />
+                <col className="w-[120px]" />
+                <col className="w-[100px]" />
+              </colgroup>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead>Nome</TableHead>
-                  <TableHead>UF</TableHead>
+                  <TableHead className="whitespace-nowrap">UF</TableHead>
                   <TableHead>Cobertura Territorial</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Data Cadastro</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
+                  <TableHead className="whitespace-nowrap">Data Cadastro</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -200,8 +208,10 @@ export default function RegioesPage() {
                     className="cursor-pointer hover:bg-accent/50"
                     onClick={() => openEdit(r)}
                   >
-                    <TableCell className="font-semibold">{r.nome}</TableCell>
-                    <TableCell>
+                    <TableCell className="font-semibold py-2.5 px-3 truncate" title={r.nome}>
+                      {r.nome}
+                    </TableCell>
+                    <TableCell className="py-2.5 px-3">
                       <Badge
                         variant="outline"
                         className="font-mono text-xs font-bold text-emerald-800 bg-emerald-50 border-emerald-200"
@@ -209,23 +219,25 @@ export default function RegioesPage() {
                         {r.uf || '—'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2.5 px-3 overflow-hidden">
                       {r.todo_o_estado || !r.cidades || r.cidades.length === 0 ? (
-                        <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium">
-                          <Building2 className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Todo o estado ({r.uf || 'UF'})</span>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-700 font-medium truncate">
+                          <Building2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="truncate">Todo o estado ({r.uf || 'UF'})</span>
                         </div>
                       ) : (
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <div className="flex items-center gap-1.5 cursor-help">
+                              <div className="flex items-center gap-1.5 cursor-help max-w-full">
                                 <Badge
                                   variant="secondary"
-                                  className="gap-1 text-xs bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200"
+                                  className="gap-1 text-xs bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200 truncate max-w-full"
                                 >
-                                  <MapPin className="w-3 h-3 text-emerald-700" />
-                                  {r.cidades.length} cidade(s) de {r.uf}
+                                  <MapPin className="w-3 h-3 text-emerald-700 shrink-0" />
+                                  <span className="truncate">
+                                    {r.cidades.length} cidade(s) de {r.uf}
+                                  </span>
                                 </Badge>
                               </div>
                             </TooltipTrigger>
@@ -239,13 +251,18 @@ export default function RegioesPage() {
                         </TooltipProvider>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2.5 px-3 whitespace-nowrap">
                       <Badge variant={r.status === 'Ativo' ? 'default' : 'secondary'}>
                         {r.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs">{formatDate(r.created_at)}</TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="text-xs py-2.5 px-3 whitespace-nowrap">
+                      {formatDate(r.created_at)}
+                    </TableCell>
+                    <TableCell
+                      className="text-right py-2.5 px-3 whitespace-nowrap"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Button variant="ghost" size="icon" onClick={() => openEdit(r)}>
                         <Edit className="w-4 h-4" />
                       </Button>

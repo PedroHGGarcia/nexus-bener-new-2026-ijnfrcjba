@@ -198,67 +198,85 @@ export default function ControleQualidadePage() {
         <p className="py-10 text-center text-muted-foreground">Nenhuma versão para este filtro.</p>
       ) : (
         <>
-          <div className="rounded-md border overflow-x-auto">
-            <Table>
+          <div className="rounded-md border overflow-x-auto shadow-sm">
+            <Table className="w-full table-fixed">
+              <colgroup>
+                <col className="w-[28%]" />
+                <col className="w-[18%]" />
+                <col className="w-[140px]" />
+                <col className="w-[24%]" />
+                <col className="w-[20%]" />
+              </colgroup>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Versão</TableHead>
-                  <TableHead>Modelo</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Pendências</TableHead>
-                  <TableHead>Alteração de preço</TableHead>
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="py-3 px-3">Versão</TableHead>
+                  <TableHead className="py-3 px-3">Modelo</TableHead>
+                  <TableHead className="py-3 px-3 whitespace-nowrap">Status</TableHead>
+                  <TableHead className="py-3 px-3">Pendências</TableHead>
+                  <TableHead className="py-3 px-3">Alteração de preço</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginadas.map(({ versao: v, pendencias, liberada, resumoPreco }) => (
                   <TableRow key={v.id}>
-                    <TableCell className="font-medium">
-                      {v.nome}
+                    <TableCell className="font-medium py-2.5 px-3 truncate" title={v.nome}>
+                      <span className="truncate block">{v.nome}</span>
                       {v.cod_erp && (
-                        <span className="block text-xs text-muted-foreground">{v.cod_erp}</span>
+                        <span className="block text-xs text-muted-foreground truncate">
+                          {v.cod_erp}
+                        </span>
                       )}
                     </TableCell>
-                    <TableCell>{v.modelos?.nome ?? '—'}</TableCell>
-                    <TableCell>
+                    <TableCell
+                      className="py-2.5 px-3 truncate"
+                      title={v.modelos?.nome ?? undefined}
+                    >
+                      {v.modelos?.nome ?? '—'}
+                    </TableCell>
+                    <TableCell className="py-2.5 px-3 whitespace-nowrap">
                       {liberada ? (
-                        <Badge className="gap-1">
+                        <Badge className="gap-1 text-xs">
                           <ShieldCheck className="h-3 w-3" /> Liberada
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="gap-1">
+                        <Badge variant="secondary" className="gap-1 text-xs">
                           <ShieldAlert className="h-3 w-3" /> Não liberada ({v.status})
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-2.5 px-3">
                       {pendencias.length === 0 ? (
-                        <span className="text-xs text-emerald-600">Sem pendências</span>
+                        <span className="text-xs text-emerald-600 font-medium">Sem pendências</span>
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {pendencias.map((p) => (
-                            <Badge key={p} variant="destructive" className="font-normal">
+                            <Badge
+                              key={p}
+                              variant="destructive"
+                              className="font-normal text-[11px] py-0"
+                            >
                               {PENDENCIA_LABELS[p]}
                             </Badge>
                           ))}
                         </div>
                       )}
                     </TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="text-sm py-2.5 px-3 truncate">
                       {resumoPreco ? (
-                        <div>
-                          <span className="text-muted-foreground">
+                        <div className="truncate">
+                          <span className="text-muted-foreground text-xs">
                             {fmtValor(resumoPreco.anterior, v.moeda)} →{' '}
                           </span>
-                          <span className="font-medium">
+                          <span className="font-medium text-xs">
                             {fmtValor(resumoPreco.atual, v.moeda)}
                           </span>
                           {resumoPreco.variacaoPct !== null && (
-                            <span className="ml-1 text-xs">
+                            <span className="ml-1 text-[11px]">
                               ({resumoPreco.variacaoPct > 0 ? '+' : ''}
                               {resumoPreco.variacaoPct.toFixed(1)}%)
                             </span>
                           )}
-                          <span className="block text-xs text-muted-foreground">
+                          <span className="block text-[11px] text-muted-foreground">
                             Reajuste em {fmtData(resumoPreco.data)}
                           </span>
                         </div>

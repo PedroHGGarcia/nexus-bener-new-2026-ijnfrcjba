@@ -347,16 +347,24 @@ export default function TiposPropostasPage() {
               onAction={handleNew}
             />
           ) : (
-            <div className="border rounded-lg bg-card overflow-x-auto">
-              <Table>
+            <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
+              <Table className="w-full table-fixed">
+                <colgroup>
+                  <col className="w-[38%]" />
+                  <col className="w-[100px]" />
+                  <col className="w-[100px]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[110px]" />
+                  <col className="w-[115px]" />
+                </colgroup>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Comissão</TableHead>
-                    <TableHead>Última Alteração</TableHead>
-                    <TableHead>Data Cadastro</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead className="py-3 px-3">Nome</TableHead>
+                    <TableHead className="py-3 px-3 whitespace-nowrap">Status</TableHead>
+                    <TableHead className="py-3 px-3 whitespace-nowrap">Comissão</TableHead>
+                    <TableHead className="py-3 px-3">Última Alteração</TableHead>
+                    <TableHead className="py-3 px-3 whitespace-nowrap">Data Cadastro</TableHead>
+                    <TableHead className="text-right py-3 px-3 whitespace-nowrap">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -365,27 +373,33 @@ export default function TiposPropostasPage() {
                     const isAtivo = statusLabel === 'Ativo'
                     return (
                       <TableRow key={t.id}>
-                        <TableCell className="font-medium">{t.nome}</TableCell>
-                        <TableCell>
+                        <TableCell className="font-medium py-2.5 px-3 truncate" title={t.nome}>
+                          {t.nome}
+                        </TableCell>
+                        <TableCell className="py-2.5 px-3 whitespace-nowrap">
                           <Badge variant={isAtivo ? 'default' : 'secondary'}>{statusLabel}</Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="text-sm text-muted-foreground py-2.5 px-3 whitespace-nowrap">
                           {t.comissao != null ? `${t.comissao}%` : '-'}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell
+                          className="text-xs text-muted-foreground py-2.5 px-3 truncate"
+                          title={t.atualizado_por || undefined}
+                        >
                           {t.atualizado_por ? (
                             <span>{t.atualizado_por}</span>
                           ) : (
                             <span className="italic opacity-60">N/A</span>
                           )}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
+                        <TableCell className="text-xs text-muted-foreground py-2.5 px-3 whitespace-nowrap">
                           {formatDate(t.created_at)}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="text-right py-2.5 px-3 whitespace-nowrap">
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8"
                             title="Visualizar detalhes e parágrafos formatados"
                             onClick={() => setViewing(t)}
                           >
@@ -394,6 +408,7 @@ export default function TiposPropostasPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8"
                             title="Editar"
                             onClick={() => handleEdit(t)}
                           >
@@ -402,8 +417,8 @@ export default function TiposPropostasPage() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            className="h-8 w-8 text-destructive"
                             title="Excluir"
-                            className="text-destructive"
                             onClick={() => setDeleteTarget(t)}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -411,7 +426,7 @@ export default function TiposPropostasPage() {
                         </TableCell>
                       </TableRow>
                     )
-                  })}{' '}
+                  })}
                 </TableBody>
               </Table>
             </div>

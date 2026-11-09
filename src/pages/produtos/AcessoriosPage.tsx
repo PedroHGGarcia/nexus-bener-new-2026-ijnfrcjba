@@ -285,19 +285,30 @@ export default function AcessoriosPage() {
         />
       ) : (
         <div className="space-y-2">
-          <div className="border rounded-lg bg-card overflow-x-auto">
-            <Table>
+          <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
+            <Table className="w-full table-fixed">
+              <colgroup>
+                <col className="w-[30%]" />
+                <col className="w-[12%]" />
+                <col className="w-[70px]" />
+                <col className="w-[120px]" />
+                <col className="w-[85px]" />
+                <col className="w-[85px]" />
+                <col className="w-[110px]" />
+                <col className="w-[100px]" />
+                <col className="w-[100px]" />
+              </colgroup>
               <TableHeader>
-                <TableRow>
+                <TableRow className="bg-muted/40 hover:bg-muted/40">
                   <TableHead>Nome</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Moeda</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Fator NAC</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Versões</TableHead>
-                  <TableHead>Atualizado</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="whitespace-nowrap">Moeda</TableHead>
+                  <TableHead className="whitespace-nowrap">Valor</TableHead>
+                  <TableHead className="whitespace-nowrap">Fator NAC</TableHead>
+                  <TableHead className="whitespace-nowrap">Status</TableHead>
+                  <TableHead className="whitespace-nowrap">Versões</TableHead>
+                  <TableHead className="whitespace-nowrap">Atualizado</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -307,24 +318,37 @@ export default function AcessoriosPage() {
                     className="cursor-pointer hover:bg-accent/50"
                     onClick={() => handleRowClick(d)}
                   >
-                    <TableCell className="font-semibold">{d.nome}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{d.tipo ?? '—'}</TableCell>
-                    <TableCell className="text-xs">{d.moeda ?? '—'}</TableCell>
-                    <TableCell className="text-xs font-mono">
+                    <TableCell className="font-semibold py-2.5 px-3 truncate" title={d.nome}>
+                      {d.nome}
+                    </TableCell>
+                    <TableCell
+                      className="text-xs text-muted-foreground py-2.5 px-3 truncate"
+                      title={d.tipo ?? undefined}
+                    >
+                      {d.tipo ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-xs py-2.5 px-3 whitespace-nowrap">
+                      {d.moeda ?? '—'}
+                    </TableCell>
+                    <TableCell className="text-xs font-mono py-2.5 px-3 whitespace-nowrap">
                       {d.valor != null ? formatCurrency(d.valor) : '—'}
                     </TableCell>
-                    <TableCell className="text-xs">{d.fator_nac ?? '—'}</TableCell>
-                    <TableCell>
+                    <TableCell className="text-xs py-2.5 px-3 whitespace-nowrap">
+                      {d.fator_nac ?? '—'}
+                    </TableCell>
+                    <TableCell className="py-2.5 px-3 whitespace-nowrap">
                       <Badge variant={d.status === 'Ativo' ? 'default' : 'secondary'}>
                         {d.status ?? '—'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-xs">
+                    <TableCell className="text-xs py-2.5 px-3 overflow-hidden">
                       {versaoFilterAtivo &&
                       Array.isArray(d.versao_nomes) &&
                       d.versao_nomes.length > 0 ? (
                         <div className="flex items-center gap-1 flex-wrap">
-                          <Badge className="font-mono text-xs font-semibold">{versaoFilter}</Badge>
+                          <Badge className="font-mono text-xs font-semibold truncate max-w-full">
+                            {versaoFilter}
+                          </Badge>
                           {d.versao_nomes.length > 1 && (
                             <Badge
                               variant="outline"
@@ -343,8 +367,13 @@ export default function AcessoriosPage() {
                         <span className="text-muted-foreground font-mono">0</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs">{formatDate(d.updated_at)}</TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <TableCell className="text-xs py-2.5 px-3 whitespace-nowrap">
+                      {formatDate(d.updated_at)}
+                    </TableCell>
+                    <TableCell
+                      className="text-right py-2.5 px-3 whitespace-nowrap"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {canEdit ? (
                         <>
                           <Button

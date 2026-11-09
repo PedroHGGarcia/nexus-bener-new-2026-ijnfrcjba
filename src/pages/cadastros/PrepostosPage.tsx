@@ -54,28 +54,44 @@ export default function PrepostosPage() {
         </Button>
       </div>
 
-      <div className="border rounded-lg bg-card">
-        <Table>
+      <div className="border rounded-lg bg-card overflow-x-auto shadow-sm">
+        <Table className="w-full table-fixed">
+          <colgroup>
+            <col className="w-[35%]" />
+            <col className="w-[20%]" />
+            <col className="w-[20%]" />
+            <col className="w-[25%]" />
+            <col className="w-[80px]" />
+          </colgroup>
           <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Documento (CPF)</TableHead>
-              <TableHead>Telefone</TableHead>
-              <TableHead>Região</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+            <TableRow className="bg-muted/40 hover:bg-muted/40">
+              <TableHead className="py-3 px-3">Nome</TableHead>
+              <TableHead className="py-3 px-3 whitespace-nowrap">Documento (CPF)</TableHead>
+              <TableHead className="py-3 px-3 whitespace-nowrap">Telefone</TableHead>
+              <TableHead className="py-3 px-3">Região</TableHead>
+              <TableHead className="text-right py-3 px-3 whitespace-nowrap">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {prepostos.map((p) => (
               <TableRow key={p.id}>
-                <TableCell className="font-semibold">{p.nome}</TableCell>
-                <TableCell className="text-xs font-mono">{p.documento}</TableCell>
-                <TableCell className="text-xs">{p.telefone}</TableCell>
-                <TableCell className="text-xs">{p.regiao}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="font-semibold py-2.5 px-3 truncate" title={p.nome}>
+                  {p.nome}
+                </TableCell>
+                <TableCell className="text-xs font-mono py-2.5 px-3 truncate" title={p.documento}>
+                  {p.documento}
+                </TableCell>
+                <TableCell className="text-xs py-2.5 px-3 whitespace-nowrap">
+                  {p.telefone}
+                </TableCell>
+                <TableCell className="text-xs py-2.5 px-3 truncate" title={p.regiao}>
+                  {p.regiao}
+                </TableCell>
+                <TableCell className="text-right py-2.5 px-3 whitespace-nowrap">
                   <Button
                     variant="ghost"
                     size="icon"
+                    className="h-8 w-8"
                     onClick={() => {
                       setEditing(p)
                       setOpenModal(true)
@@ -86,7 +102,7 @@ export default function PrepostosPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-destructive"
+                    className="h-8 w-8 text-destructive"
                     onClick={() => benerStore.deleteItem('prepostos', 'prepostos', p.id)}
                   >
                     <Trash2 className="w-4 h-4" />

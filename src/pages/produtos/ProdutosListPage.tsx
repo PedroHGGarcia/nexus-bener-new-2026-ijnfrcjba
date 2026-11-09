@@ -586,7 +586,18 @@ export default function ProdutosListPage() {
       {/* Table */}
       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm table-fixed">
+            <colgroup>
+              <col className="w-[24%]" />
+              <col className="w-[85px]" />
+              <col className="w-[100px]" />
+              <col className="w-[13%]" />
+              <col className="w-[14%]" />
+              <col className="w-[11%]" />
+              <col className="w-[12%]" />
+              <col className="w-[115px]" />
+              <col className="w-[100px]" />
+            </colgroup>
             <thead>
               <tr className="border-b bg-muted/40 text-left">
                 <Th className="text-foreground">Versão</Th>
@@ -605,7 +616,7 @@ export default function ProdutosListPage() {
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="border-b last:border-0">
                     {Array.from({ length: COLSPAN }).map((__, j) => (
-                      <td key={j} className="px-4 py-3">
+                      <td key={j} className="px-3 py-3">
                         <Skeleton className="h-5 w-full max-w-[120px]" />
                       </td>
                     ))}
@@ -652,14 +663,14 @@ export default function ProdutosListPage() {
                     key={v.id}
                     className="border-b last:border-0 hover:bg-muted/30 transition-colors"
                   >
-                    <td className="px-4 py-2.5">
-                      <div className="flex items-center gap-3">
+                    <td className="px-3 py-2.5 overflow-hidden">
+                      <div className="flex items-center gap-2.5 min-w-0">
                         {v.imagem_preview && !brokenImages.has(v.id) ? (
                           <div
                             role="button"
                             tabIndex={0}
                             aria-label={`Ampliar foto de ${v.nome}`}
-                            className="relative group w-11 h-11 shrink-0 rounded-md border bg-white p-0.5 shadow-xs transition-transform duration-150 hover:scale-105 cursor-zoom-in focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-1"
+                            className="relative group w-10 h-10 shrink-0 rounded-md border bg-white p-0.5 shadow-xs transition-transform duration-150 hover:scale-105 cursor-zoom-in focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-1"
                             onClick={(e) => {
                               e.stopPropagation()
                               setPreviewImage({ url: v.imagem_preview!, nome: v.nome })
@@ -694,7 +705,7 @@ export default function ProdutosListPage() {
                           </div>
                         ) : (
                           <div
-                            className="w-11 h-11 shrink-0 rounded-md border border-dashed border-border/80 bg-muted/40 flex flex-col items-center justify-center text-[10px] text-muted-foreground gap-0.5 select-none"
+                            className="w-10 h-10 shrink-0 rounded-md border border-dashed border-border/80 bg-muted/40 flex flex-col items-center justify-center text-[10px] text-muted-foreground gap-0.5 select-none"
                             title="Sem foto cadastrada"
                           >
                             <ImageIcon className="w-4 h-4 opacity-50" />
@@ -703,10 +714,15 @@ export default function ProdutosListPage() {
                             </span>
                           </div>
                         )}
-                        <span className="font-semibold text-foreground leading-snug">{v.nome}</span>
+                        <span
+                          className="font-semibold text-foreground leading-snug truncate"
+                          title={v.nome}
+                        >
+                          {v.nome}
+                        </span>
                       </div>
                     </td>
-                    <td className="px-4 py-2.5">
+                    <td className="px-2.5 py-2.5 whitespace-nowrap">
                       <Badge
                         variant="secondary"
                         className={
@@ -718,17 +734,30 @@ export default function ProdutosListPage() {
                         {v.status === 'Ativo' ? 'Ativo' : 'Inativo'}
                       </Badge>
                     </td>
-                    <td className="px-4 py-2.5 text-muted-foreground tabular-nums">
+                    <td
+                      className="px-2.5 py-2.5 text-muted-foreground tabular-nums truncate font-mono text-xs"
+                      title={v.cod_erp || undefined}
+                    >
                       {v.cod_erp || '—'}
                     </td>
-                    <td className="px-4 py-2.5">{v._categoriaNome}</td>
-                    <td className="px-4 py-2.5">{v._produtoNome}</td>
-                    <td className="px-4 py-2.5">{v._marcaNome}</td>
-                    <td className="px-4 py-2.5">{v._modeloNome}</td>
-                    <td className="px-4 py-2.5 text-right tabular-nums font-medium text-foreground">
+                    <td className="px-2.5 py-2.5 truncate" title={v._categoriaNome}>
+                      {v._categoriaNome}
+                    </td>
+                    <td className="px-2.5 py-2.5 truncate" title={v._produtoNome}>
+                      {v._produtoNome}
+                    </td>
+                    <td className="px-2.5 py-2.5 truncate" title={v._marcaNome}>
+                      {v._marcaNome}
+                    </td>
+                    <td className="px-2.5 py-2.5 truncate" title={v._modeloNome}>
+                      {v._modeloNome}
+                    </td>
+                    <td className="px-2.5 py-2.5 text-right tabular-nums font-medium text-foreground whitespace-nowrap">
                       {formatCurrencyByMoeda(v.valor, v.moeda)}
                     </td>
-                    <td className="px-4 py-2.5 text-right">{renderRowActions(v)}</td>
+                    <td className="px-2.5 py-2.5 text-right whitespace-nowrap">
+                      {renderRowActions(v)}
+                    </td>
                   </tr>
                 ))
               )}
