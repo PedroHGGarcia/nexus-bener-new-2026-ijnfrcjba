@@ -690,27 +690,28 @@ export default function EmitirLicitacaoPage() {
       }).catch((e) => console.warn('n8n email trigger warning:', e))
 
       // Gera e salva o PDF oficial no storage a partir do snapshot congelado.
-      // O download posterior usa o arquivo salvo (pdf_anexo), sem regerar.
-      generateProposalPdf(result.id)
-        .then((pdfResult) => {
-          if (pdfResult.ok && pdfResult.data?.pdfUrl) {
-            toast({ title: 'PDF gerado e salvo no storage.' })
-          } else if (!pdfResult.ok) {
-            toast({
-              title: 'Falha ao gerar PDF da proposta',
-              description: (pdfResult as { ok: false; error: string }).error,
-              variant: 'destructive',
-            })
-          }
-        })
-        .catch((e) => console.warn('Falha ao gerar PDF da proposta de licitação:', e))
+      // Aguardar para garantir que o PDF já esteja salvo no storage antes do download automático.
+      try {
+        const pdfResult = await generateProposalPdf(result.id)
+        if (pdfResult.ok && pdfResult.data?.pdfUrl) {
+          toast({ title: 'PDF gerado e salvo no storage.' })
+        } else if (!pdfResult.ok) {
+          toast({
+            title: 'Falha ao gerar PDF da proposta',
+            description: (pdfResult as { ok: false; error: string }).error,
+            variant: 'destructive',
+          })
+        }
+      } catch (e) {
+        console.warn('Falha ao gerar PDF da proposta de licitação:', e)
+      }
 
       toast({
         title: 'Proposta de Licitação enviada com sucesso!',
         description: `Proposta ${result.numero_proposta || ''} emitida e cadastrada no sistema.`,
       })
 
-      navigate(`/controle-propostas/proposta-pdf/${result.id}`)
+      navigate(`/controle-propostas/proposta-pdf/${result.id}?autoDownload=1`)
     } catch (err) {
       toast({
         title: 'Erro ao emitir proposta de licitação',

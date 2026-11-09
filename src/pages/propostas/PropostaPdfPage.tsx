@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -29,13 +29,14 @@ import { ReenviarNotificacaoDialog } from '@/components/propostas/ReenviarNotifi
 import { EnviarWhatsAppDialog } from '@/components/propostas/EnviarWhatsAppDialog'
 import { fetchPropostaById, updatePropostaStatus } from '@/services/propostas'
 import { sendProposalEmail } from '@/services/proposal-email'
-import { getProposalPdfUrl } from '@/services/proposal-pdf'
+import { getProposalPdfUrl, downloadProposalPdfFile } from '@/services/proposal-pdf'
 import { useProposalPrintTitle } from '@/hooks/use-proposal-print-title'
 import { PropostaWithRelations, STATUS_FLOW, STATUS_LABELS } from '@/types/proposta'
 
 export default function PropostaPdfPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const [proposal, setProposal] = useState<PropostaWithRelations | null>(null)
   const [loading, setLoading] = useState(true)
@@ -43,6 +44,7 @@ export default function PropostaPdfPage() {
   const [copiedLink, setCopiedLink] = useState(false)
   const [notifyDialogOpen, setNotifyDialogOpen] = useState(false)
   const [whatsAppDialogOpen, setWhatsAppDialogOpen] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   // Names the saved PDF after the proposal number (Proposta-<numero>.pdf)
   useProposalPrintTitle(proposal)
@@ -133,20 +135,73 @@ export default function PropostaPdfPage() {
     }
   }
 
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = useCallback(async () => {
     if (!proposal) return
+    setIsDownloading(true)
     try {
-      const url = await getProposalPdfUrl(proposal.id, proposal.pdf_anexo)
-      setProposal({ ...proposal, pdf_anexo: url })
-      window.open(url, '_blank')
+      const result = await downloadProposalPdfFile(proposal)
+      if (result.url && result.url !== proposal.pdf_anexo) {
+        setProposal((prev) => (prev ? { ...prev, pdf_anexo: result.url } : prev))
+      }
     } catch (err) {
       toast({
         title: 'Falha ao baixar PDF',
         description: err instanceof Error ? err.message : '',
         variant: 'destructive',
       })
+    } finally {
+      setIsDownloading(false)
     }
-  }
+  }, [proposal])
+
+  // Consumir intenção de autoDownload uma única vez
+  useEffect(() => {
+    if (!proposal || !id) return
+    const autoDownloadParam = searchParams.get('autoDownload')
+    if (autoDownloadParam !== '1') return
+
+    // Remove o parâmetro da URL imediatamente com replace
+    const nextParams = new URLSearchParams(searchParams)
+    nextParams.delete('autoDownload')
+    const queryString = nextParams.toString()
+    navigate(
+      {
+        pathname: `/controle-propostas/proposta-pdf/${id}`,
+        search: queryString ? `?${queryString}` : '',
+      },
+      { replace: true },
+    )
+
+    const sessionKey = `proposal-pdf-downloaded:${id}`
+    if (sessionStorage.getItem(sessionKey)) {
+      return
+    }
+
+    // Grava no sessionStorage ANTES de iniciar a operação (previne disparo duplo ou em refresh)
+    try {
+      sessionStorage.setItem(sessionKey, '1')
+    } catch {
+      // sessionStorage pode falhar em contextos com storage bloqueado; prossegue
+    }
+
+    // Dispara download automático
+    downloadProposalPdfFile(proposal)
+      .then((res) => {
+        if (res.url && res.url !== proposal.pdf_anexo) {
+          setProposal((prev) => (prev ? { ...prev, pdf_anexo: res.url } : prev))
+        }
+      })
+      .catch((err) => {
+        toast({
+          title: 'Falha ao baixar PDF automaticamente',
+          description:
+            err instanceof Error
+              ? err.message
+              : 'Não foi possível concluir o download automático. Você pode tentar novamente pelo botão Baixar PDF.',
+          variant: 'destructive',
+        })
+      })
+  }, [proposal, id, searchParams, navigate])
 
   if (loading) return <LoadingState count={4} />
   if (error || !proposal) return <ErrorState message="Proposta não encontrada" onRetry={loadData} />
@@ -284,10 +339,11 @@ export default function PropostaPdfPage() {
           <Button
             variant="outline"
             onClick={handleDownloadPdf}
+            disabled={isDownloading}
             className="gap-2"
             title="Baixar o PDF salvo desta proposta"
           >
-            <Download className="w-4 h-4" /> Baixar PDF
+            <Download className="w-4 h-4" /> {isDownloading ? 'Baixando...' : 'Baixar PDF'}
           </Button>
         </div>
       </div>
@@ -366,10 +422,11 @@ export default function PropostaPdfPage() {
           <Button
             variant="outline"
             onClick={handleDownloadPdf}
+            disabled={isDownloading}
             className="gap-2"
             title="Baixar o PDF salvo desta proposta"
           >
-            <Download className="w-4 h-4" /> Baixar PDF
+            <Download className="w-4 h-4" /> {isDownloading ? 'Baixando...' : 'Baixar PDF'}
           </Button>
         </div>
       </div>

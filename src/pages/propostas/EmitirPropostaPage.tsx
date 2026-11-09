@@ -96,7 +96,7 @@ export default function EmitirPropostaPage() {
         console.warn('Erro ao enviar e-mails de notificação:', err)
       })
 
-    navigate(`/controle-propostas/proposta-pdf/${id}`)
+    navigate(`/controle-propostas/proposta-pdf/${id}?autoDownload=1`)
   }
 
   return (

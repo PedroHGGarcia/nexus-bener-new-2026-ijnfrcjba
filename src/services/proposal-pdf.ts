@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase/client'
 import type { ServiceResult } from '@/lib/utils'
 import logoAsset from '@/assets/bener-thumb-accaf.png'
+import { buildProposalFileName } from '@/lib/proposal-file-name'
 
 async function fetchAsDataUrl(url: string): Promise<string | null> {
   try {
@@ -102,6 +103,48 @@ export async function getProposalPdfUrl(
     throw new Error('O arquivo não foi salvo no storage.')
   }
   return result.data.pdfUrl
+}
+
+/**
+ * Baixa o PDF da proposta diretamente como arquivo usando Blob + <a> temporário com download attribute.
+ * Se o bucket ou a rede bloquearem CORS no fetch, faz fallback para window.open.
+ * Revoga o objectURL gerado após o clique.
+ */
+export async function downloadProposalPdfFile(proposta: {
+  id: string
+  numero_proposta?: string | null
+  revisao?: string | null
+  pdf_anexo?: string | null
+}): Promise<{ url: string; fallbackToTab: boolean }> {
+  const url = await getProposalPdfUrl(proposta.id, proposta.pdf_anexo)
+  const fileName = buildProposalFileName(proposta.numero_proposta || proposta.id, proposta.revisao)
+
+  try {
+    const res = await fetch(url)
+    if (!res.ok) {
+      throw new Error(`Falha no download (HTTP ${res.status})`)
+    }
+    const blob = await res.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    try {
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } finally {
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+    }
+    return { url, fallbackToTab: false }
+  } catch (fetchErr) {
+    console.warn(
+      '[downloadProposalPdfFile] fetch/Blob bloqueado ou com falha, abrindo em nova aba:',
+      fetchErr,
+    )
+    window.open(url, '_blank')
+    return { url, fallbackToTab: true }
+  }
 }
 
 export async function printProposalPdf(propostaId: string): Promise<void> {

@@ -49,7 +49,7 @@ import { fetchPropostas, deleteProposta } from '@/services/propostas'
 import { PropostaWithRelations, STATUS_LABELS } from '@/types/proposta'
 import { useCurrencyRates } from '@/hooks/use-currency-rates'
 import { formatBrlEquivalent } from '@/services/currency-rates'
-import { generateProposalPdf } from '@/services/proposal-pdf'
+import { generateProposalPdf, downloadProposalPdfFile } from '@/services/proposal-pdf'
 
 const PAGE_SIZE = 50
 
@@ -555,31 +555,22 @@ export default function PropostasCriadasPage() {
                             variant="ghost"
                             size="icon"
                             onClick={async () => {
-                              // Baixa o PDF salvo na emissão/atualização; só gera se ainda não existir.
-                              let url = (p as { pdf_anexo?: string | null }).pdf_anexo || null
-                              if (!url) {
-                                const r = await generateProposalPdf(p.id)
-                                if (!r.ok) {
-                                  toast({
-                                    title: 'Falha ao gerar PDF',
-                                    description: (r as { ok: false; error: string }).error,
-                                    variant: 'destructive',
-                                  })
-                                  return
-                                }
-                                url = r.data?.pdfUrl ?? null
-                                if (url) {
+                              try {
+                                const res = await downloadProposalPdfFile(p)
+                                if (
+                                  res.url &&
+                                  res.url !== (p as { pdf_anexo?: string | null }).pdf_anexo
+                                ) {
                                   setData((prev) =>
-                                    prev.map((x) => (x.id === p.id ? { ...x, pdf_anexo: url } : x)),
+                                    prev.map((x) =>
+                                      x.id === p.id ? { ...x, pdf_anexo: res.url } : x,
+                                    ),
                                   )
                                 }
-                              }
-                              if (url) {
-                                window.open(url, '_blank')
-                              } else {
+                              } catch (err) {
                                 toast({
-                                  title: 'PDF não disponível',
-                                  description: 'O arquivo não foi salvo no storage.',
+                                  title: 'Falha ao baixar PDF',
+                                  description: err instanceof Error ? err.message : '',
                                   variant: 'destructive',
                                 })
                               }

@@ -79,7 +79,7 @@ export default function EditarPropostaPage() {
               showPrintPdfBlockedFallbackToast(newId)
             }
           }
-          navigate(`/controle-propostas/proposta-pdf/${newId}`)
+          navigate(`/controle-propostas/proposta-pdf/${newId}?autoDownload=1`)
         }}
         onCancel={() => navigate('/controle-propostas/propostas-criadas')}
       />
