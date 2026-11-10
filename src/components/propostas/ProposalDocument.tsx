@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { PropostaWithRelations } from '@/types/proposta'
 import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
 import { TipoProposta } from '@/types/tipo-proposta'
@@ -749,6 +749,38 @@ export function ProposalDocument({ proposal }: Props) {
     hasComparison ||
     hasTiposPropostaDetails
 
+  // Medição da altura do bloco de conteúdo para estimativa de total de páginas na visualização de tela
+  const contentBodyRef = useRef<HTMLDivElement>(null)
+  const [estimatedTotalPages, setEstimatedTotalPages] = useState<number>(
+    showAdditionalPages ? 2 : 1,
+  )
+
+  useEffect(() => {
+    if (!showAdditionalPages) {
+      setEstimatedTotalPages(1)
+      return
+    }
+
+    const measurePages = () => {
+      if (!contentBodyRef.current) return
+      // Na visualização em tela / impressão, cada página de conteúdo A4 tem ~226mm de altura útil
+      // 1mm ~ 3.7795px (96dpi standard) -> 226mm ~ 854px
+      const scrollHeight = contentBodyRef.current.scrollHeight
+      const usableHeightPx = 854
+      const contentPages = Math.max(1, Math.ceil(scrollHeight / usableHeightPx))
+      // 1 página de capa + N páginas de conteúdo
+      setEstimatedTotalPages(1 + contentPages)
+    }
+
+    measurePages()
+    const timer = setTimeout(measurePages, 300)
+    window.addEventListener('resize', measurePages)
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('resize', measurePages)
+    }
+  }, [showAdditionalPages, proposal, equipmentItems])
+
   // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
   const sectionCounter = new ProposalSectionCounter()
 
@@ -778,6 +810,8 @@ export function ProposalDocument({ proposal }: Props) {
             Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373
           </p>
           <p className="font-normal">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+          {/* Numeração no canto inferior direito para navegadores legados (sem sobrepor o rodapé de endereços) */}
+          <span className="proposal-running-footer-page-counter absolute bottom-0 right-0 text-[9px] font-bold text-black pointer-events-none" />
         </div>
       </div>
 
@@ -959,15 +993,14 @@ export function ProposalDocument({ proposal }: Props) {
                   <p className="font-normal">
                     E-mail: vendas@bener.com.br - Site: www.bener.com.br
                   </p>
-                  <p className="text-right text-[10px] font-bold mt-1 text-black">
-                    Página 1 de {showAdditionalPages ? 2 : 1}
-                  </p>
+                  {/* Capa sem numeração no rodapé de tela */}
                 </div>
               </div>
 
               {/* ================= PAGE 2+: TECHNICAL & COMMERCIAL DETAILS ================= */}
               {showAdditionalPages && (
                 <div
+                  ref={contentBodyRef}
                   data-sheet-index="1"
                   data-page="2"
                   className="proposal-page proposal-sheet relative flex flex-col justify-between p-10 sm:p-12 print:p-0 bg-white min-h-[297mm] print:min-h-0 print:h-auto border-t-2 border-dashed border-slate-300 print:border-none"
@@ -1790,14 +1823,13 @@ export function ProposalDocument({ proposal }: Props) {
                       E-mail: vendas@bener.com.br - Site: www.bener.com.br
                     </p>
                     <p className="text-right text-[10px] font-bold mt-1 text-black">
-                      Página 2 de 2
+                      {estimatedTotalPages > 1
+                        ? `Página 2 de ${estimatedTotalPages}`
+                        : 'Página 1 de 1'}
                     </p>
                   </div>
 
-                  {/* Numeração de página impressa desenhada pelo layout da folha de conteúdo (não sobrepõe o rodapé de endereços) */}
-                  <div className="proposal-page-footer-number hidden print:block">
-                    Página 2 de 2
-                  </div>
+                  {/* Numeração de página impressa via running-footer / margin-box do CSS */}
                 </div>
               )}
             </td>

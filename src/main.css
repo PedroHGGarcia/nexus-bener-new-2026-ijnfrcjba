@@ -299,6 +299,46 @@
   size: A4 portrait;
   margin: 0 !important;
 }
+
+/* Margin box do Chromium 131+ (suporte nativo a paginação real Página X de N no rodapé direito)
+   A capa (:first) fica sem numeração. As demais folhas recebem "Página counter(page) de counter(pages)". */
+@page proposta:first {
+  @bottom-right {
+    content: '';
+  }
+}
+
+@page:first {
+  @bottom-right {
+    content: '';
+  }
+}
+
+@page proposta {
+  @bottom-right {
+    content: 'Página ' counter(page) ' de ' counter(pages);
+    font-family: 'Courier New', Courier, monospace, 'Lucida Console', sans-serif;
+    font-size: 9px;
+    font-weight: bold;
+    color: #000;
+    margin-right: 12mm;
+    margin-bottom: 10mm;
+    vertical-align: middle;
+  }
+}
+
+@page {
+  @bottom-right {
+    content: 'Página ' counter(page) ' de ' counter(pages);
+    font-family: 'Courier New', Courier, monospace, 'Lucida Console', sans-serif;
+    font-size: 9px;
+    font-weight: bold;
+    color: #000;
+    margin-right: 12mm;
+    margin-bottom: 10mm;
+    vertical-align: middle;
+  }
+}
 @media print {
   .proposal-running-header {
     display: block !important;
@@ -327,18 +367,7 @@
   }
 
   .proposal-page-footer-number {
-    display: block !important;
-    position: fixed !important;
-    bottom: 10mm !important;
-    right: 12mm !important;
-    height: 16mm !important;
-    line-height: 16mm !important;
-    z-index: 10000 !important;
-    text-align: right !important;
-    font-size: 9px !important;
-    color: #475569 !important;
-    font-family: 'Courier New', Courier, monospace, 'Lucida Console', sans-serif !important;
-    pointer-events: none !important;
+    display: none !important;
   }
 
   /* Tabela de paginação para impressão: thead/tfoot repetem em todas as páginas
