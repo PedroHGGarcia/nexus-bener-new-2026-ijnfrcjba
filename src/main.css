@@ -293,45 +293,11 @@
 @page {
   size: A4 portrait;
   margin: 0 !important;
-
-  @bottom-right {
-    content: 'Página ' counter(page);
-    font-family: 'Courier New', Courier, monospace, 'Lucida Console', sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    color: #000;
-    vertical-align: bottom;
-    padding-right: 12mm;
-    padding-bottom: 6mm;
-  }
-}
-
-@page :first {
-  @bottom-right {
-    content: normal;
-  }
 }
 
 @page proposta {
   size: A4 portrait;
   margin: 0 !important;
-
-  @bottom-right {
-    content: 'Página ' counter(page);
-    font-family: 'Courier New', Courier, monospace, 'Lucida Console', sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    color: #000;
-    vertical-align: bottom;
-    padding-right: 12mm;
-    padding-bottom: 6mm;
-  }
-}
-
-@page proposta:first {
-  @bottom-right {
-    content: normal;
-  }
 }
 @media print {
   .proposal-running-header {
@@ -358,6 +324,21 @@
     box-sizing: border-box !important;
     font-size: 12px !important;
     line-height: 1.15 !important;
+  }
+
+  .proposal-page-footer-number {
+    display: block !important;
+    position: fixed !important;
+    bottom: 10mm !important;
+    right: 12mm !important;
+    height: 16mm !important;
+    line-height: 16mm !important;
+    z-index: 10000 !important;
+    text-align: right !important;
+    font-size: 9px !important;
+    color: #475569 !important;
+    font-family: 'Courier New', Courier, monospace, 'Lucida Console', sans-serif !important;
+    pointer-events: none !important;
   }
 
   /* Tabela de paginação para impressão: thead/tfoot repetem em todas as páginas

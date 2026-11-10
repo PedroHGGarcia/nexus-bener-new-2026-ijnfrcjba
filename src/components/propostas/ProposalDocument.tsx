@@ -770,13 +770,15 @@ export function ProposalDocument({ proposal }: Props) {
 
       {/* Running Footer Nativo para @media print (aparece no rodapé de TODAS as páginas impressas via fixed footer) */}
       <div className="proposal-running-footer hidden print:block print:fixed print:bottom-[10mm] print:left-[12mm] print:right-[12mm] print:h-[16mm] print:bg-white print:z-[9999] border-t border-black pt-1 text-center text-[12px] leading-[1.15] text-black">
-        <p className="font-normal">
-          Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial
-        </p>
-        <p className="font-normal">
-          Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373
-        </p>
-        <p className="font-normal">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+        <div className="relative w-full h-full flex flex-col justify-center">
+          <p className="font-normal">
+            Rua Iracema Lucas, 450 (Antiga Rua Parsch) - Distrito Industrial
+          </p>
+          <p className="font-normal">
+            Vinhedo - SP - Brasil - CEP: 13280-172 - Fone / Fax: (0**19) 3826-7373
+          </p>
+          <p className="font-normal">E-mail: vendas@bener.com.br - Site: www.bener.com.br</p>
+        </div>
       </div>
 
       <table className="proposal-print-table w-full border-collapse m-0 p-0 border-none">
@@ -1790,6 +1792,11 @@ export function ProposalDocument({ proposal }: Props) {
                     <p className="text-right text-[10px] font-bold mt-1 text-black">
                       Página 2 de 2
                     </p>
+                  </div>
+
+                  {/* Numeração de página impressa desenhada pelo layout da folha de conteúdo (não sobrepõe o rodapé de endereços) */}
+                  <div className="proposal-page-footer-number hidden print:block">
+                    Página 2 de 2
                   </div>
                 </div>
               )}
