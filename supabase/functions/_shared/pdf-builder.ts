@@ -1,5 +1,6 @@
 import { escapeHtml } from './escape-html.ts'
 import { ProposalSectionCounter } from './proposal-section-numbering.ts'
+import { resolveRepresentanteCargo } from './representante-cargo.ts'
 export {
   buildProposalPdfBytes,
   PdfDoc,
@@ -1578,7 +1579,7 @@ export function buildProposalPdfHtml(
         }
         <div style="border-top: 1px solid #334155; width: 85%; padding-top: 4px; font-size: 11px;">
           <strong>${escapeHtml(proposta.nome_representante_comercial || proposta.representante_original || 'Bener Comercial')}</strong><br />
-          <span style="font-size: 9px; color: #64748b;">Responsável Interno — Comercial</span>
+          <span style="font-size: 9px; color: #64748b;">${escapeHtml(resolveRepresentanteCargo(proposta.representantes))}</span>
           ${proposta.data_assinatura_representante ? `<br /><span style="font-size: 8px; color: #64748b;">Assinado em ${new Date(proposta.data_assinatura_representante).toLocaleDateString('pt-BR')}</span>` : ''}
         </div>
       </div>

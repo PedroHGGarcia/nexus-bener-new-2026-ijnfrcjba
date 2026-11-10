@@ -127,8 +127,24 @@ export async function generateAndUploadProposalPdf(
     const { data: urlData } = adminClient.storage.from(BUCKET).getPublicUrl(fileName)
     pdfUrl = urlData.publicUrl
 
+    // Versão com cache-busting e metadados layout_v2
+    const nowTs = Date.now()
+    const cacheBustedUrl = `${pdfUrl}?v=${nowTs}`
+    const pdfMeta = {
+      layout_version: 'layout_v2',
+      has_page_numbers: true,
+      generated_at: new Date(nowTs).toISOString(),
+      timestamp: nowTs,
+    }
     // Persist the URL on the proposal row for later retrieval
-    await adminClient.from('propostas').update({ pdf_anexo: pdfUrl }).eq('id', propostaId)
+    await adminClient
+      .from('propostas')
+      .update({
+        pdf_anexo: cacheBustedUrl,
+        pdf_anexo_meta: pdfMeta,
+      })
+      .eq('id', propostaId)
+    pdfUrl = cacheBustedUrl
   } catch (errPersist: any) {
     console.warn('[pdf-generator] Aviso: erro ao atualizar pdf_anexo na proposta:', errPersist)
     // Se o upload foi bem sucedido mas falhou apenas o update, ainda temos a publicUrl

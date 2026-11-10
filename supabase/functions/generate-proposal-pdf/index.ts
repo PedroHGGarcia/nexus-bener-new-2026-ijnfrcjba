@@ -86,7 +86,9 @@ Deno.serve(async (req: Request) => {
     // Always fetch directly from DB to prevent client payload manipulation
     const { data: proposalData, error: fetchErr } = await adminClient
       .from('propostas')
-      .select('*, clientes(*), versoes(*), representantes:representante(*), gerentes:gerente(*)')
+      .select(
+        '*, clientes(*), versoes(*), representantes:representante(*, profiles(id, role)), gerentes:gerente(*)',
+      )
       .eq('id', proposta_id)
       .maybeSingle()
 
@@ -402,11 +404,24 @@ Deno.serve(async (req: Request) => {
         }
 
         const { data: urlData } = adminClient.storage.from('propostas-pdf').getPublicUrl(fileName)
+        const nowTs = Date.now()
         // Versão na URL evita que o cache do CDN devolva o PDF anterior após uma regeneração
-        pdfUrl = `${urlData.publicUrl}?v=${Date.now()}`
+        pdfUrl = `${urlData.publicUrl}?v=${nowTs}`
 
-        // Persiste a URL do PDF salvo no registro da proposta (fonte do botão "Baixar PDF")
-        await adminClient.from('propostas').update({ pdf_anexo: pdfUrl }).eq('id', proposalData.id)
+        // Persiste a URL do PDF salvo e o marcador de versão de layout (layout_v2 com paginação X de Y)
+        const pdfMeta = {
+          layout_version: 'layout_v2',
+          has_page_numbers: true,
+          generated_at: new Date(nowTs).toISOString(),
+          timestamp: nowTs,
+        }
+        await adminClient
+          .from('propostas')
+          .update({
+            pdf_anexo: pdfUrl,
+            pdf_anexo_meta: pdfMeta,
+          })
+          .eq('id', proposalData.id)
       } catch (storageErr: any) {
         const storageMessage =
           storageErr?.message || JSON.stringify(storageErr) || String(storageErr)

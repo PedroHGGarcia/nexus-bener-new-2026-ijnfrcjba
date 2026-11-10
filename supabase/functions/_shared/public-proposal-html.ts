@@ -6,6 +6,7 @@
 import { escapeHtml } from './escape-html.ts'
 import { calcComissaoServicosBener, TEXTO_COMISSAO_BENER_VERBATIM } from './pdf-builder.ts'
 import { ProposalSectionCounter } from './proposal-section-numbering.ts'
+import { resolveRepresentanteCargo } from './representante-cargo.ts'
 const esc = escapeHtml
 
 export function normalizeMoedaCode(raw?: string | null): string {
@@ -635,7 +636,7 @@ export function buildPublicProposalHtml(
 
   const totalPaginas = hasPage2Content ? 2 : 1
   const page1Number = `Página 1 de ${totalPaginas}`
-  const page2Number = `Página 2 de 2`
+  const page2Number = `Página 2 de ${totalPaginas}`
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -1679,7 +1680,7 @@ export function buildPublicProposalHtml(
             }
             <div class="sig-line" style="${proposta.assinatura_representante ? 'margin-top:4px;' : ''}">
               <strong>${esc(proposta.nome_representante_comercial || proposta.representante_original || '—')}</strong><br />
-              Representante Comercial
+              ${esc(resolveRepresentanteCargo(proposta.representantes))}
               ${proposta.data_assinatura_representante ? `<div style="font-size:9px;color:#64748b;margin-top:2px;">Assinado em ${new Date(proposta.data_assinatura_representante).toLocaleDateString('pt-BR')}</div>` : ''}
             </div>
           </div>

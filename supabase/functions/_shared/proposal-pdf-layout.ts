@@ -20,6 +20,7 @@
 import { calcComissaoServicosBener, TEXTO_COMISSAO_BENER_VERBATIM } from './pdf-builder.ts'
 import { renderRichContent, resolveDescricaoFontSizePdfNum } from './proposal-rich-text.ts'
 import { ProposalSectionCounter } from './proposal-section-numbering.ts'
+import { resolveRepresentanteCargo } from './representante-cargo.ts'
 
 const PAGE_W = 595.28
 const PAGE_H = 841.89
@@ -1584,7 +1585,7 @@ export async function buildProposalPdfBytes(input: BuildInput): Promise<Uint8Arr
     ['Gerente de Produto', p.nome_gerente_produto || p.gerentes?.nome || p.gerente_original],
     ['Assessor Técnico', p.nome_assessor_tecnico],
     [
-      'Representante Comercial',
+      resolveRepresentanteCargo(p.representantes),
       p.nome_representante_comercial || p.representantes?.fantasia || p.representante_original,
     ],
   ]

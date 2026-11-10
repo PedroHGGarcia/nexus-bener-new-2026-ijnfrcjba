@@ -43,7 +43,8 @@ Deno.serve(async (req: Request) => {
     const url = new URL(req.url)
 
     const format = url.searchParams.get('format') || 'html'
-    const saveToStorage = url.searchParams.get('save') === 'true'
+    const saveToStorage =
+      url.searchParams.get('save') === 'true' || url.searchParams.get('save') === '1'
 
     // Accept ?token=... or ?id=... or /functions/v1/public-proposal-pdf/<token_or_uuid>
     let identifier = url.searchParams.get('token') || url.searchParams.get('id')
@@ -72,7 +73,7 @@ Deno.serve(async (req: Request) => {
     let query = adminClient
       .from('propostas')
       .select(
-        '*, clientes(*), versoes(*), representantes:representante(id, fantasia), gerentes:gerente(id, nome)',
+        '*, clientes(*), versoes(*), representantes:representante(id, fantasia, profiles(id, role)), gerentes:gerente(id, nome)',
       )
 
     if (UUID_REGEX.test(identifier)) {
@@ -312,9 +313,20 @@ Deno.serve(async (req: Request) => {
         if (!uploadError) {
           const { data: urlData } = adminClient.storage.from('propostas-pdf').getPublicUrl(fileName)
           if (urlData?.publicUrl) {
+            const nowTs = Date.now()
+            const cacheBustedUrl = `${urlData.publicUrl}?v=${nowTs}`
+            const pdfMeta = {
+              layout_version: 'layout_v2',
+              has_page_numbers: true,
+              generated_at: new Date(nowTs).toISOString(),
+              timestamp: nowTs,
+            }
             await adminClient
               .from('propostas')
-              .update({ pdf_anexo: urlData.publicUrl })
+              .update({
+                pdf_anexo: cacheBustedUrl,
+                pdf_anexo_meta: pdfMeta,
+              })
               .eq('id', proposal.id)
           }
         }

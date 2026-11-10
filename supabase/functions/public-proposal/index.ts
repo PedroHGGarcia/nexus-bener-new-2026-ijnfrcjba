@@ -137,7 +137,8 @@ Deno.serve(async (req: Request) => {
             marcas(id, nome),
             produtos(id, nome, categorias_produtos:categorias(id, nome))
           )
-        )
+        ),
+        representantes:representante(id, fantasia, profiles(id, role))
       `)
     if (isUuid) {
       query = query.or(`public_token.eq.${token},id.eq.${token}`)
@@ -324,6 +325,7 @@ Deno.serve(async (req: Request) => {
       pdf_anexo: proposal.pdf_anexo,
       cliente_original: proposal.cliente_original,
       versao_original: proposal.versao_original,
+      representantes: proposal.representantes || null,
       clientes: proposal.cliente,
       versoes: (proposal.dados_snapshot as any)?.primary_versao || proposal.versao_rel,
       proposta_versoes: items || [],
