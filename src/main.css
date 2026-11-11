@@ -318,6 +318,12 @@
     overflow: visible !important;
   }
 
+  .proposal-sheets-preview {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    margin: 0 auto !important;
+  }
+
   .proposal-preview-content .proposal-document {
     width: 210mm !important;
     max-width: 210mm !important;
