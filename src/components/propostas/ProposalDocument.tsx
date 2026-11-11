@@ -762,21 +762,30 @@ export function ProposalDocument({ proposal }: Props) {
     }
 
     const measurePages = () => {
-      if (!contentBodyRef.current) return
-      // Na visualização em tela / impressão, cada página de conteúdo A4 tem ~226mm de altura útil
-      // 1mm ~ 3.7795px (96dpi standard) -> 226mm ~ 854px
-      const scrollHeight = contentBodyRef.current.scrollHeight
-      const usableHeightPx = 854
-      const contentPages = Math.max(1, Math.ceil(scrollHeight / usableHeightPx))
-      // 1 página de capa + N páginas de conteúdo
+      const node = contentBodyRef.current
+      if (!node) return
+
+      // The second sheet is a flow container; measure its full content, not
+      // the fixed print height. 226mm is the printable A4 body height after
+      // the repeating header/footer reservations.
+      const usableHeightPx = (226 / 25.4) * 96
+      const contentHeight = Math.max(node.scrollHeight, node.getBoundingClientRect().height)
+      const contentPages = Math.max(1, Math.ceil(contentHeight / usableHeightPx))
       setEstimatedTotalPages(1 + contentPages)
     }
 
-    measurePages()
-    const timer = setTimeout(measurePages, 300)
+    const raf = requestAnimationFrame(measurePages)
+    const timer = window.setTimeout(measurePages, 500)
+    const observer = typeof ResizeObserver !== 'undefined'
+      ? new ResizeObserver(measurePages)
+      : null
+    if (observer && contentBodyRef.current) observer.observe(contentBodyRef.current)
     window.addEventListener('resize', measurePages)
+
     return () => {
+      cancelAnimationFrame(raf)
       clearTimeout(timer)
+      observer?.disconnect()
       window.removeEventListener('resize', measurePages)
     }
   }, [showAdditionalPages, proposal, equipmentItems])
