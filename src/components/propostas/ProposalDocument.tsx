@@ -1,4 +1,178 @@
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
 
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+=======  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+import { fetchPropostaVersoes } from '@/services/proposta-versoes'
+import { snapshotToPropostaVersoes } from '@/lib/proposal-snapshot'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+import { fetchPropostaVersoes } from '@/services/proposta-versoes'
+import { snapshotToPropostaVersoes } from '@/lib/proposal-snapshot'import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+import { fetchPropostaVersoes } from '@/services/proposta-versoes'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+import { fetchPropostaVersoes } from '@/services/proposta-versoes'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+=======
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+import { fetchPropostaVersoes } from '@/services/proposta-versoes'
+import { snapshotToPropostaVersoes } from '@/lib/proposal-snapshot'
+import type { CustomField } from '@/components/propostas/CustomFieldsEditor'
+import { supabase } from '@/lib/supabase/client'
+import { formatCurrencyByMoeda, formatBulletList, normalizeMoedaCode } from '@/lib/format'
+import { calcComissaoServicosBener } from '@/lib/proposta-calculations'
+import {
+  splitIntoParagraphs,
+  parseParagraphs,
+  stripBoldMarkers,
+  isTaxValueEmpty,
+  isCommercialFieldEmpty,
+} from '@/lib/paragraphs'
+import { TechnicalDataDisplay } from '@/components/produtos/TechnicalDataDisplay'
+import { resolveDescricaoFontSizeScreen } from '@/lib/descricao-tamanho'
+import { ProposalSectionCounter } from '@/lib/proposal-section-numbering'
+import benerLogo from '@/assets/image-f448b.png'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+import { fetchPropostaVersoes } from '@/services/proposta-versoes'
+import { snapshotToPropostaVersoes } from '@/lib/proposal-snapshot'
+import type { CustomField } from '@/components/propostas/CustomFieldsEditor'
+import { supabase } from '@/lib/supabase/client'
+import { formatCurrencyByMoeda, formatBulletList, normalizeMoedaCode } from '@/lib/format'
+import { calcComissaoServicosBener } from '@/lib/proposta-calculations'
+import {
+  splitIntoParagraphs,
+  parseParagraphs,
+  stripBoldMarkers,
+  isTaxValueEmpty,
+  isCommercialFieldEmpty,
+} from '@/lib/paragraphs'
+import { TechnicalDataDisplay } from '@/components/produtos/TechnicalDataDisplay'
+import { resolveDescricaoFontSizeScreen } from '@/lib/descricao-tamanho'
+import { ProposalSectionCounter } from '@/lib/proposal-section-numbering'
+import benerLogo from '@/assets/image-f448b.png'
 =======
   const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
 import { PropostaWithRelations } from '@/types/proposta'
