@@ -300,6 +300,28 @@
   margin: 0 !important;
 }
 
+/* Preview screen mirrors the A4 sheets used by the print layout. */
+@media screen {
+  .proposal-document {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .proposal-sheet,
+  .proposal-page {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    height: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-bottom: 12mm !important;
+    background: #fff !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  }
+}
+
 /* Numeração de páginas é desenhada por folha pelo ProposalDocument em JavaScript
    devido a @page { margin: 0 } zerar a área de margin boxes CSS. */
 @media print {
