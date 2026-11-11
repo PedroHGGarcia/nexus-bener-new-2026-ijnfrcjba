@@ -299,6 +299,31 @@
   size: A4 portrait;
   margin: 0 !important;
 }
+
+/* Preview screen mirrors the A4 sheets used by the print layout. */
+@media screen {
+  .proposal-document {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .proposal-sheet,
+  .proposal-page {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    height: auto !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    margin-bottom: 12mm !important;
+    background: #fff !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  }
+}
+
+/* Numeração de páginas é desenhada por folha pelo ProposalDocument em JavaScript
+   devido a @page { margin: 0 } zerar a área de margin boxes CSS. */
 @media print {
   .proposal-running-header {
     display: block !important;
@@ -327,18 +352,7 @@
   }
 
   .proposal-page-footer-number {
-    display: block !important;
-    position: fixed !important;
-    bottom: 10mm !important;
-    right: 12mm !important;
-    height: 16mm !important;
-    line-height: 16mm !important;
-    z-index: 10000 !important;
-    text-align: right !important;
-    font-size: 9px !important;
-    color: #475569 !important;
-    font-family: 'Courier New', Courier, monospace, 'Lucida Console', sans-serif !important;
-    pointer-events: none !important;
+    display: none !important;
   }
 
   /* Tabela de paginação para impressão: thead/tfoot repetem em todas as páginas
@@ -502,17 +516,6 @@
     border: none !important;
   }
 
-  /* Altura zero / auto: mata qualquer min-height que estoure a área útil e empurre páginas seguintes.
-     A CAPA é excetuada abaixo para ter altura fixa de 226mm:
-     A4 (297mm) - topo físico (10mm) - base física (10mm) - cabeçalho fixo (35mm) - rodapé fixo (16mm) = 226mm de altura útil.
-     Dando ao flex-1 do bloco da máquina espaço para crescer e exibir a foto grande na página 1. */
-  .proposal-document,
-  .proposal-page:not(.proposal-cover):not([data-page='1']),
-  .proposal-sheet:not(.proposal-cover):not([data-page='1']) {
-    min-height: auto !important;
-    height: auto !important;
-  }
-
   /* Capa (página 1) na impressão: altura útil exata de 226mm para que o flex-1 da foto ocupe todo o espaço restante */
   [data-page='1'].proposal-cover,
   .proposal-cover {
@@ -524,6 +527,23 @@
     flex-direction: column !important;
     justify-content: flex-start !important;
     overflow: hidden !important;
+    break-before: avoid !important;
+    page-break-before: avoid !important;
+  }
+
+  /* Folhas paginadas de conteúdo na impressão (páginas 2+):
+     Altura útil exata de 226mm com quebra de página explícita e rodapé com número no canto inferior direito */
+  .proposal-sheet:not(.proposal-cover) {
+    height: 226mm !important;
+    min-height: 226mm !important;
+    max-height: 226mm !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    overflow: hidden !important;
+    break-before: page !important;
+    page-break-before: always !important;
   }
 
   .proposal-cover > div:first-child,
@@ -561,8 +581,8 @@
     padding-top: 0 !important;
   }
 
-  [data-page='2'],
-  [data-sheet-index='1'] {
+  [data-page]:not([data-page='1']),
+  [data-sheet-index]:not([data-sheet-index='0']) {
     break-before: page !important;
     page-break-before: always !important;
     margin-top: 0 !important;
