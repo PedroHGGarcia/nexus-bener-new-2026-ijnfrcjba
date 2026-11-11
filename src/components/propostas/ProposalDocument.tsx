@@ -1,4 +1,250 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+import { fetchPropostaVersoes } from '@/services/proposta-versoes'
+import { snapshotToPropostaVersoes } from '@/lib/proposal-snapshot'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+import { fetchPropostaVersoes } from '@/services/proposta-versoes'
+import { snapshotToPropostaVersoes } from '@/lib/proposal-snapshot'import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+import { fetchPropostaVersoes } from '@/services/proposta-versoes'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+import { fetchPropostaVersoes } from '@/services/proposta-versoes'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+import { TipoProposta } from '@/types/tipo-proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+import { PropostaWithRelations } from '@/types/proposta'=======
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+
+  // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)import { useState, useEffect, useMemo, useRef } from 'react'
+=======
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
+=======
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)import { useState, useEffect, useMemo, useRef } from 'react'
 import { PropostaWithRelations } from '@/types/proposta'
 import { PropostaVersaoWithRelations } from '@/types/proposta-versao'
 import { TipoProposta } from '@/types/tipo-proposta'
@@ -749,37 +995,97 @@ export function ProposalDocument({ proposal }: Props) {
     hasComparison ||
     hasTiposPropostaDetails
 
-  // Medição da altura do bloco de conteúdo para estimativa de total de páginas na visualização de tela
-  const contentBodyRef = useRef<HTMLDivElement>(null)
-  const [estimatedTotalPages, setEstimatedTotalPages] = useState<number>(
-    showAdditionalPages ? 2 : 1,
-  )
+  // Medição e distribuição do conteúdo em folhas físicas explícitas (Páginas 2..N)
+  // Especificação OpenAI (gpt-6-luna):
+  // 1. Medir em contêiner invisível com largura útil e fontes/imagens prontas
+  // 2. Altura útil de 226mm (A4 297mm - 10mm top - 10mm bottom - 35mm header - 16mm footer)
+  // 3. Agrupar seções em folhas explícitas e anexar rodapé com "Página X de N"
+  const rawContentRef = useRef<HTMLDivElement>(null)
+  const [pagedSheets, setPagedSheets] = useState<Array<number[]>>([])
+  const [isMeasured, setIsMeasured] = useState<boolean>(false)
 
-  useEffect(() => {
+  const measureAndPaginate = useCallback(() => {
     if (!showAdditionalPages) {
-      setEstimatedTotalPages(1)
+      setPagedSheets([])
+      setIsMeasured(true)
       return
     }
 
-    const measurePages = () => {
-      if (!contentBodyRef.current) return
-      // Na visualização em tela / impressão, cada página de conteúdo A4 tem ~226mm de altura útil
-      // 1mm ~ 3.7795px (96dpi standard) -> 226mm ~ 854px
-      const scrollHeight = contentBodyRef.current.scrollHeight
-      const usableHeightPx = 854
-      const contentPages = Math.max(1, Math.ceil(scrollHeight / usableHeightPx))
-      // 1 página de capa + N páginas de conteúdo
-      setEstimatedTotalPages(1 + contentPages)
+    const container = rawContentRef.current
+    if (!container) return
+
+    // Elementos filhos diretos do container são as seções e blocos da proposta
+    const children = Array.from(container.children) as HTMLElement[]
+    if (children.length === 0) {
+      setPagedSheets([[0]])
+      setIsMeasured(true)
+      return
     }
 
-    measurePages()
-    const timer = setTimeout(measurePages, 300)
-    window.addEventListener('resize', measurePages)
-    return () => {
-      clearTimeout(timer)
-      window.removeEventListener('resize', measurePages)
+    // Altura útil da folha A4 descontando cabeçalho (35mm), rodapé (16mm), margens (20mm) e rodapé do número (18px)
+    // 226mm a 96dpi = 226 * 3.779527559px ≈ 854px.
+    // Usamos 810px como teto seguro para garantir que NENHUMA folha estoure e gere página fantasma
+    const maxUsableHeightPx = 810
+
+    const sheets: Array<number[]> = []
+    let currentSheet: number[] = []
+    let currentSheetHeight = 0
+
+    children.forEach((el, index) => {
+      const rect = el.getBoundingClientRect()
+      // Inclui margens verticais computadas para precisão
+      const style = window.getComputedStyle(el)
+      const marginTop = parseFloat(style.marginTop) || 0
+      const marginBottom = parseFloat(style.marginBottom) || 0
+      const elHeight = Math.ceil(rect.height + marginTop + marginBottom)
+
+      if (currentSheet.length === 0) {
+        currentSheet.push(index)
+        currentSheetHeight = elHeight
+      } else if (currentSheetHeight + elHeight <= maxUsableHeightPx) {
+        currentSheet.push(index)
+        currentSheetHeight += elHeight
+      } else {
+        sheets.push(currentSheet)
+        currentSheet = [index]
+        currentSheetHeight = elHeight
+      }
+    })
+
+    if (currentSheet.length > 0) {
+      sheets.push(currentSheet)
     }
-  }, [showAdditionalPages, proposal, equipmentItems])
+
+    setPagedSheets(sheets.length > 0 ? sheets : [[0]])
+    setIsMeasured(true)
+  }, [showAdditionalPages])
+
+  useEffect(() => {
+    // Aguarda montagem, imagens e fontes
+    const handleReady = () => {
+      measureAndPaginate()
+    }
+
+    const timer1 = setTimeout(handleReady, 100)
+    const timer2 = setTimeout(handleReady, 500)
+    const timer3 = setTimeout(handleReady, 1200)
+
+    if (document.fonts?.ready) {
+      document.fonts.ready.then(handleReady).catch(() => {})
+    }
+
+    window.addEventListener('resize', handleReady)
+    return () => {
+      clearTimeout(timer1)
+      clearTimeout(timer2)
+      clearTimeout(timer3)
+      window.removeEventListener('resize', handleReady)
+    }
+  }, [measureAndPaginate, proposal, equipmentItems])
+
+=======
+  const totalPages = 1 + (showAdditionalPages ? Math.max(1, pagedSheets.length) : 0)
+=======
 
   // Numeração hierárquica de seções — espelho do gerador do servidor (ProposalSectionCounter)
   const sectionCounter = new ProposalSectionCounter()
