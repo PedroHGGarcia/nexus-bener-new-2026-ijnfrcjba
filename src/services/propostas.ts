@@ -13,48 +13,15 @@ export async function fetchPropostas(options?: {
   userEmail?: string
   isVendedorOuRep?: boolean
 }): Promise<PropostaWithRelations[]> {
-  let query = supabase
+  // Para vendedor/representante o filtro real é a RLS (created_by = auth.uid());
+  // o .eq('created_by') aqui é só conveniência para a UI já receber só o próprio.
+  const query = supabase
     .from(TABLE)
     .select(SELECT_RELATIONS)
     .order('created_at', { ascending: false })
 
-  if (options?.isVendedorOuRep && (options.userId || options.userEmail)) {
-    // Busca representante vinculado a este perfil para cobrir tanto user quanto representante_id
-    let repIds: string[] = []
-    try {
-      const repQuery = supabase.from('representantes').select('id')
-
-      const filters: string[] = []
-      if (options.userId) filters.push(`profile_id.eq.${options.userId}`)
-      if (options.userEmail) filters.push(`email.ilike.${options.userEmail}`)
-
-      if (filters.length > 0) {
-        const { data: reps } = await repQuery.or(filters.join(','))
-        if (reps && reps.length > 0) {
-          repIds = reps.map((r) => r.id)
-        }
-      }
-    } catch {
-      // continua com filtros de user
-    }
-
-    const orClauses: string[] = []
-    if (options.userId) {
-      orClauses.push(`user.eq.${options.userId}`)
-    }
-    if (options.userEmail) {
-      orClauses.push(`user.ilike.${options.userEmail}`)
-    }
-    if (options.userName) {
-      orClauses.push(`user.ilike.${options.userName}`)
-    }
-    if (repIds.length > 0) {
-      orClauses.push(`representante.in.(${repIds.join(',')})`)
-    }
-
-    if (orClauses.length > 0) {
-      query = query.or(orClauses.join(','))
-    }
+  if (options?.isVendedorOuRep && options.userId) {
+    query.eq('created_by', options.userId)
   }
 
   const { data, error } = await query
