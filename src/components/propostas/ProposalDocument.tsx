@@ -18,8 +18,8 @@ import {
 import { TechnicalDataDisplay } from '@/components/produtos/TechnicalDataDisplay'
 import { resolveDescricaoFontSizeScreen } from '@/lib/descricao-tamanho'
 import { ProposalSectionCounter } from '@/lib/proposal-section-numbering'
-import { useProposalPagination } from '@/hooks/use-proposal-pagination'
-import { useProposalContentSheets, type ContentSheet } from '@/hooks/use-proposal-content-sheets'
+
+
 import benerLogo from '@/assets/image-f448b.png'
 
 interface Props {
