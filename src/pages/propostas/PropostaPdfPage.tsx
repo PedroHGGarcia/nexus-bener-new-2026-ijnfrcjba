@@ -24,7 +24,7 @@ import { toast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 import { LoadingState, ErrorState } from '@/components/StateViews'
 import { SignatureSection } from '@/components/propostas/SignatureSection'
-import { ProposalDocument } from '@/components/propostas/ProposalDocument'
+import { ProposalDocumentSheets } from '@/components/propostas/ProposalDocumentSheets'
 import { ReenviarNotificacaoDialog } from '@/components/propostas/ReenviarNotificacaoDialog'
 import { EnviarWhatsAppDialog } from '@/components/propostas/EnviarWhatsAppDialog'
 import { fetchPropostaById, updatePropostaStatus } from '@/services/propostas'
@@ -348,9 +348,9 @@ export default function PropostaPdfPage() {
         </div>
       </div>
 
-      <Card className="shadow-lg overflow-hidden border">
-        <CardContent className="p-8 bg-white text-slate-900">
-          <ProposalDocument proposal={proposal} />
+      <Card className="proposal-preview-card shadow-lg overflow-hidden border">
+        <CardContent className="proposal-preview-content p-8 bg-white text-slate-900">
+          <ProposalDocumentSheets proposal={proposal} />
 
           <div className="border-t border-slate-200 mt-8 pt-6 print:hidden">
             <h3 className="font-bold text-sm mb-3 text-slate-800">Assinaturas e Validação</h3>
