@@ -19,6 +19,7 @@
  *                         da tarja do contador "Página X de N")
  *   conteúdo útil       = 226mm por folha
  */
+// touch
 import { useMemo } from 'react'
 import { useProposalPagination } from '@/hooks/use-proposal-pagination'
 import benerLogo from '@/assets/image-f448b.png'
