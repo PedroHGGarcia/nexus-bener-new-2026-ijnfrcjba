@@ -348,8 +348,8 @@ export default function PropostaPdfPage() {
         </div>
       </div>
 
-      <Card className="shadow-lg overflow-hidden border">
-        <CardContent className="p-8 bg-white text-slate-900">
+      <Card className="proposal-preview-card shadow-lg overflow-hidden border">
+        <CardContent className="proposal-preview-content p-8 bg-white text-slate-900">
           <ProposalDocument proposal={proposal} />
 
           <div className="border-t border-slate-200 mt-8 pt-6 print:hidden">
