@@ -300,7 +300,55 @@
   margin: 0 !important;
 }
 
-/* Preview screen mirrors the A4 sheets used by the print layout. */
+/* Proposal detail preview: screen uses the same A4 canvas as print,
+   while @media print removes the card shell and keeps the existing flow. */
+@media screen {
+  .proposal-preview-card {
+    max-width: none !important;
+    width: 100% !important;
+    background: #e5e7eb !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    border: 0 !important;
+  }
+
+  .proposal-preview-content {
+    padding: 24px !important;
+    background: #e5e7eb !important;
+    overflow: visible !important;
+  }
+
+  .proposal-preview-content .proposal-document {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    margin: 0 auto !important;
+  }
+
+  .proposal-preview-content .proposal-sheet,
+  .proposal-preview-content .proposal-page {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    height: auto !important;
+    margin: 0 auto 12mm !important;
+    background: #fff !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
+  }
+}
+
+@media print {
+  .proposal-preview-card,
+  .proposal-preview-content {
+    max-width: none !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    overflow: visible !important;
+  }
+}
+
 @media screen {
   .proposal-document {
     width: 210mm !important;
