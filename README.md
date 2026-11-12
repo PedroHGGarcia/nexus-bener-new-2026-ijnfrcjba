@@ -129,3 +129,7 @@ npm run build
 ```
 
 Os arquivos otimizados serão gerados na pasta `dist/` e estarão prontos para deploy.
+
+## 🏷️ Versão
+
+- v0.0.193 — Nexus Bener (commit 56a904a)
