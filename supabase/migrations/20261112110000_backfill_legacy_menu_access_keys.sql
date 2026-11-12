@@ -27,6 +27,7 @@ DECLARE
   v_new_key text;
   v_arr jsonb;
   v_count int := 0;
+  v_rows int := 0;
 BEGIN
   -- Normaliza perfis cujo menu_access ficou duplamente codificado
   -- (jsonb string contendo um array JSON)
@@ -48,7 +49,8 @@ BEGIN
       AND p.menu_access @> to_jsonb(v_legacy::text)
       AND NOT p.menu_access @> to_jsonb(v_new_key::text);
 
-    v_count := v_count + ROW_COUNT;
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    v_count := v_count + v_rows;
   END LOOP;
 
   RAISE NOTICE 'backfill_legacy_menu_access: % atualizacoes', v_count;
