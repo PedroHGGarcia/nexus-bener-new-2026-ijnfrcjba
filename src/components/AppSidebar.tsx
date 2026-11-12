@@ -31,6 +31,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { usePwaInstall } from '@/hooks/use-pwa-install'
 import { InstallPwaDialog } from '@/components/pwa/InstallPwaDialog'
+import { expandLegacyMenuKeys } from '@/lib/menu-access'
 
 interface NavChild {
   key: string
@@ -202,7 +203,9 @@ export function AppSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) {
   const navigate = useNavigate()
   const [installModalOpen, setInstallModalOpen] = useState(false)
   const { isInstallable, isInstalled } = usePwaInstall()
-  const menuAccess = user?.menuAccess ?? []
+  // Expande chaves antigas (pré-prefixo, ex.: 'propostas-criadas') para as novas
+  // equivalentes ('controle-propostas.criadas') preservando as existentes.
+  const menuAccess = expandLegacyMenuKeys(user?.menuAccess ?? [])
   const adminRole = isAdminRole(user?.role)
   const isVendedor = isRepresentanteRole(user?.role)
   const [open, setOpen] = useState<Record<string, boolean>>({
@@ -219,8 +222,9 @@ export function AppSidebar({ onCloseMobile }: { onCloseMobile?: () => void }) {
     if (!menuAccess.length || menuAccess.includes('*')) return true
 
     // NORMALIZAÇÃO de chaves para os demais papéis:
-    // Compara tanto com pontos quanto com hífens ('controle-propostas.emitir' <-> 'controle-propostas-emitir')
-    // e inclui equivalência para 'produtos.list' <-> 'produtos-lista'.
+    // Compara tanto com pontos quanto com hífens ('controle-propostas.emitir' <-> 'controle-propostas-emitir'),
+    // inclui equivalência para 'produtos.list' <-> 'produtos-lista' e
+    // expande chaves antigas -> novas (menuAccess já vem expandido).
     const allowed = new Set<string>()
     for (const item of menuAccess) {
       allowed.add(item)

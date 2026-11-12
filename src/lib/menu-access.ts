@@ -88,6 +88,37 @@ export const MENU_ITEMS: MenuItemDef[] = [
   { key: 'configuracoes', label: 'Configurações', path: '/configuracoes' },
 ]
 
+/**
+ * Chaves de menu antigas (pré-prefixo, salvas em menu_access de perfis criados
+ * antes da renomeação) -> chaves novas usadas no menu lateral atual.
+ * Mesmo mapeamento da migration 20261112110000_backfill_legacy_menu_access_keys.
+ */
+export const LEGACY_MENU_KEY_MAP: Record<string, string> = {
+  'propostas-criadas': 'controle-propostas.criadas',
+  'propostas-emitir': 'controle-propostas.emitir',
+  'propostas-dashboard': 'controle-propostas.dashboard',
+  'propostas-avancadas': 'controle-propostas.avancadas',
+  'propostas-tipos': 'controle-propostas.tipos',
+  'propostas-emitir-licitacao': 'controle-propostas.emitir-licitacao',
+  'cadastros-clientes': 'cadastros.clientes',
+  'cadastros-representantes': 'cadastros.representantes',
+  'cadastros-regioes': 'cadastros.regioes',
+  'cadastros-gerentes': 'cadastros.gerentes',
+  'cadastros-prepostos': 'cadastros.prepostos',
+  'produtos-lista': 'produtos.list',
+}
+
+/** Expande chaves antigas de menu_access para as novas equivalentes (sem remover as originais) */
+export function expandLegacyMenuKeys(keys: string[] | undefined): string[] {
+  if (!keys || keys.length === 0) return []
+  const out = new Set<string>(keys)
+  for (const k of keys) {
+    const mapped = LEGACY_MENU_KEY_MAP[k]
+    if (mapped) out.add(mapped)
+  }
+  return Array.from(out)
+}
+
 export const FORBIDDEN_REP_VENDEDOR_MENU_KEYS = [
   'area-atuacao',
   'controle-propostas.emitir-licitacao',
@@ -104,13 +135,23 @@ export const FORBIDDEN_REP_VENDEDOR_MENU_KEYS = [
   'produtos-precos',
 ]
 
-/** Normaliza uma chave de menu gerando aliases de separador (ponto <-> hífen) e equivalências de catálogo */
+/** Normaliza uma chave de menu gerando aliases de separador (ponto <-> hífen),
+ * equivalências de catálogo e equivalências de chave antiga -> nova */
 export function normalizeMenuKeyVariants(key: string): string[] {
   const variants = new Set<string>()
   if (!key) return []
   variants.add(key)
   variants.add(key.replace(/\./g, '-'))
   variants.add(key.replace(/-/g, '.'))
+
+  // Equivalência chave antiga <-> chave nova (ex.: 'propostas-criadas' <-> 'controle-propostas.criadas')
+  const legacyOfKey = Object.entries(LEGACY_MENU_KEY_MAP).find(
+    ([legacy, modern]) => legacy === key || modern === key,
+  )
+  if (legacyOfKey) {
+    variants.add(legacyOfKey[0])
+    variants.add(legacyOfKey[1])
+  }
 
   // Mapeamentos específicos entre nomes de catálogo e IDs de rota
   if (key === 'produtos.list' || key === 'produtos-list') {
